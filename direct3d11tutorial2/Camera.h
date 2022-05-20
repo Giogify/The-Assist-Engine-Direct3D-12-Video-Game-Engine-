@@ -56,8 +56,4 @@ public:
 		m_y += y;
 		m_z += z;
 	}
-
-	void test() noexcept {
-		m_x = m_x + 1.0;
-	}
 };
