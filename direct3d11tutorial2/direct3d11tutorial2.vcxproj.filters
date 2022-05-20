@@ -235,9 +235,6 @@
     <FxCompile Include="PixelShader.hlsl">
       <Filter>Header Files\gfx\shaders</Filter>
     </FxCompile>
-    <FxCompile Include="PixelShader1.hlsl">
-      <Filter>Header Files\gfx\shaders</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Object Include="testCube.obj">

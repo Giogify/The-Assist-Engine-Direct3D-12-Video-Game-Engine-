@@ -15,7 +15,7 @@ public:
 		std::vector<Material> mtl{};
 		std::string nextline{};
 		std::ifstream objFile{};
-		objFile.open(file);
+		objFile.open(file + ".mtl");
 		if (objFile.is_open()) {
 			while (objFile) {
 				
@@ -23,7 +23,7 @@ public:
 				std::getline(objFile, nextline);
 
 				// If the current line starts with "newmtl"
-				if (nextline.starts_with("newmtl")) {
+				if (nextline.starts_with("newmtl ")) {
 
 					// Erase the "newmtl "
 					nextline.erase(0u, 7u);
@@ -36,7 +36,7 @@ public:
 				}
 
 				// If the current line starts with "Ns"
-				else if (nextline.starts_with("Ns")) {
+				else if (nextline.starts_with("Ns ")) {
 
 					// Erase "Ns "
 					nextline.erase(0u, 3u);
@@ -46,13 +46,13 @@ public:
 				}
 
 				// If the current line starts with "Ka"
-				else if (nextline.starts_with("Ka")) {
+				else if (nextline.starts_with("Ka ")) {
 
 					// Erase the "Ka "
 					nextline.erase(0u, 3u);
 
 					// If the current line starts with "spectral"
-					if (nextline.starts_with("spectral")) {
+					if (nextline.starts_with("spectral ")) {
 
 						// Erase the "spectral "
 						nextline.erase(0u, 9u);
@@ -84,21 +84,34 @@ public:
 					}
 
 					// If the current line starts with "xyz"
-					else if (nextline.starts_with("xyz")) {
+					else if (nextline.starts_with("xyz ")) {
 						
-						// Erase the "xyz  "
+						// Erase the "xyz "
 						nextline.erase(0u, 4u);
 
 						// This material's KA uses the XYZ format, set it to true
 						mtl.at(mtl.size() - 1).isMaterialKAXYZ = true;
 
 						// Capture the X, Y, Z values
-						mtl.at(mtl.size() - 1).KA_XYZ.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KA_XYZ.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KA_XYZ.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).KA_XYZ.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).KA_XYZ.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).KA_XYZ.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 
 					// Must be a RGB Value
@@ -108,12 +121,25 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialKARGB = true;
 
 						// Capture the R, G, B values
-						mtl.at(mtl.size() - 1).KA_RGB.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KA_RGB.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KA_RGB.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).KA_RGB.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).KA_RGB.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).KA_RGB.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 				}
 
@@ -164,12 +190,25 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialKDXYZ = true;
 
 						// Capture the X, Y, Z values
-						mtl.at(mtl.size() - 1).KD_XYZ.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KD_XYZ.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KD_XYZ.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).KD_XYZ.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).KD_XYZ.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).KD_XYZ.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 
 					// Must be a RGB Value
@@ -179,22 +218,35 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialKDRGB = true;
 
 						// Capture the R, G, B values
-						mtl.at(mtl.size() - 1).KD_RGB.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KD_RGB.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KD_RGB.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).KD_RGB.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).KD_RGB.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).KD_RGB.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 				}
 
 				// Ks Values
-				else if (nextline.starts_with("Ks")) {
+				else if (nextline.starts_with("Ks ")) {
 					// Erase the "Ks "
 					nextline.erase(0u, 3u);
 
 					// If the current line starts with "spectral"
-					if (nextline.starts_with("spectral")) {
+					if (nextline.starts_with("spectral ")) {
 
 						// Erase the "spectral "
 						nextline.erase(0u, 9u);
@@ -235,12 +287,25 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialKSXYZ = true;
 
 						// Capture the X, Y, Z values
-						mtl.at(mtl.size() - 1).KS_XYZ.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KS_XYZ.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KS_XYZ.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).KS_XYZ.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).KS_XYZ.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).KS_XYZ.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 
 					// Must be a RGB Value
@@ -250,12 +315,25 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialKSRGB = true;
 
 						// Capture the R, G, B values
-						mtl.at(mtl.size() - 1).KS_RGB.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KS_RGB.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).KS_RGB.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).KS_RGB.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).KS_RGB.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).KS_RGB.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 				}
 				
@@ -306,12 +384,25 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialTFXYZ = true;
 
 						// Capture the X, Y, Z values
-						mtl.at(mtl.size() - 1).TF_XYZ.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).TF_XYZ.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).TF_XYZ.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).TF_XYZ.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).TF_XYZ.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).TF_XYZ.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 
 					// Must be a RGB Value
@@ -321,17 +412,30 @@ public:
 						mtl.at(mtl.size() - 1).isMaterialTFRGB = true;
 
 						// Capture the R, G, B values
-						mtl.at(mtl.size() - 1).TF_RGB.at(0) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).TF_RGB.at(1) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
-						mtl.at(mtl.size() - 1).TF_RGB.at(2) = std::stof(nextline.substr(0u, 8u));
-						nextline.erase(0u, 9u);
+						for (int i = 0; !nextline.empty(); i++) {
+							std::string temp{};
+							while (!nextline.starts_with(" ") && !nextline.empty()) {
+								temp.append(nextline.substr(0u, 1u));
+								nextline.erase(0u, 1u);
+							}
+							nextline.erase(0u, 1u);
+							switch (i) {
+							case 0:
+								mtl.at(mtl.size() - 1).TF_RGB.at(0) = std::stof(temp);
+								break;
+							case 1:
+								mtl.at(mtl.size() - 1).TF_RGB.at(1) = std::stof(temp);
+								break;
+							case 2:
+								mtl.at(mtl.size() - 1).TF_RGB.at(2) = std::stof(temp);
+								break;
+							}
+						}
 					}
 				}
 				
 				// Illumination Models
-				else if (nextline.starts_with("illum")) {
+				else if (nextline.starts_with("illum ")) {
 					
 					// Erase "illum "
 					nextline.erase(0u, 6u);
@@ -354,7 +458,7 @@ public:
 					nextline.erase(0u, 2u);
 
 					// determine if "-halo" is on
-					if (nextline.starts_with("-halo")) {
+					if (nextline.starts_with("-halo ")) {
 
 						// Erase "-halo "
 						nextline.erase(0u, 6u);
@@ -368,7 +472,7 @@ public:
 				}
 				
 				// Ns exponent
-				else if (nextline.starts_with("Ns")) {
+				else if (nextline.starts_with("Ns ")) {
 					
 					//Erase "Ns "
 					nextline.erase(0u, 3u);
@@ -378,7 +482,7 @@ public:
 				}
 
 				// Sharpness value
-				else if (nextline.starts_with("sharpness")) {
+				else if (nextline.starts_with("sharpness ")) {
 					
 					// Erase "sharpness "
 					nextline.erase(0u, 10u);
@@ -388,7 +492,7 @@ public:
 				}
 
 				// Ni optical density
-				else if (nextline.starts_with("Ni")) {
+				else if (nextline.starts_with("Ni ")) {
 					
 					// Erase "Ni "
 					nextline.erase(0u, 3u);

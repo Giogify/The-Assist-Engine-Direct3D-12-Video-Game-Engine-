@@ -1,5 +1,6 @@
 #pragma once
 #include "Object.h"
+#include "Material.h"
 #include <random>
 
 class Model {
@@ -34,6 +35,7 @@ private:
 
 	bool isInit = false;
 
+	std::unique_ptr<std::vector<Material>> m_MaterialData{};
 	std::shared_ptr<IndexedTriangleList> m_ModelData{};
 
 	// Model Data

@@ -1,9 +1,12 @@
 #include "Model.h"
 #include "CustomGeo.h"
 #include "Collections.h"
+#include "MaterialParser.h"
 
 Model::Model(GraphicsOutput& gfx, std::string& objPath) {
 	namespace dx = DirectX;
+
+	m_MaterialData = std::make_unique<std::vector<Material>>(MaterialParser::make(objPath));
 
 	bool found = false;
 	for (auto& itl : ITL_Collection::getCollection()) {
