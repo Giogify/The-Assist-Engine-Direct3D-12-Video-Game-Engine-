@@ -5,7 +5,7 @@
 
 static class ITL_Collection {
 	
-	static inline std::map<std::string, std::shared_ptr<IndexedTriangleList>> ITLCollection{};
+	static inline std::map<std::string, IndexedTriangleList> ITLCollection{};
 
 public:
 
@@ -14,7 +14,7 @@ public:
 	}
 
 	static void add(std::string& name, IndexedTriangleList* itl) noexcept {
-		ITLCollection.insert(std::pair<std::string, IndexedTriangleList*>(name, itl));
+		ITLCollection.insert(std::pair<std::string, IndexedTriangleList>(name, *std::make_unique<IndexedTriangleList>(itl)));
 	}
 
 };

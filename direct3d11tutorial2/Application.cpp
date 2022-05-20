@@ -108,7 +108,6 @@ void Application::applicationUpdate() {
 		for (int i = 0; i < iter; i++) {
 			actors.pop_back();
 		}
-		ITL_Collection::getCollection().clear();
 		actors.shrink_to_fit();
 	}
 

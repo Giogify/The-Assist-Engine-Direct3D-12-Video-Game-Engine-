@@ -11,13 +11,13 @@ Model::Model(GraphicsOutput& gfx, std::string& objPath) {
 	bool found = false;
 	for (auto& itl : ITL_Collection::getCollection()) {
 		if (itl.first == objPath) {
-			m_ModelData = itl.second;
+			m_ModelData = std::make_unique<IndexedTriangleList>(itl.second);
 			found = true;
 		}
 	}
 
 	if (!found) {
-		m_ModelData = std::make_shared<IndexedTriangleList>(CustomGeo::make(objPath));
+		m_ModelData = std::make_unique<IndexedTriangleList>(CustomGeo::make(objPath));
 		ITL_Collection::add(objPath, m_ModelData.get());
 	}
 

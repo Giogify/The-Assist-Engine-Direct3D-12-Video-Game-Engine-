@@ -30,7 +30,26 @@ public: // Public Methods
 
 	// Constructors
 	IndexedTriangleList() = default;
-	IndexedTriangleList(std::vector<std::string> names, std::vector<DirectX::XMFLOAT3> pos,
+	IndexedTriangleList(const IndexedTriangleList& itl) :
+	m_names(itl.m_names),
+	m_pos(itl.m_pos),
+	m_tex(itl.m_tex),
+	m_norm(itl.m_norm),
+	m_indices(itl.m_indices),
+	m_objectIndexTable(itl.m_objectIndexTable),
+	m_objects(itl.m_objects) {}
+	
+	IndexedTriangleList(IndexedTriangleList* pitl) :
+		m_names(pitl->m_names),
+		m_pos(pitl->m_pos),
+		m_tex(pitl->m_tex),
+		m_norm(pitl->m_norm),
+		m_indices(pitl->m_indices),
+		m_objectIndexTable(pitl->m_objectIndexTable),
+		m_objects(pitl->m_objects) {}
+	
+	IndexedTriangleList(std::vector<std::string> names,
+		std::vector<DirectX::XMFLOAT3> pos,
 		std::vector<DirectX::XMFLOAT2> tex,
 		std::vector<DirectX::XMFLOAT3> norm,
 		std::vector<DirectX::XMFLOAT3X3> indices,

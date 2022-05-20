@@ -36,7 +36,7 @@ private:
 	bool isInit = false;
 
 	std::unique_ptr<std::vector<Material>> m_MaterialData{};
-	std::shared_ptr<IndexedTriangleList> m_ModelData{};
+	std::unique_ptr<IndexedTriangleList> m_ModelData{};
 
 	// Model Data
 	std::vector<std::unique_ptr<Object>> m_objects{};
