@@ -1,4 +1,5 @@
 #pragma once
+#include "Material.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -13,6 +14,7 @@ public:
 		std::vector<DirectX::XMFLOAT3> pos{};
 		std::vector<DirectX::XMFLOAT2> tex{};
 		std::vector<DirectX::XMFLOAT3> norm{};
+		Material mtl{};
 	};
 
 public: // Public Fields
@@ -25,6 +27,7 @@ public: // Public Fields
 	std::vector<unsigned int> m_objectIndexTable{};
 
 	std::vector<Object> m_objects{};
+	std::vector<Material> m_mtls{};
 
 public: // Public Methods
 
@@ -32,6 +35,7 @@ public: // Public Methods
 	IndexedTriangleList() = default;
 	IndexedTriangleList(const IndexedTriangleList& itl) :
 	m_names(itl.m_names),
+	m_mtls(itl.m_mtls),
 	m_pos(itl.m_pos),
 	m_tex(itl.m_tex),
 	m_norm(itl.m_norm),
@@ -41,6 +45,7 @@ public: // Public Methods
 	
 	IndexedTriangleList(IndexedTriangleList* pitl) :
 		m_names(pitl->m_names),
+		m_mtls(pitl->m_mtls),
 		m_pos(pitl->m_pos),
 		m_tex(pitl->m_tex),
 		m_norm(pitl->m_norm),
@@ -48,13 +53,14 @@ public: // Public Methods
 		m_objectIndexTable(pitl->m_objectIndexTable),
 		m_objects(pitl->m_objects) {}
 	
-	IndexedTriangleList(std::vector<std::string> names,
+	IndexedTriangleList(std::vector<std::string> names, std::vector<Material> mtls,
 		std::vector<DirectX::XMFLOAT3> pos,
 		std::vector<DirectX::XMFLOAT2> tex,
 		std::vector<DirectX::XMFLOAT3> norm,
 		std::vector<DirectX::XMFLOAT3X3> indices,
 		std::vector<unsigned int> objectIndexTable) :
 		m_names(std::move(names)),
+		m_mtls(std::move(mtls)),
 		m_pos(std::move(pos)),
 		m_tex(std::move(tex)),
 		m_norm(std::move(norm)),
@@ -71,6 +77,7 @@ public: // Public Methods
 			
 			Object objectTemp{};
 			objectTemp.name = m_names.at(i);
+			objectTemp.mtl = m_mtls.at(i);
 			
 			for (int j = m_objectIndexTable.at(i); j < m_objectIndexTable.at(i + 1); j++) {
 				for (int k = 0; k < 3; k++) {

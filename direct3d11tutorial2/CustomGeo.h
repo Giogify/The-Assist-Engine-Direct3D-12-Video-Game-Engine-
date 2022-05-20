@@ -1,5 +1,6 @@
 #pragma once
 #include "IndexedTriangleList.h"
+#include "Material.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -10,9 +11,10 @@ class CustomGeo {
 public:
 
 	using itl = IndexedTriangleList;
-	static IndexedTriangleList make(std::string& file) {
+	static IndexedTriangleList make(std::string& file, std::vector<Material>& mtl) {
 
 		std::vector<std::string> names{};
+		std::vector<Material> mtls{};
 		std::vector<DirectX::XMFLOAT3> pos{};
 		std::vector<DirectX::XMFLOAT2> tex{};
 		std::vector<DirectX::XMFLOAT3> norm{};
@@ -25,7 +27,15 @@ public:
 		if (objFile.is_open()) {
 			while (objFile) {
 				std::getline(objFile, nextline);
-				if (nextline.starts_with("o ")) {
+				if (nextline.starts_with("usemtl ")) {
+					nextline.erase(0u, 7u);
+					for (auto& m : mtl) {
+						if (m.name == nextline) {
+							mtls.push_back(m);
+						}
+					}
+				}
+				else if (nextline.starts_with("o ")) {
 					
 					// Erase "o "
 					nextline.erase(0u, 2u);
@@ -240,6 +250,6 @@ public:
 		// Add the final size.
 		objectIndexTable.push_back(*std::make_unique<unsigned int>(indices.size()));
 
-		return { names, pos, tex, norm, indices, objectIndexTable };
+		return { names, mtls, pos, tex, norm, indices, objectIndexTable };
 	}
 };

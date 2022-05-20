@@ -53,6 +53,7 @@
 class Material {
 
 	friend class MaterialParser;
+	friend class CustomGeo;
 
 protected:
 

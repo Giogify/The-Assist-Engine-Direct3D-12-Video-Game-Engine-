@@ -6,8 +6,6 @@
 Model::Model(GraphicsOutput& gfx, std::string& objPath) {
 	namespace dx = DirectX;
 
-	m_MaterialData = std::make_unique<std::vector<Material>>(MaterialParser::make(objPath));
-
 	bool found = false;
 	for (auto& itl : ITL_Collection::getCollection()) {
 		if (itl.first == objPath) {
@@ -17,7 +15,7 @@ Model::Model(GraphicsOutput& gfx, std::string& objPath) {
 	}
 
 	if (!found) {
-		m_ModelData = std::make_unique<IndexedTriangleList>(CustomGeo::make(objPath));
+		m_ModelData = std::make_unique<IndexedTriangleList>(CustomGeo::make(objPath, *std::make_unique<std::vector<Material>>(MaterialParser::make(objPath))));
 		ITL_Collection::add(objPath, m_ModelData.get());
 	}
 

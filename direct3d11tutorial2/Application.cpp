@@ -92,7 +92,7 @@ void Application::applicationUpdate() {
 		actors.shrink_to_fit();
 	}
 	if (key == '!') {
-		for (int i = 0; i < 100; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
+		for (int i = 0; i < 1000; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
 		actors.shrink_to_fit();
 	}
 	if (key == '2') {
@@ -100,7 +100,7 @@ void Application::applicationUpdate() {
 		actors.shrink_to_fit();
 	}
 	if (key == '@') {
-		for (int i = 0; i < 10; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
+		for (int i = 0; i < 100; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
 		actors.shrink_to_fit();
 	}
 	if (key == '`') {
