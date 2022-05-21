@@ -52,10 +52,7 @@
 
 class Material {
 
-	friend class MaterialParser;
-	friend class CustomGeo;
-
-protected:
+public:
 
 	// Material name
 	std::string name{};

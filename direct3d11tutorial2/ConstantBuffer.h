@@ -14,19 +14,7 @@ protected:
 
 public:
 
-	ConstantBuffer(GraphicsOutput& gfx, const C* constants, unsigned int size) {
-		
-		const UINT MAX_ELEMENTS = D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT;
-		UINT amountLeftToProcess = size;
-		UINT factor = size / MAX_ELEMENTS;
-		
-		auto csd = std::make_unique<D3D11_SUBRESOURCE_DATA[]>((static_cast<size_t>(factor)) + 1);
-
-		for (int i = 0; amountLeftToProcess > MAX_ELEMENTS; i++) {
-			csd[i].pSysMem = constants + (i * (/*sizeof(C) * */MAX_ELEMENTS));
-			amountLeftToProcess -= MAX_ELEMENTS;
-		}
-		csd[factor].pSysMem = constants + (factor * (/*sizeof(C) * */MAX_ELEMENTS));
+	ConstantBuffer(GraphicsOutput& gfx, const C& constants) {
 
 		// Create and Configure Constant Buffer Descriptor
 		D3D11_BUFFER_DESC cbd = {};
@@ -34,28 +22,13 @@ public:
 		cbd.Usage = D3D11_USAGE_DYNAMIC;
 		cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		cbd.MiscFlags = 0u;
-		cbd.ByteWidth = sizeof(C) * MAX_ELEMENTS;
-		cbd.StructureByteStride = sizeof(C);
+		cbd.ByteWidth = sizeof(C);
+		cbd.StructureByteStride = 0u;
+			
+		D3D11_SUBRESOURCE_DATA csd = {};
+		csd.pSysMem = &constants;
 
-		amountLeftToProcess = size;
-
-		for (int i = 0; amountLeftToProcess > MAX_ELEMENTS; i++) {
-			getDevice(gfx)->CreateBuffer(&cbd, &csd[i], &buffers[cbufferCount]);
-			cbufferCount++;
-			amountLeftToProcess -= MAX_ELEMENTS;
-		}
-		
-		// Create and Configure Constant Buffer Descriptor
-		D3D11_BUFFER_DESC cbd2 = {};
-		cbd2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbd2.Usage = D3D11_USAGE_DYNAMIC;
-		cbd2.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbd2.MiscFlags = 0u;
-		cbd2.ByteWidth = sizeof(C) * amountLeftToProcess;
-		cbd2.StructureByteStride = sizeof(C);
-		
-		getDevice(gfx)->CreateBuffer(&cbd2, &csd[factor], &buffers[cbufferCount]);
-		cbufferCount++;
+		getDevice(gfx)->CreateBuffer(&cbd, &csd, &m_pConstantBuffer);
 	}
 
 	ConstantBuffer(GraphicsOutput& gfx) {

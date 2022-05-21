@@ -63,7 +63,7 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 	sd.SampleDesc.Count = 1;
 	sd.SampleDesc.Quality = 0;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.BufferCount = DXGI_MAX_SWAP_CHAIN_BUFFERS;
+	sd.BufferCount = 2u;
 	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 	sd.Flags = 0;
 
@@ -71,7 +71,7 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 	HRESULT hr{};
 
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenSCDesc = {};
-	fullscreenSCDesc.RefreshRate.Numerator = 120u;
+	fullscreenSCDesc.RefreshRate.Numerator = 240u;
 	fullscreenSCDesc.RefreshRate.Denominator = 1u;
 	fullscreenSCDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	fullscreenSCDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
@@ -179,6 +179,27 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 	m_pDeviceContext->RSSetViewports(1u, &vp);
 
 	Camera m_camera = {};
+
+	// Create Sampler
+
+	//auto samplerBorderColor = std::make_unique<float[]>(4);
+	//for (int i = 0; i < 4; i++) samplerBorderColor[i] = 1.0f;
+
+	D3D11_SAMPLER_DESC samplerDesc = {};
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.MinLOD = -FLT_MAX;
+	samplerDesc.MaxLOD = FLT_MAX;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1u;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+
+	wrl::ComPtr<ID3D11SamplerState> samplerState;
+
+	m_pDevice->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
+	m_pDeviceContext->PSSetSamplers(0u, 1u, samplerState.GetAddressOf());
 }
 
 void GraphicsOutput::endFrame() {

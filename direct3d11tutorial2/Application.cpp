@@ -147,11 +147,11 @@ void Application::applicationUpdate() {
 
 	DirectX::XMFLOAT4X4 proj = {};
 	DirectX::XMStoreFloat4x4(&proj, wnd.getGraphicsOutput().getCamera().getMatrix());
-	/*oss << " [Camera Matrix] "
+	oss << " [Camera Matrix] "
 		<< proj._11 << " " << proj._12 << " " << proj._13 << " " << proj._14 << " "
 		<< proj._21 << " " << proj._22 << " " << proj._23 << " " << proj._24 << " "
 		<< proj._31 << " " << proj._32 << " " << proj._33 << " " << proj._34 << " "
-		<< proj._41 << " " << proj._42 << " " << proj._43 << " " << proj._44;*/
+		<< proj._41 << " " << proj._42 << " " << proj._43 << " " << proj._44;
 
 	// Print Debug Information to Window Title
 	wnd.setTitle(oss.str());

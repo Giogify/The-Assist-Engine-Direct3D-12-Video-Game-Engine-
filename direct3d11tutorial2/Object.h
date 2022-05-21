@@ -32,6 +32,66 @@ public:
 		} color;
 	};
 
+	// Material Data
+	struct MaterialData {
+		struct {
+			float r{};
+			float g{};
+			float b{};
+			float a{};
+		} colorDiffuse;
+		struct {
+			float r{};
+			float g{};
+			float b{};
+			float a{};
+		} colorEmissive;
+		struct {
+			float r{};
+			float g{};
+			float b{};
+		} colorSpecular;
+
+		float specularPower{};
+
+		struct {
+			float x;
+			float y;
+			float z;
+			float w;
+		} lightDirection[3];
+		struct {
+			float r;
+			float g;
+			float b;
+			float a;
+		} lightColorDiffuse[3];
+		struct {
+			float r;
+			float g;
+			float b;
+			float a;
+		} lightColorSpecular[3];
+		struct {
+			float x;
+			float y;
+			float z;
+			float w;
+		} eyePos;
+		struct {
+			float r;
+			float g;
+			float b;
+			float a;
+		} fogColor;
+		struct {
+			float x;
+			float y;
+			float z;
+			float w;
+		} fogVector;
+	};
+
 	// Positional Fields
 	struct Position {
 		float m_r{ 0.0f };
@@ -60,6 +120,7 @@ private:
 
 	// Object Data
 	std::unique_ptr<IndexedTriangleList::Object> m_object = nullptr;
+	MaterialData m_MaterialData{};
 
 public:
 
@@ -74,5 +135,7 @@ public:
 	Position& getPos() noexcept { return pos; }
 
 	Speed& getSpeed() noexcept { return speed; }
+
+	MaterialData& getMaterialData() noexcept { return m_MaterialData; }
 
 };
