@@ -80,7 +80,7 @@ public: // Public Data Structures
 
 private: // Private Fields
 
-	static constexpr unsigned int	M_BUFFERSIZE		= 16u;
+	static constexpr unsigned int	M_BUFFERSIZE		= 32u;
 	int								m_xPos				= {};
 	int								m_yPos				= {};
 	int								m_wheelDelta		= { 0 };

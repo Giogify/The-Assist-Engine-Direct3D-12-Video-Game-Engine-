@@ -81,46 +81,46 @@ public:
 
 	// Positional Fields
 	struct Position {
-		float m_r{};
-		float m_roll{};
-		float m_pitch{};
-		float m_yaw{};
-		float m_theta{};
-		float m_phi{};
-		float m_chi{};
+		float r{};
+		float roll{};
+		float pitch{};
+		float yaw{};
+		float theta{};
+		float phi{};
+		float chi{};
 	};
 
 	// Speed Fields
 	struct Speed {
-		float m_droll{};
-		float m_dpitch{};
-		float m_dyaw{};
-		float m_dtheta{};
-		float m_dphi{};
-		float m_dchi{};
+		float droll{};
+		float dpitch{};
+		float dyaw{};
+		float dtheta{};
+		float dphi{};
+		float dchi{};
 	};
 
 private:
 
-	Binds binds{};
+	Binds mBinds{};
 
-	Position pos{};
-	Speed speed{};
+	Position mPos{};
+	Speed mSpeed{};
 
 	// Object Data
-	IndexedTriangleList::Object m_object{};
-	MaterialData m_MaterialData{};
+	IndexedTriangleList::Object mObject{};
+	MaterialData mMaterialData{};
 
 public:
 
 	Object() = default;
 
 	Object(const Object& obj) : 
-	pos(obj.pos),
-	speed(obj.speed),
-	m_object(obj.m_object),
-	m_MaterialData(obj.m_MaterialData),
-	binds(obj.binds) {}
+	mPos(obj.mPos),
+	mSpeed(obj.mSpeed),
+		mObject(obj.mObject),
+		mMaterialData(obj.mMaterialData),
+		mBinds(obj.mBinds) {}
 
 	Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data);
 
@@ -128,19 +128,19 @@ public:
 
 	DirectX::XMMATRIX getTransformXM() const noexcept;
 
-	Position& getPos() noexcept { return pos; }
+	Position& getPos() noexcept { return mPos; }
 
-	Speed& getSpeed() noexcept { return speed; }
+	Speed& getSpeed() noexcept { return mSpeed; }
 
-	MaterialData& getMaterialData() noexcept { return m_MaterialData; }
+	MaterialData& getMaterialData() noexcept { return mMaterialData; }
 
 	void draw(GraphicsOutput& gfx) noexcept {
-		binds.vb.bind(gfx);
-		binds.vs.bind(gfx);
-		binds.ps.bind(gfx);
-		binds.inlay.bind(gfx);
-		binds.top.bind(gfx);
-		gfx.Draw(binds.vb.getCount());
+		mBinds.vb.bind(gfx);
+		mBinds.vs.bind(gfx);
+		mBinds.ps.bind(gfx);
+		mBinds.inlay.bind(gfx);
+		mBinds.top.bind(gfx);
+		gfx.Draw(mBinds.vb.getCount());
 	}
 
 };

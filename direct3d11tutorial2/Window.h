@@ -102,8 +102,8 @@ public: // Public Data Structures
 
 private: // Private Fields
 
-	int								m_width			= { 0 };
-	int								m_height		= { 0 };
+	int								m_width			= {};
+	int								m_height		= {};
 	HWND							m_hWnd			= {};
 	std::unique_ptr<GraphicsOutput> pGraphicsOutput = nullptr;
 
@@ -136,6 +136,8 @@ public: // Public Methods
 	
 	// Overloading Operators
 	Window& operator=(const Window&) = delete;
+
+	WINDOWINFO getWindowInfo() noexcept;
 
 };
 

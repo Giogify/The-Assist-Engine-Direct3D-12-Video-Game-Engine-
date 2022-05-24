@@ -204,7 +204,7 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
 Window::Window(int width, int height, const TCHAR* name) :
     m_width(width),
     m_height(height) {
-    
+
     RECT rc = {};
     rc.left = 100;
     rc.right = width + rc.left;
@@ -216,8 +216,8 @@ Window::Window(int width, int height, const TCHAR* name) :
         WindowClass::GetName(),
         name,
         WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
-        100,
-        100,
+        (1920 / 2) - ((rc.right - rc.left) / 2),
+        (1080 / 2) - ((rc.bottom - rc.top) / 2),
         rc.right - rc.left,
         rc.bottom - rc.top,
         nullptr,
@@ -226,7 +226,7 @@ Window::Window(int width, int height, const TCHAR* name) :
         this
     );
     if (m_hWnd == nullptr) { throw CHWND_LAST_EXCEPT(); }
-    
+
     // Show the window, since it will be hidden on creation.
     ShowWindow(m_hWnd, SW_SHOWDEFAULT);
 
@@ -253,6 +253,14 @@ std::optional<WPARAM> Window::handleMessages() {
         DispatchMessage(&msg);
     }
     return {}; // empty optional
+}
+
+WINDOWINFO Window::getWindowInfo() noexcept {
+    WINDOWINFO wndInfo = {};
+    wndInfo.cbSize = sizeof(WINDOWINFO);
+
+    GetWindowInfo(m_hWnd, &wndInfo);
+    return wndInfo;
 }
 
 GraphicsOutput& Window::getGraphicsOutput() {

@@ -8,17 +8,21 @@ class Application {
 	
 private: // Private Fields
 
-	Window wnd;
-	Timer startTimer;
-	Timer timer;
-	Timer renderTimer;
-	bool m_isFrameAdvance = false;
-	std::vector<std::unique_ptr<Actor>> actors;
+	std::vector<std::unique_ptr<Actor>> mActors{};
 
-	TransformCBuffer tcb{ wnd.getGraphicsOutput() };
+	Window mWnd;
 
-	float maxFPS = 0.0f;
-	float FPS = 120.000000f;
+	Timer mTimerStart{};
+	Timer mTimer{};
+	Timer mTimerRender{};
+
+	bool mIsFrameAdvanceEnabled{ false };
+	bool mIsCameraModeEnabled{ false };
+	
+	TransformCBuffer tcb{ mWnd.getGraphicsOutput() };
+
+	float mMaxFPS{ 0.0f };
+	float mFPSCap{ 120.0f };
 
 private: // Private Methods
 

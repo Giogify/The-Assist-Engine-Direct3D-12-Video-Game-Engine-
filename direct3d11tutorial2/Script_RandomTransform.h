@@ -8,7 +8,7 @@ private:
 
 public:
 
-	virtual void init(Actor& actor) noexcept override {
+	void init(Actor& actor) noexcept override {
 		std::mt19937 rng(std::random_device{}());
 		std::uniform_real_distribution<float> adist(0.0f, 3.1415f * 2.0f);
 		std::uniform_real_distribution<float> ddist(0.0f, 3.1415f * 2.0f);
@@ -28,28 +28,28 @@ public:
 		float phi = adist(rng);
 
 		for (auto& o : actor.getModel().getObjects()) {
-			o.getPos().m_r = r;
-			o.getPos().m_chi = chi;
-			o.getPos().m_theta = theta;
-			o.getPos().m_phi = phi;
-			o.getSpeed().m_droll = droll;
-			o.getSpeed().m_dpitch = dpitch;
-			o.getSpeed().m_dyaw = dyaw;
-			o.getSpeed().m_dphi = dphi;
-			o.getSpeed().m_dtheta = dtheta;
-			o.getSpeed().m_dchi = dchi;
+			o.getPos().r = r;
+			o.getPos().chi = chi;
+			o.getPos().theta = theta;
+			o.getPos().phi = phi;
+			o.getSpeed().droll = droll;
+			o.getSpeed().dpitch = dpitch;
+			o.getSpeed().dyaw = dyaw;
+			o.getSpeed().dphi = dphi;
+			o.getSpeed().dtheta = dtheta;
+			o.getSpeed().dchi = dchi;
 		}
 	}
 
-	virtual void run(Actor& actor) noexcept override {
+	void run(Actor& actor) noexcept override {
 
 		for (auto& o : actor.getModel().getObjects()) {
-			o.getPos().m_roll = o.getSpeed().m_droll * actor.getStartTimer().peek();
-			o.getPos().m_pitch = o.getSpeed().m_dpitch * actor.getStartTimer().peek();
-			o.getPos().m_yaw = o.getSpeed().m_dyaw * actor.getStartTimer().peek();
-			o.getPos().m_phi = o.getSpeed().m_dphi * actor.getStartTimer().peek();
-			o.getPos().m_theta = o.getSpeed().m_dtheta * actor.getStartTimer().peek();
-			o.getPos().m_chi = o.getSpeed().m_dchi * actor.getStartTimer().peek();
+			o.getPos().roll = o.getSpeed().droll * actor.getStartTimer().peek();
+			o.getPos().pitch = o.getSpeed().dpitch * actor.getStartTimer().peek();
+			o.getPos().yaw = o.getSpeed().dyaw * actor.getStartTimer().peek();
+			o.getPos().phi = o.getSpeed().dphi * actor.getStartTimer().peek();
+			o.getPos().theta = o.getSpeed().dtheta * actor.getStartTimer().peek();
+			o.getPos().chi = o.getSpeed().dchi * actor.getStartTimer().peek();
 		}
 	}
 

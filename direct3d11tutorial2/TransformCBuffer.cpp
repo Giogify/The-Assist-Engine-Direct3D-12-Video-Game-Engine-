@@ -2,11 +2,11 @@
 
 TransformCBuffer::TransformCBuffer(GraphicsOutput& gfx) {
 
-	if (!m_pVCBuffer) {
-		m_pVCBuffer = std::make_unique<VertexConstantBuffer<VertexCBuffer>>(gfx);
+	if (!mptrVCBuffer) {
+		mptrVCBuffer = std::make_unique<VertexConstantBuffer<VertexCBuffer>>(gfx);
 	}
-	if (!m_pPCBuffer) {
-		m_pPCBuffer = std::make_unique<PixelConstantBuffer<PixelCBuffer>>(gfx);
+	if (!mptrPCBuffer) {
+		mptrPCBuffer = std::make_unique<PixelConstantBuffer<PixelCBuffer>>(gfx);
 	}
 }
 
@@ -29,27 +29,27 @@ void TransformCBuffer::bind(GraphicsOutput& gfx, Object& object) noexcept {
 	PCB.materialData = object.getMaterialData();
 
 	Light::LightData light = {};
-	light.pos = { 0.0f, 0.0f, 0.0f, 1.0f };
+	light.pos = { -4.0f, 12.0f, 5.0f, 1.0f };
 	light.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	light.constAtten = 5.0f;
-	light.linAtten = 0.0f;
+	light.constAtten = 1.0f;
+	light.linAtten = 0.08f;
 	light.quadAtten = 0.0f;
 	light.isEnabled = true;
 	light.type = Light::POINT_LIGHT;
 
-	PCB.eyePos = { gfx.getCamera().m_x, gfx.getCamera().m_y, gfx.getCamera().m_z, 1.0f};
-	PCB.globalAmbient = { 0.1f, 0.1f, 0.1f, 1.0f };
+	PCB.eyePos = { gfx.getCamera().mEye.x, gfx.getCamera().mEye.y, gfx.getCamera().mEye.z, 1.0f};
+	PCB.globalAmbient = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	PCB.lights[0].light = light;
 
 	auto test = sizeof(VCB);
 	auto test2 = sizeof(PCB);
 
-	m_pVCBuffer->update(gfx, VCB);
-	m_pPCBuffer->update(gfx, PCB);
-	m_pVCBuffer->bind(gfx);
-	m_pPCBuffer->bind(gfx);
+	mptrVCBuffer->update(gfx, VCB);
+	mptrPCBuffer->update(gfx, PCB);
+	mptrVCBuffer->bind(gfx);
+	mptrPCBuffer->bind(gfx);
 }
 
-std::unique_ptr<VertexConstantBuffer<TransformCBuffer::VertexCBuffer>> TransformCBuffer::m_pVCBuffer;
-std::unique_ptr<PixelConstantBuffer<TransformCBuffer::PixelCBuffer>> TransformCBuffer::m_pPCBuffer;
+std::unique_ptr<VertexConstantBuffer<TransformCBuffer::VertexCBuffer>> TransformCBuffer::mptrVCBuffer;
+std::unique_ptr<PixelConstantBuffer<TransformCBuffer::PixelCBuffer>> TransformCBuffer::mptrPCBuffer;

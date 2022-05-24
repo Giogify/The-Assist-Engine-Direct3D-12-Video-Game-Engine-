@@ -2,58 +2,103 @@
 #include <DirectXMath.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <memory>
 
 
 class Camera {
 
+private:
+
+	struct Position {
+		float x{};
+		float y{};
+		float z{};
+	};
+
+private:
+
+	const DirectX::XMVECTOR X_ROTATION_AXIS = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	const DirectX::XMVECTOR Y_ROTATION_AXIS = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	const DirectX::XMVECTOR Z_ROTATION_AXIS = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+
 public:
 
-	float m_x{};
-	float m_y{};
-	float m_z{};
-	float m_pitch{};
-	float m_heading{};
-	//DirectX::XMMATRIX m_matrix{};
+	Position mEye{};
+	Position mFocus{};
+
+	float mRoll{};
+	float mPitch{};
+	float mYaw{};
+
+	bool mIsInit{ false };
 
 public:
 
-	Camera() {
-		m_x = 0.0;
-		m_y = 0.0;
-		m_z = 0.0;
-		m_pitch = 0.0;
-		m_heading = 0.0;
-	}
-
-	/*
-	Camera(DirectX::XMMATRIX matrix) :
-		m_x(0), m_y(0), m_z(0), m_pitch(0), m_heading(0), m_matrix(matrix) {}*/
+	Camera() = default;
 
 	DirectX::XMMATRIX getMatrix() const noexcept {
-		//return m_matrix;
-		return DirectX::XMMatrixRotationRollPitchYaw(m_pitch * (M_PI / 180), m_heading * (M_PI / 180), 0)
-			* DirectX::XMMatrixTranslation(m_x, m_y, m_z);
-	}
-	
-	/*
-	void setMatrix(DirectX::XMMATRIX& matrix) noexcept {
-		m_matrix = matrix;
-	}
-	*/
+		namespace DX = DirectX;
 
-	void addHeading(float dh) noexcept {
-		m_heading += dh;
+		DX::XMVECTOR eye = DX::XMVectorSet(mEye.x, mEye.y, mEye.z, 1.0f);
+		DX::XMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
+		DX::XMVECTOR up = DX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+		DX::XMMATRIX cameraMatrix = DX::XMMatrixLookAtLH(eye, focus, up);
+
+		cameraMatrix *= DX::XMMatrixRotationAxis(Z_ROTATION_AXIS, DX::XMConvertToRadians(mRoll));
+		cameraMatrix *= DX::XMMatrixRotationAxis(X_ROTATION_AXIS, DX::XMConvertToRadians(mPitch));
+		cameraMatrix *= DX::XMMatrixRotationAxis(Y_ROTATION_AXIS, DX::XMConvertToRadians(mYaw));
+
+		return cameraMatrix;
+
+		//DX::XMVECTOR scalingOrigin{ 0.0f, 0.0f, 0.0f, 1.0f };
+		//DX::XMVECTOR scaling{ 1.0f, 1.0f, 1.0f, 1.0f };
+		//DX::XMVECTOR rotationOrigin{ 0.0f, 0.0f, 0.0f, 1.0f };
+		//DX::XMVECTOR translation{ mEye.x, mEye.y, mEye.z, 1.0f };
+
+		//return DX::XMMatrixTransformation(
+		//	//Scaling Origin
+		//	scalingOrigin,
+		//	//Scaling Orientation
+		//	DX::XMQuaternionRotationRollPitchYaw(DX::XMConvertToRadians(mPitch), DX::XMConvertToRadians(mYaw), DX::XMConvertToRadians(mRoll)),
+		//	//Scaling
+		//	scaling,
+		//	//Rotation Origin
+		//	rotationOrigin,
+		//	//Rotation Orientation
+		//	DX::XMQuaternionRotationRollPitchYaw(DX::XMConvertToRadians(mPitch), DX::XMConvertToRadians(mYaw), DX::XMConvertToRadians(mRoll)),
+		//	//Translation
+		//	translation
+		//);
 	}
 
-	void addPitch(float dp) noexcept {
-		m_pitch += dp;
-		if (m_pitch > 90.0) m_pitch = 90.0;
-		if (m_pitch < -90.0) m_pitch = -90.0;
+	void addPitch(float delta) noexcept {
+		mPitch += delta;
+		if (mPitch > 90.0) mPitch = 90.0;
+		if (mPitch < -90.0) mPitch = -90.0;
 	}
 
-	void translate(float x, float y, float z) noexcept {
-		m_x += x;
-		m_y += y;
-		m_z += z;
+	void addYaw(float delta) noexcept {
+		mYaw += delta;
+		while (mYaw > 360) mYaw -= 360;
+		while (mYaw < -360) mYaw += 360;
+	}
+
+	void translate(float dx, float dy, float dz) noexcept {
+		if (!mIsInit) {
+			mEye.x += dx;
+			mEye.y += dy;
+			mEye.z += dz;
+			mFocus.y += dy;
+			mIsInit = true;
+		}
+		else {
+			mEye.x += dx;
+			mEye.y += dy;
+			mEye.z += dz;
+			mFocus.x += dx;
+			mFocus.y += dy;
+			mFocus.z += dz;
+		}
 	}
 };

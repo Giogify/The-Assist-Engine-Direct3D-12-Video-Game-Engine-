@@ -230,6 +230,9 @@
     <ClInclude Include="Light.h">
       <Filter>Header Files\gfx\draw</Filter>
     </ClInclude>
+    <ClInclude Include="scriptActorInitialTransform.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">

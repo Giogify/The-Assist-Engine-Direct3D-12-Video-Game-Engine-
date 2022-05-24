@@ -40,8 +40,8 @@ public:
 
 private:
 
-	static std::unique_ptr<VertexConstantBuffer<VertexCBuffer>> m_pVCBuffer;
-	static std::unique_ptr<PixelConstantBuffer<PixelCBuffer>> m_pPCBuffer;
+	static std::unique_ptr<VertexConstantBuffer<VertexCBuffer>> mptrVCBuffer;
+	static std::unique_ptr<PixelConstantBuffer<PixelCBuffer>> mptrPCBuffer;
 
 public:
 	

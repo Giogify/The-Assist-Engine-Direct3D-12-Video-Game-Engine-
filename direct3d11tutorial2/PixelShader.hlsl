@@ -209,8 +209,6 @@ float4 main(PS_INPUT input) : SV_TARGET0 {
 
 	if (mtl.isTextured)	texColor = Texture.Sample(Sampler, input.tex);
 
-	//(float4(0.8f, 0.8f, 0.8f, 1.0f) + float4(1.0f, 1.0f, 1.0f, 1.0f) + float4(0.8f, 0.8f, 0.8f, 1.0f) + float4(0.5f, 0.5f, 0.5f, 1.0f)
-
 	float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
 
 	return finalColor;

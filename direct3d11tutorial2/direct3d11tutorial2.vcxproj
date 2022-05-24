@@ -199,6 +199,7 @@
     <ClInclude Include="PixelShader.h" />
     <ClInclude Include="Scriptable.h" />
     <ClInclude Include="Script.h" />
+    <ClInclude Include="scriptActorInitialTransform.h" />
     <ClInclude Include="Script_RandomTransform.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Keyboard.h" />
