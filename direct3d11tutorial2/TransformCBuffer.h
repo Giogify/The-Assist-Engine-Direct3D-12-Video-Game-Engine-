@@ -1,29 +1,52 @@
 #pragma once
 #include "ConstantBuffer.h"
+#include "Light.h"
 #include "Object.h"
 #include <DirectXMath.h>
 
-class TransformCBuffer : public Bindable {
+class TransformCBuffer {
 
 public:
 
-	struct TotalCBuffer {
-		Object::MaterialData materialData{};
+	struct VertexCBuffer {
 		DirectX::XMMATRIX TransformXM{};
-		DirectX::XMFLOAT3X3 InverseTranspose{};
 		DirectX::XMMATRIX cameraMatrix{};
 		DirectX::XMMATRIX projMatrix{};
+		DirectX::XMMATRIX InverseTranspose{};
+	};
+
+	struct PixelCBuffer {
+		
+		Object::MaterialData materialData;
+		
+		struct {
+			float x{};
+			float y{};
+			float z{};
+			float w{};
+		} eyePos;
+		
+		struct {
+			float r{};
+			float g{};
+			float b{};
+			float a{};
+		} globalAmbient;
+		
+		struct {
+			Light::LightData light{};
+		} lights[8];
 	};
 
 private:
 
-	static std::unique_ptr<VertexConstantBuffer<TotalCBuffer>> m_pVCBuffer;
-	static std::unique_ptr<PixelConstantBuffer<TotalCBuffer>> m_pPCBuffer;
-	Object& m_parent;
+	static std::unique_ptr<VertexConstantBuffer<VertexCBuffer>> m_pVCBuffer;
+	static std::unique_ptr<PixelConstantBuffer<PixelCBuffer>> m_pPCBuffer;
 
 public:
-
-	TransformCBuffer(GraphicsOutput& gfx, Object& parent);
-	void bind(GraphicsOutput& gfx) noexcept override;
+	
+	TransformCBuffer() = default;
+	TransformCBuffer(GraphicsOutput& gfx);
+	void bind(GraphicsOutput& gfx, Object& object) noexcept;
 
 };

@@ -192,7 +192,7 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samplerDesc.MinLOD = -FLT_MAX;
 	samplerDesc.MaxLOD = FLT_MAX;
-	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MipLODBias = 1.0f;
 	samplerDesc.MaxAnisotropy = 1u;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 
@@ -200,6 +200,9 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 
 	m_pDevice->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
 	m_pDeviceContext->PSSetSamplers(0u, 1u, samplerState.GetAddressOf());
+
+	
+
 }
 
 void GraphicsOutput::endFrame() {

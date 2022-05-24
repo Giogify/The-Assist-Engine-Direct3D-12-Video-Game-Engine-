@@ -8,8 +8,7 @@ Actor::Actor(GraphicsOutput& gfx, std::string& objPath) {
 	startTimer.mark();
 
 	// Assign model
-
-	m_model = std::make_unique<Model>(gfx, objPath);
+	m_model = { gfx, objPath };
 	
 	if (objPath != "ground" && objPath != "frs3") {
 		scripts_add(new Script_RandomTransform());

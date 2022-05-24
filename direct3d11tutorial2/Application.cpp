@@ -1,10 +1,11 @@
-#include "Application.h"
 #include "Actor.h"
+#include "Application.h"
+#include "Collections.h"
 #include <random>
 #include <memory>
 #include <iostream>
 #include <iomanip>
-#include "Collections.h"
+
 
 // Top-Level Application Logic
 void Application::applicationUpdate() {
@@ -20,11 +21,15 @@ void Application::applicationUpdate() {
 
 	// UPDATE CODE HERE
 
-	wnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f);
-	//wnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f);
+	//wnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f);
+	wnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f);
 	for (auto& a : actors) {
 		a->update();
-		a->getModel()->draw(wnd.getGraphicsOutput());
+		a->getModel().draw(wnd.getGraphicsOutput());
+
+		for (auto& o : a->getModel().getObjects()) {
+			tcb.bind(wnd.getGraphicsOutput(), o);
+		}
 	}
 
 	auto key = wnd.kb.ReadChar();
@@ -46,7 +51,6 @@ void Application::applicationUpdate() {
 	if (key == '/') {
 		m_isFrameAdvance = true;
 	}
-
 	while (m_isFrameAdvance) {
 		Window::handleMessages();
 		while (!wnd.kb.CharIsEmpty()) {
@@ -59,25 +63,16 @@ void Application::applicationUpdate() {
 			}
 		}
 	}
-
 	goto1:
 
 	wnd.getGraphicsOutput().endFrame();
 
 	while ((renderTimer.peek() * 1000.0000000f) < (1000.0000000f / FPS));
 
-	if (key == '[') {
-		FPS -= 1.0f;
-	}
-	if (key == ']') {
-		FPS += 1.0f;
-	}
-	if (key == '{') {
-		FPS -= 10.0f;
-	}
-	if (key == '}') {
-		FPS += 10.0f;
-	}
+	if (key == '[') FPS -= 1.0f;
+	if (key == ']') FPS += 1.0f;
+	if (key == '{') FPS -= 10.0f;
+	if (key == '}') FPS += 10.0f;
 
 	if (maxFPS < 1000.0f / (renderTimer.peek() * 1000.0000000f)) {
 		maxFPS = 1000.0f / (renderTimer.peek() * 1000.0000000f);
@@ -92,7 +87,7 @@ void Application::applicationUpdate() {
 		actors.shrink_to_fit();
 	}
 	if (key == '!') {
-		for (int i = 0; i < 1000; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
+		for (int i = 0; i < 100; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
 		actors.shrink_to_fit();
 	}
 	if (key == '2') {
@@ -100,7 +95,7 @@ void Application::applicationUpdate() {
 		actors.shrink_to_fit();
 	}
 	if (key == '@') {
-		for (int i = 0; i < 100; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
+		for (int i = 0; i < 10; i++) actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
 		actors.shrink_to_fit();
 	}
 	if (key == '`') {
@@ -111,7 +106,7 @@ void Application::applicationUpdate() {
 		actors.shrink_to_fit();
 	}
 
-	oss << " [Actors] " << actors.size() << " " << actors.capacity();
+	oss << " [Actors] " << actors.size();
 
 	// Camera Manipulation
 
@@ -134,10 +129,10 @@ void Application::applicationUpdate() {
 	if (key == 'e') wnd.getGraphicsOutput().getCamera().addHeading(2);
 
 	// Rotate Up
-	if (key == 'r') wnd.getGraphicsOutput().getCamera().addPitch(2);
+	if (key == 'f') wnd.getGraphicsOutput().getCamera().addPitch(2);
 
 	// Rotate Down
-	if (key == 'f') wnd.getGraphicsOutput().getCamera().addPitch(-2);
+	if (key == 'r') wnd.getGraphicsOutput().getCamera().addPitch(-2);
 
 	// Forward
 	if (mouse.getType() == Mouse::Event::Type::WheelUp) wnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, -0.5);
@@ -160,13 +155,15 @@ void Application::applicationUpdate() {
 Application::~Application() {}
 
 Application::Application() : wnd(1280, 720, L"Window") {
-
+	for (int i = 0; i < 50; i++) {
+		actors.push_back(std::make_unique<Actor>(wnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
+	}
 }
 
 int Application::applicationStart() {
 
 	wnd.getGraphicsOutput().setProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.25f, 5000.0f));
-	wnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, 50.0);
+	wnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, 30.0);
 
 	while (true) {
 		if (const auto msgCode = Window::handleMessages()) return *msgCode;

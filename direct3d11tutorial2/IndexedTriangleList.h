@@ -125,13 +125,6 @@ public: // Public Methods
 		}*/
 	}
 
-	void transform(DirectX::FXMMATRIX matrix) {
-		for (int i = 0; i < m_objects.size(); i++) {
-			for (auto& v : m_objects.at(i).pos) {
-				const DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&v);
-				DirectX::XMStoreFloat3(&v, DirectX::XMVector3Transform(pos, matrix));
-			}
-		}
-	}
+
 
 };

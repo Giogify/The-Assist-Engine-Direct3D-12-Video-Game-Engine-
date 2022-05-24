@@ -1,7 +1,5 @@
 #pragma once
-
 class Actor;
-
 #include "Timer.h"
 #include "Model.h"
 #include "Scriptable.h"
@@ -13,7 +11,7 @@ class Actor : public Scriptable {
 private:
 
 	// Model
-	std::shared_ptr<Model> m_model{};
+	Model m_model{};
 
 	// Timers
 	Timer startTimer{};
@@ -23,7 +21,7 @@ public:
 
 	Actor(GraphicsOutput& gfx, std::string& objPath);
 
-	Model* getModel() const noexcept { return m_model.get(); }
+	Model& getModel() noexcept { return m_model; }
 
 	void update() noexcept;
 

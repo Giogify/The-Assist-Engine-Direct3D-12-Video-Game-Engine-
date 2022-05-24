@@ -6,10 +6,6 @@ class ConstantBuffer : public Bindable {
 
 protected:
 
-	UINT cbufferCount = 0u;
-	ID3D11Buffer* buffers[5u];
-	//static inline auto m_pConstantBuffers = std::make_unique<Microsoft::WRL::ComPtr<ID3D11Buffer>[]>(5u);
-	//std::unique_ptr<Microsoft::WRL::ComPtr<ID3D11Buffer>[], std::default_delete<Microsoft::WRL::ComPtr<ID3D11Buffer>[]>> m_pConstantBuffers = std::make_unique<Microsoft::WRL::ComPtr<ID3D11Buffer>[]>(4);
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_pConstantBuffer{};
 
 public:
@@ -73,14 +69,13 @@ template<typename C>
 class PixelConstantBuffer : public ConstantBuffer<C> {
 
 	using ConstantBuffer<C>::m_pConstantBuffer;
-	using ConstantBuffer<C>::buffers;
 	using Bindable::getDeviceContext;
 
 public:
 
 	using ConstantBuffer<C>::ConstantBuffer;
 	void bind(GraphicsOutput& gfx) noexcept override {
-		getDeviceContext(gfx)->PSSetConstantBuffers(0u, 5u, &buffers[0]);
+		getDeviceContext(gfx)->PSSetConstantBuffers(0u, 1u, m_pConstantBuffer.GetAddressOf());
 	}
 	//void bind(GraphicsOutput& gfx, std::vector<Microsoft::WRL::ComPtr<ID3D11Buffer>> pConstantBuffers) noexcept {
 	//	getDeviceContext(gfx)->PSSetConstantBuffers(0u, pConstantBuffers.size(), pConstantBuffers.at(0).GetAddressOf());

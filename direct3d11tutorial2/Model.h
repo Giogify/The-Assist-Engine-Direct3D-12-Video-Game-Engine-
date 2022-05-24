@@ -33,13 +33,11 @@ private:
 
 private:
 
-	bool isInit = false;
-
 	std::vector<Material> m_MaterialData{};
-	std::unique_ptr<IndexedTriangleList> m_ModelData = nullptr;
+	IndexedTriangleList m_ModelData{};
 
 	// Model Data
-	std::vector<std::unique_ptr<Object>> m_objects{};
+	std::vector<Object> m_objects{};
 
 public:
 
@@ -47,11 +45,17 @@ public:
 
 	Model(GraphicsOutput& gfx, std::string& objPath);
 
-	//Model& operator=(const Model&) = delete;
+	/*Model& operator=(const Model& model) noexcept {
+		Model newmodel{};
+		newmodel.m_MaterialData = model.m_MaterialData;
+		newmodel.m_ModelData = model.m_ModelData;
+		newmodel.m_objects = model.m_objects;
+		return newmodel;
+	}*/
 
 	void update() noexcept;
 
-	void draw(GraphicsOutput& gfx) const noexcept;
+	void draw(GraphicsOutput& gfx) noexcept;
 
-	std::vector<std::unique_ptr<Object>>& getObjects() noexcept { return m_objects; }
+	std::vector<Object>& getObjects() noexcept { return m_objects; }
 };

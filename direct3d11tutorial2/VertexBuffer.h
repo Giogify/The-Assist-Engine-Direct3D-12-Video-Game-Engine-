@@ -8,11 +8,21 @@ protected:
 	UINT m_stride = {};
 	UINT m_offset = { 0u };
 	UINT m_count = { 0u };
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_pVertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
 
 public:
 	
 	VertexBuffer() = default;
+	VertexBuffer(const VertexBuffer& vb) :
+		m_stride(vb.m_stride),
+		m_offset(vb.m_offset),
+		m_count(vb.m_count),
+		m_pVertexBuffer(vb.m_pVertexBuffer) {}
+	VertexBuffer(const std::unique_ptr<VertexBuffer> vb) :
+		m_stride(vb.get()->m_stride),
+		m_offset(vb.get()->m_offset),
+		m_count(vb.get()->m_count),
+		m_pVertexBuffer(vb.get()->m_pVertexBuffer) {}
 
 	template<class V>
 	VertexBuffer(GraphicsOutput& gfx, const V* vertices, unsigned int size) :
@@ -33,7 +43,7 @@ public:
 		vertexSD.pSysMem = vertices;
 
 		// Fill Vertex Buffer with Vertex Buffer Desc and Subresource
-		getDevice(gfx)->CreateBuffer(&vertexBD, &vertexSD, &m_pVertexBuffer);
+		getDevice(gfx)->CreateBuffer(&vertexBD, &vertexSD, m_pVertexBuffer.GetAddressOf());
 	}
 
 	void bind(GraphicsOutput& gfx) noexcept override;

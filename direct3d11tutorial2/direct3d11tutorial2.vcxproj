@@ -182,6 +182,7 @@
     <ClInclude Include="Bindable.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Collections.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="MaterialParser.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Model.h" />

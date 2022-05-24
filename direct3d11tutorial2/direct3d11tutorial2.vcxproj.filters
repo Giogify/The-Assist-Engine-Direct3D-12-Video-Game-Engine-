@@ -227,6 +227,9 @@
     <ClInclude Include="Script.h">
       <Filter>Header Files\scripts</Filter>
     </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Header Files\gfx\draw</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">

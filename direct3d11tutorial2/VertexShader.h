@@ -5,11 +5,13 @@ class VertexShader : public Bindable {
 
 protected:
 
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_pVertexShader;
-	Microsoft::WRL::ComPtr<ID3DBlob> m_pBytecodeBlob;
-	std::wstring path = {};
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> m_pBytecodeBlob = nullptr;
+	std::wstring path{};
 
 public:
+
+	VertexShader() = default;
 
 	VertexShader(GraphicsOutput& gfx, const std::wstring& path);
 

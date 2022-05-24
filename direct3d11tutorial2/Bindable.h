@@ -11,6 +11,5 @@ protected:
 public:
 
 	virtual void bind(GraphicsOutput& gfx) noexcept = 0;
-	virtual ~Bindable() = default;
 
 };

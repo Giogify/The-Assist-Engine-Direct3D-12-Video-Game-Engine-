@@ -6,87 +6,213 @@
 /  ----------------------------------------------
 */
 
-// Constant Buffer Structure
+#define MAX_LIGHTS 8
 
-Texture2D<float4> Texture : register(t0);
+#define DIRECTIONAL_LIGHT 0
+#define POINT_LIGHT 1
+#define SPOT_LIGHT 2
+
+// Texture and Sampler
+Texture2D Texture : register(t0);
 sampler Sampler : register(s0);
 
-cbuffer constantBuffer : register(b0) {
+// Material Struct (5 vectors)
+struct Material {
+	
+	float4 emissive; //Ke
 
-	float4 Color_Diffuse			: packoffset(c0);
-	float3 Color_Emissive			: packoffset(c1);
-	float3 Color_Specular			: packoffset(c2);
-	float Specular_Power			: packoffset(c2.w);
+	float4 ambient; //Ka
 
-	float3 Light_Direction[3]		: packoffset(c3);
-	float3 Light_Color_Diffuse[3]	: packoffset(c6);
-	float3 Light_Color_Specular[3]	: packoffset(c9);
+	float4 diffuse; //Kd
 
-	float3 posEye					: packoffset(c12);
-
-	float3 Fog_Color				: packoffset(c13);
-	float4 Fog_Vector				: packoffset(c14);
-
-	matrix worldViewTransform		: packoffset(c15);
+	float4 specular; //Ks
+	
+	float specularPower; //Ns
+	bool isTextured;
+	int2 padding;
 };
+
+// Light Struct (5 vectors)
+struct Light {
+	
+	float4 pos;
+	
+	float4 direction;
+
+	float4 color;
+
+	float spotAngle;
+	float constAtten;
+	float linAtten;
+	float quadAtten;
+
+	int type;
+	bool isEnabled;
+	int2 padding;
+
+};
+
+// Light Constant Buffer (47 vectors)
+cbuffer pixelCBuffer : register(b0) {
+
+	Material mtl : packoffset(c0);
+
+	float4 eyePos : packoffset(c5);
+
+	float4 globalAmbient : packoffset(c6);
+
+	Light lights[MAX_LIGHTS] : packoffset(c7);
+
+}
+
+// Lighting Result Struct
+struct LightingResult {
+	float4 diffuse;
+	float4 specular;
+};
+
+// ---Helper Functions---
+
+// Diffuse
+float4 doDiffuse(Light light, float3 L, float3 N) {
+	float NdotL = max(0, dot(N, L));
+	return light.color * NdotL;
+}
+
+// Specular
+float4 doSpecular(Light light, float3 V, float3 L, float3 N) {
+
+	// Phong Lighting
+	float3 R = normalize(reflect(-L, N));
+	float RdotV = max(0, dot(R, V));
+
+	//Blinn-Phong Lighting
+	float3 H = normalize(L + V);
+	float NdotH = max(0, dot(N, H));
+
+	return light.color * pow(NdotH, mtl.specularPower);
+}
+
+// Attentuation
+float doAttenuation(Light light, float d) {
+	return 1.0f / (light.constAtten + light.linAtten * d + light.quadAtten * d * d);
+}
+
+// Point Light
+LightingResult doPointLight(Light light, float3 V, float4 P, float3 N) {
+	LightingResult result;
+
+	float3 L = (light.pos - P).xyz;
+	float distance = length(L);
+	L = L / distance;
+
+	float attenuation = doAttenuation(light, distance);
+
+	result.diffuse = doDiffuse(light, L, N) * attenuation;
+	result.specular = doSpecular(light, V, L, N) * attenuation;
+
+	return result;
+}
+
+// Directional Light
+LightingResult doDirectionalLight(Light light, float3 V, float4 P, float3 N) {
+	LightingResult result;
+
+	float3 L = -light.direction.xyz;
+
+	result.diffuse = doDiffuse(light, L, N);
+	result.specular = doSpecular(light, V, L, N);
+
+	return result;
+}
+
+// Spot Light
+float doSpotCone(Light light, float3 L) {
+	float minCos = cos(light.spotAngle);
+	float maxCos = (minCos + 1.0f) / 2.0f;
+	float cosAngle = dot(light.direction.xyz, -L);
+	return smoothstep(minCos, maxCos, cosAngle);
+}
+LightingResult doSpotLight(Light light, float3 V, float4 P, float3 N) {
+	LightingResult result;
+
+	float3 L = (light.pos - P).xyz;
+	float distance = length(L);
+	L = L / distance;
+
+	float attenuation = doAttenuation(light, distance);
+	float spotIntensity = doSpotCone(light, L);
+
+	result.diffuse = doDiffuse(light, L, N) * attenuation * spotIntensity;
+	result.specular = doSpecular(light, V, L, N) * attenuation * spotIntensity;
+
+	return result;
+}
+
+// Compute Lighting
+LightingResult computeLighting(float4 P, float3 N) {
+	float3 V = normalize(eyePos - P).xyz;
+
+	LightingResult totalResult = { {0, 0, 0, 0}, {0, 0, 0, 0} };
+
+	[loop]
+	for (int i = 0; i < MAX_LIGHTS; i++) {
+		LightingResult result = { {0, 0, 0, 0}, {0, 0, 0, 0} };
+
+		if (!lights[i].isEnabled) continue;
+
+		switch (lights[i].type) {
+		case DIRECTIONAL_LIGHT: {
+			result = doDirectionalLight(lights[i], V, P, N);
+		}
+			break;
+		case POINT_LIGHT: {
+			result = doPointLight(lights[i], V, P, N);
+		}
+			break;
+		case SPOT_LIGHT: {
+			result = doSpotLight(lights[i], V, P, N);
+		}
+			break;
+		}
+
+		totalResult.diffuse += result.diffuse;
+		totalResult.specular += result.specular;
+	}
+
+	totalResult.diffuse = saturate(totalResult.diffuse);
+	totalResult.specular = saturate(totalResult.specular);
+
+	return totalResult;
+}
+
+// ---Helper Functions---
 
 // Input Struct
 struct PS_INPUT {
 	float2 tex : TEXCOORD0;
 	float4 posWS : TEXCOORD1;
 	float3 normWS : TEXCOORD2;
-	float4 diffuse : COLOR0;
 };
 
-struct ColorPair {
-	float3 diffuse;
-	float3 specular;
-};
-
-ColorPair computeLights(float3 eyeVector, float3 worldNorm, uniform int numLights) {
-	float3x3 lightDirections = 0;
-	float3x3 lightDiffuse = 0;
-	float3x3 lightSpecular = 0;
-	float3x3 halfVectors = 0;
-
-	[unroll]
-	for (int i = 0; i < numLights; i++) {
-		lightDirections[i] = Light_Direction[i];
-		lightDiffuse[i] = Light_Color_Diffuse[i];
-		lightSpecular[i] = Light_Color_Specular[i];
-
-		halfVectors[i] = normalize(eyeVector - lightDirections[i]);
-	}
-
-	float3 dotL = mul(-lightDirections, worldNorm);
-	float3 dotH = mul(halfVectors, worldNorm);
-
-	float3 zeroL = step(0, dotL);
-
-	float3 diffuse = zeroL * dotL;
-	float3 specular = pow(max(dotH, 0) * zeroL, Specular_Power) * dotL;
-
-	ColorPair result;
-
-	result.diffuse = mul(diffuse, lightDiffuse) * Color_Diffuse.rgb + Color_Emissive;
-	result.specular = mul(specular, lightSpecular) * Color_Specular;
-
-	return result;
-}
-
+// Shader Main
 float4 main(PS_INPUT input) : SV_TARGET0 {
-	
-	float4 color = Texture.Sample(Sampler, input.tex) * input.diffuse;
-	float3 eyeVector = normalize(posEye - input.posWS.xyz);
-	float3 worldNorm = normalize(input.normWS);
-	ColorPair lightResult = computeLights(eyeVector, worldNorm, 3);
-	color.rgb *= lightResult.diffuse;
 
-	// Specular
-	color.rgb += lightResult.specular * color.a;
+	LightingResult lit = computeLighting(input.posWS, normalize(input.normWS));
 
-	// Fog
-	color.rgb = lerp(color.rgb, Fog_Color * color.a, input.posWS.w);
+	float4 emissive = mtl.emissive;
+	float4 ambient = mtl.ambient * globalAmbient;
+	float4 diffuse = mtl.diffuse * lit.diffuse;
+	float4 specular = mtl.specular * lit.specular;
 
-	return color;
+	float4 texColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	if (mtl.isTextured)	texColor = Texture.Sample(Sampler, input.tex);
+
+	//(float4(0.8f, 0.8f, 0.8f, 1.0f) + float4(1.0f, 1.0f, 1.0f, 1.0f) + float4(0.8f, 0.8f, 0.8f, 1.0f) + float4(0.5f, 0.5f, 0.5f, 1.0f)
+
+	float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
+
+	return finalColor;
+
 }

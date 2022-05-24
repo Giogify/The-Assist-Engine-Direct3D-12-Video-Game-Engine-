@@ -2,7 +2,7 @@
 #include <cassert>
 #include <typeinfo>
 
-void Drawable::draw(GraphicsOutput& gfx) const noexcept {
+void Drawable::draw(GraphicsOutput& gfx) noexcept {
 	for (auto& b : m_binds) {
 		b->bind(gfx);
 	}
@@ -13,12 +13,10 @@ void Drawable::draw(GraphicsOutput& gfx) const noexcept {
 }
 
 void Drawable::addBind(std::unique_ptr<Bindable> bind) noexcept {
-	assert("*Must* use addVertexBuffer to bind index buffer" && typeid(*bind) != typeid(VertexBuffer));
 	m_binds.push_back(std::move(bind));
 }
 
 void Drawable::addVertexBuffer(std::unique_ptr<VertexBuffer> vertexBuffer) noexcept {
-	assert("Attempting to add Vertex buffer a second time" && m_pVertexBuffer == nullptr);
-	m_pVertexBuffer = vertexBuffer.get();
-	m_binds.push_back(std::move(vertexBuffer));
+	//m_pVertexBuffer = std::make_unique<VertexBuffer>(vertexBuffer);
+	//m_binds.push_back(std::make_unique<VertexBuffer>(vertexBuffer));
 }

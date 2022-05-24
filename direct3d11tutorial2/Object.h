@@ -1,12 +1,26 @@
 #pragma once
-#include "DrawableBase.h"
+#include "VertexBuffer.h"
+#include "VertexShader.h"
+#include "PixelShader.h"
+#include "InputLayout.h"
+#include "Topology.h"
 #include "IndexedTriangleList.h"
 
-class Object : public DrawableBase<Object> {
+class Object {
 
 	friend class Model;
 
 public:
+
+	// Binds
+	struct Binds {
+		VertexBuffer vb{};
+		VertexShader vs{};
+		PixelShader ps{};
+		std::vector<D3D11_INPUT_ELEMENT_DESC> ied{};
+		InputLayout inlay{};
+		Topology top{};
+	};
 
 	// VertexData struct
 	struct VertexData {
@@ -39,103 +53,94 @@ public:
 			float g{};
 			float b{};
 			float a{};
+		} colorEmissive;
+		struct {
+			float r{};
+			float g{};
+			float b{};
+			float a{};
+		} colorAmbient;
+		struct {
+			float r{};
+			float g{};
+			float b{};
+			float a{};
 		} colorDiffuse;
 		struct {
 			float r{};
 			float g{};
 			float b{};
 			float a{};
-		} colorEmissive;
-		struct {
-			float r{};
-			float g{};
-			float b{};
 		} colorSpecular;
 
 		float specularPower{};
-
-		struct {
-			float x;
-			float y;
-			float z;
-			float w;
-		} lightDirection[3];
-		struct {
-			float r;
-			float g;
-			float b;
-			float a;
-		} lightColorDiffuse[3];
-		struct {
-			float r;
-			float g;
-			float b;
-			float a;
-		} lightColorSpecular[3];
-		struct {
-			float x;
-			float y;
-			float z;
-			float w;
-		} eyePos;
-		struct {
-			float r;
-			float g;
-			float b;
-			float a;
-		} fogColor;
-		struct {
-			float x;
-			float y;
-			float z;
-			float w;
-		} fogVector;
+		int isTextured{ false };
+		int padding0{};
+		int padding1{};
 	};
 
 	// Positional Fields
 	struct Position {
-		float m_r{ 0.0f };
-		float m_roll{ 0.0f };
-		float m_pitch{ 0.0f };
-		float m_yaw{ 0.0f };
-		float m_theta{ 0.0f };
-		float m_phi{ 0.0f };
-		float m_chi{ 0.0f };
+		float m_r{};
+		float m_roll{};
+		float m_pitch{};
+		float m_yaw{};
+		float m_theta{};
+		float m_phi{};
+		float m_chi{};
 	};
 
 	// Speed Fields
 	struct Speed {
-		float m_droll{ 0.0f };
-		float m_dpitch{ 0.0f };
-		float m_dyaw{ 0.0f };
-		float m_dtheta{ 0.0f };
-		float m_dphi{ 0.0f };
-		float m_dchi{ 0.0f };
+		float m_droll{};
+		float m_dpitch{};
+		float m_dyaw{};
+		float m_dtheta{};
+		float m_dphi{};
+		float m_dchi{};
 	};
 
 private:
+
+	Binds binds{};
 
 	Position pos{};
 	Speed speed{};
 
 	// Object Data
-	std::unique_ptr<IndexedTriangleList::Object> m_object = nullptr;
+	IndexedTriangleList::Object m_object{};
 	MaterialData m_MaterialData{};
 
 public:
 
-	//Object(const Object&) = delete;
+	Object() = default;
+
+	Object(const Object& obj) : 
+	pos(obj.pos),
+	speed(obj.speed),
+	m_object(obj.m_object),
+	m_MaterialData(obj.m_MaterialData),
+	binds(obj.binds) {}
 
 	Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data);
 
-	void update(float dt) noexcept override;
+	void update(float dt) noexcept;
 
-	DirectX::XMMATRIX getTransformXM() const noexcept override;
+	DirectX::XMMATRIX getTransformXM() const noexcept;
 
 	Position& getPos() noexcept { return pos; }
 
 	Speed& getSpeed() noexcept { return speed; }
 
 	MaterialData& getMaterialData() noexcept { return m_MaterialData; }
+
+	void draw(GraphicsOutput& gfx) noexcept {
+		binds.vb.bind(gfx);
+		binds.vs.bind(gfx);
+		binds.ps.bind(gfx);
+		binds.inlay.bind(gfx);
+		binds.top.bind(gfx);
+		gfx.Draw(binds.vb.getCount());
+	}
 
 };

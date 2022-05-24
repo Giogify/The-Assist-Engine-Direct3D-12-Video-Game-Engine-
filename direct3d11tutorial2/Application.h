@@ -2,6 +2,7 @@
 #include "Window.h"
 #include "Timer.h"
 #include "Actor.h"
+#include "TransformCBuffer.h"
 
 class Application {
 	
@@ -14,8 +15,10 @@ private: // Private Fields
 	bool m_isFrameAdvance = false;
 	std::vector<std::unique_ptr<Actor>> actors;
 
+	TransformCBuffer tcb{ wnd.getGraphicsOutput() };
+
 	float maxFPS = 0.0f;
-	float FPS = 60.000000f;
+	float FPS = 120.000000f;
 
 private: // Private Methods
 

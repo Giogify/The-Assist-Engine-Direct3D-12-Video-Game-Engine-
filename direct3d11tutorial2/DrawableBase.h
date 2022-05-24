@@ -11,7 +11,7 @@ private: // Private Fields
 
 private:
 
-	const std::vector<std::unique_ptr<Bindable>>& getStaticBinds() const noexcept {
+	std::vector<std::unique_ptr<Bindable>>& getStaticBinds() noexcept override {
 		return staticBinds;
 	}
 
@@ -21,11 +21,9 @@ protected:
 		return !staticBinds.empty();
 	}
 	static void addStaticBind(std::unique_ptr<Bindable> bind) noexcept {
-		assert("*Must* use addStaticVertexBuffer to bind index buffer" && typeid(*bind) != typeid(VertexBuffer));
 		staticBinds.push_back(std::move(bind));
 	}
 	void addStaticVertexBuffer(std::unique_ptr<VertexBuffer> vertexBuffer) noexcept {
-		assert("Attempting to add Index Buffer a second time..." && m_pVertexBuffer == nullptr);
 		m_pVertexBuffer = vertexBuffer.get();
 		staticBinds.push_back(std::move(vertexBuffer));
 	}
@@ -36,7 +34,6 @@ protected:
 				return;
 			}
 		}
-		assert("Failed to find Index Buffer among vector [staticBinds]." && m_pVertexBuffer != nullptr);
 	}
 
 };

@@ -5,10 +5,11 @@ class PixelShader : public Bindable {
 
 protected:
 
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pPixelShader;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pPixelShader{};
 
 public:
 
+	PixelShader() = default;
 	PixelShader(GraphicsOutput& gfx, const std::wstring& path);
 
 	void bind(GraphicsOutput& gfx) noexcept override;
