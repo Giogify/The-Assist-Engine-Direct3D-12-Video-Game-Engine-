@@ -102,10 +102,11 @@ public: // Public Data Structures
 
 private: // Private Fields
 
-	int								m_width			= {};
-	int								m_height		= {};
-	HWND							m_hWnd			= {};
+	unsigned int					m_width{};
+	unsigned int					m_height{};
+	HWND							m_hWnd{};
 	std::unique_ptr<GraphicsOutput> pGraphicsOutput = nullptr;
+	RAWINPUTDEVICE					mRID{};
 
 public: // Public Fields
 
@@ -122,13 +123,13 @@ private: // Private Methods
 public: // Public Methods
 
 	// Constructor
-	Window(int, int, const TCHAR*);
+	Window(unsigned int, unsigned int, const TCHAR*);
 
 	//Destructor
 	~Window();
 	Window(const Window&) = delete;
 
-	void setTitle(const std::string& title);
+	void setTitle(const std::wstring& title);
 
 	static std::optional<WPARAM> handleMessages();
 

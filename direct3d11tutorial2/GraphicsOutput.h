@@ -78,7 +78,7 @@ private: // Private Fields
 public: // Public Methods
 
 	// Constructor
-	GraphicsOutput(HWND hWnd);
+	GraphicsOutput(HWND hWnd, UINT width, UINT height);
 
 	GraphicsOutput(const GraphicsOutput&) = delete;
 	GraphicsOutput& operator=(const GraphicsOutput&) = delete;

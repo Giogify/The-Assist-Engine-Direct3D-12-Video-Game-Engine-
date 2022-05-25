@@ -46,7 +46,7 @@ std::string GraphicsOutput::GraphicsHRException::getErrorString() const noexcept
 }
 const char* GraphicsOutput::GraphicsRemovedDeviceException::getType() const noexcept { return "[Graphics Exception]: [Removed Device]"; }
 
-GraphicsOutput::GraphicsOutput(HWND hWnd) {
+GraphicsOutput::GraphicsOutput(HWND hWnd, unsigned int width, unsigned int height) {
 
 	CreateDXGIFactory2(
 		0u,
@@ -56,8 +56,8 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 
 	// Instantiate and Populate the Swap Chain Descriptor
 	DXGI_SWAP_CHAIN_DESC1 sd = {};
-	sd.Width = 0u;
-	sd.Height = 0u;
+	sd.Width = width;
+	sd.Height = height;
 	sd.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	sd.Scaling = DXGI_SCALING_STRETCH;
 	sd.SampleDesc.Count = 1;
@@ -147,8 +147,8 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 	wrl::ComPtr<ID3D11Texture2D1> pDepthStencilTexture;
 
 	D3D11_TEXTURE2D_DESC1 depthStencilTextureDesc = {};
-	depthStencilTextureDesc.Width = 1280u;
-	depthStencilTextureDesc.Height = 720u;
+	depthStencilTextureDesc.Width = width;
+	depthStencilTextureDesc.Height = height;
 	depthStencilTextureDesc.MipLevels = 1u;
 	depthStencilTextureDesc.ArraySize = 1u;
 	depthStencilTextureDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -170,8 +170,8 @@ GraphicsOutput::GraphicsOutput(HWND hWnd) {
 
 	// Configure Viewport
 	D3D11_VIEWPORT vp = {};
-	vp.Width = 1280;
-	vp.Height = 720;
+	vp.Width = width;
+	vp.Height = height;
 	vp.MinDepth = 0;
 	vp.MaxDepth = 1;
 	vp.TopLeftX = 0;

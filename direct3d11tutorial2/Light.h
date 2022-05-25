@@ -11,30 +11,30 @@ public:
 	struct LightData {
 		
 		struct {
-			float x{};
-			float y{};
-			float z{};
-			float w{};
+			float x{ 0.0f };
+			float y{ 0.0f };
+			float z{ 0.0f };
+			float w{ 1.0f };
 		} pos;
 		struct {
-			float x{};
-			float y{};
-			float z{};
-			float w{};
+			float x{ 1.0f };
+			float y{ 1.0f };
+			float z{ 1.0f };
+			float w{ 1.0f };
 		} direction;
 		struct {
-			float r{};
-			float g{};
-			float b{};
-			float a{};
+			float r{ 1.0f };
+			float g{ 1.0f };
+			float b{ 1.0f };
+			float a{ 1.0f };
 		} color;
 
-		float spotAngle{};
-		float constAtten{};
-		float linAtten{};
-		float quadAtten{};
+		float spotAngle{ 15.0f };
+		float constAtten{ 1.0f };
+		float linAtten{ 0.08f };
+		float quadAtten{ 0.0f };
 
-		int type{};
+		int type{ POINT_LIGHT };
 		int isEnabled{ false };
 		int padding0{};
 		int padding1{};

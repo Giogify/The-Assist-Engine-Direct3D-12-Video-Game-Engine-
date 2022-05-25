@@ -1,4 +1,5 @@
 #include "Window.h"
+#include <hidusage.h>
 #include <sstream>
 #include <iostream>
 
@@ -120,6 +121,20 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
 
     // ---- MOUSE MESSAGES ---- //
 
+    /*case WM_INPUT: {
+        UINT dwSize = sizeof(RAWINPUT);
+        static BYTE lpb[sizeof(RAWINPUT)];
+
+        GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
+
+        RAWINPUT* raw = (RAWINPUT*)lpb;
+
+        if (raw->header.dwType == RIM_TYPEMOUSE) {
+            mouse.OnMouseMove(raw->data.mouse.lLastX, raw->data.mouse.lLastY);
+        }
+        break;
+    }*/
+
         // When the Mouse is Moved
     case WM_MOUSEMOVE: {
         const POINTS point = MAKEPOINTS(lParam);
@@ -201,7 +216,7 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
     // Window Class Public Methods
 
         // Constructor/Destructor
-Window::Window(int width, int height, const TCHAR* name) :
+Window::Window(unsigned int width, unsigned int height, const TCHAR* name) :
     m_width(width),
     m_height(height) {
 
@@ -231,14 +246,21 @@ Window::Window(int width, int height, const TCHAR* name) :
     ShowWindow(m_hWnd, SW_SHOWDEFAULT);
 
     // Define graphics output pointer.
-    pGraphicsOutput = std::make_unique<GraphicsOutput>(m_hWnd);
+    pGraphicsOutput = std::make_unique<GraphicsOutput>(m_hWnd, width, height);
+
+    mRID.usUsagePage = HID_USAGE_PAGE_GENERIC;
+    mRID.usUsage = HID_USAGE_GENERIC_MOUSE;
+    mRID.dwFlags = RIDEV_INPUTSINK;
+    mRID.hwndTarget = m_hWnd;
+    RegisterRawInputDevices(&mRID, 1u, sizeof(mRID));
+
 }
 Window::~Window() { DestroyWindow(m_hWnd); }
 
         // Set the Title
-void Window::setTitle(const std::string& title) {
-    std::wstring wTitle = std::wstring(title.begin(), title.end());
-    if (SetWindowText(m_hWnd, wTitle.c_str()) == 0) {
+void Window::setTitle(const std::wstring& title) {
+    //std::wstring wTitle = std::wstring(title.begin(), title.end());
+    if (SetWindowText(m_hWnd, title.c_str()) == 0) {
         throw CHWND_LAST_EXCEPT();
     }
 }
@@ -249,7 +271,6 @@ std::optional<WPARAM> Window::handleMessages() {
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
         if (msg.message == WM_QUIT) return msg.wParam;
         TranslateMessage(&msg);
-        std::cout << "[" << msg.wParam << ']' << '\n';
         DispatchMessage(&msg);
     }
     return {}; // empty optional

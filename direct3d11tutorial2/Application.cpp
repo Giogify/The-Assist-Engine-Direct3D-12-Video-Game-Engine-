@@ -11,7 +11,7 @@
 int Application::applicationUpdate() {
 
 	// Create Debug Information
-	std::ostringstream oss = {};
+	std::wostringstream oss = {};
 	oss.setf(std::ios::fixed);
 	oss << std::setprecision(2);
 
@@ -22,7 +22,7 @@ int Application::applicationUpdate() {
 	// UPDATE CODE HERE
 
 	//wnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f);
-	mWnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f);
+	mWnd.getGraphicsOutput().flushBackBufferColor(0.1f, 0.1f, 0.1f);
 	for (auto& a : mActors) {
 		a->update();
 		a->getModel().draw(mWnd.getGraphicsOutput());
@@ -35,14 +35,45 @@ int Application::applicationUpdate() {
 	std::vector<char> keys{};
 	std::vector<Mouse::Event> mouse{};
 
-	while (!mWnd.kb.CharIsEmpty()) keys.push_back(mWnd.kb.ReadChar());
-	while (!mWnd.mouse.isEmpty()) mouse.push_back(mWnd.mouse.readEvent());
-
-	for (auto& key : keys) if (key == '+') mWnd.getGraphicsOutput().changeDepth(0.05);
-
-	for (auto& key : keys) if (key == '-') mWnd.getGraphicsOutput().changeDepth(-0.05);
-
-	oss << " [Depth] " << mWnd.getGraphicsOutput().getDepth();
+	while (!mWnd.kb.CharIsEmpty()) {
+		keys.push_back(mWnd.kb.ReadChar());
+		//std::cout << "[Key Pressed] (" << keys.back() << ")" << '\n';
+	}
+	while (!mWnd.mouse.isEmpty()) {
+		mouse.push_back(mWnd.mouse.readEvent());
+		//std::cout << "[";
+		/*switch (mouse.back().getType()) {
+		case Mouse::Event::Type::Enter:
+			std::cout << "Enter]";
+			break;
+		case Mouse::Event::Type::Exit:
+			std::cout << "Exit]";
+			break;
+		case Mouse::Event::Type::LMBPress:
+			std::cout << "LMBPress]";
+			break;
+		case Mouse::Event::Type::LMBRelease:
+			std::cout << "LMBRelease]";
+			break;
+		case Mouse::Event::Type::Move:
+			std::cout << "Move] (" << mouse.back().getX() << ", " << mouse.back().getY() << ")";
+			break;
+		case Mouse::Event::Type::RMBPress:
+			std::cout << "RMBPress]";
+			break;
+		case Mouse::Event::Type::RMBRelease:
+			std::cout << "RMBRelease]";
+			break;
+		case Mouse::Event::Type::WheelDown:
+			std::cout << "WheelDown]";
+			break;
+		case Mouse::Event::Type::WheelUp:
+			std::cout << "WheelUp]";
+			break;
+		}*/
+		//std::cout << '\n';
+	
+	}
 
 	//if (key == 'w') {
 	//    wnd.getGraphicsOutput().get
@@ -135,7 +166,9 @@ int Application::applicationUpdate() {
 				RECT rc = mWnd.getWindowInfo().rcClient;
 				auto centerX = (rc.right - rc.left) / 2;
 				auto centerY = (rc.bottom - rc.top) / 2;
-				SetCursorPos(centerX + rc.left, centerY + rc.top);
+				if (e.getX() != centerX || e.getY() != centerY) {
+					SetCursorPos(centerX + rc.left, centerY + rc.top);
+				}
 				auto dx = centerX - e.getX();
 				auto dy = centerY - e.getY();
 				mWnd.getGraphicsOutput().getCamera().addYaw(0.25f * dx);
@@ -176,10 +209,6 @@ int Application::applicationUpdate() {
 		<< " [Yaw: " << mWnd.getGraphicsOutput().getCamera().mYaw << "]"
 		<< " [Roll: " << mWnd.getGraphicsOutput().getCamera().mRoll << "]";
 
-	if (mIsCameraModeEnabled) {
-		oss << " [Camera Mouse Control Enabled]";
-	}
-
 	// Print Debug Information to Window Title
 	mWnd.setTitle(oss.str());
 
@@ -191,15 +220,15 @@ int Application::applicationUpdate() {
 Application::~Application() {}
 
 Application::Application() : mWnd(1280, 720, L"Window") {
-	for (int i = 0; i < 100; i++) {
-		mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
+	for (int i = 0; i < 1; i++) {
+		mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCubeSuperDetailed")));
 	}
 }
 
 int Application::applicationStart() {
 
 	mWnd.getGraphicsOutput().setProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.25f, 5000.0f));
-	mWnd.getGraphicsOutput().getCamera().translate(0.0f, 0.0f, 20.0f);
+	mWnd.getGraphicsOutput().getCamera().translate(0.0f, 0.0f, 1.0f);
 
 	while (true) {
 		if (const auto msgCode = Window::handleMessages()) return *msgCode;

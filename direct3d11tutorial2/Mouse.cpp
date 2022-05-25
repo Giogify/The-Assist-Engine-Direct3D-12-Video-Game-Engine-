@@ -1,4 +1,5 @@
 #include "Mouse.h"
+#include <iostream>
 #include "PCWindows.h"
 
 void Mouse::OnMouseMove(int x, int y) noexcept {
