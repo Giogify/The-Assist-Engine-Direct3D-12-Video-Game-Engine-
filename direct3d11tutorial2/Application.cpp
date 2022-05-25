@@ -8,7 +8,7 @@
 
 
 // Top-Level Application Logic
-void Application::applicationUpdate() {
+int Application::applicationUpdate() {
 
 	// Create Debug Information
 	std::ostringstream oss = {};
@@ -32,12 +32,15 @@ void Application::applicationUpdate() {
 		}
 	}
 
-	auto key = mWnd.kb.ReadChar();
-	auto mouse = mWnd.mouse.readEvent();
+	std::vector<char> keys{};
+	std::vector<Mouse::Event> mouse{};
 
-	if (key == '+') mWnd.getGraphicsOutput().changeDepth(0.05);
+	while (!mWnd.kb.CharIsEmpty()) keys.push_back(mWnd.kb.ReadChar());
+	while (!mWnd.mouse.isEmpty()) mouse.push_back(mWnd.mouse.readEvent());
 
-	if (key == '-') mWnd.getGraphicsOutput().changeDepth(-0.05);
+	for (auto& key : keys) if (key == '+') mWnd.getGraphicsOutput().changeDepth(0.05);
+
+	for (auto& key : keys) if (key == '-') mWnd.getGraphicsOutput().changeDepth(-0.05);
 
 	oss << " [Depth] " << mWnd.getGraphicsOutput().getDepth();
 
@@ -48,7 +51,7 @@ void Application::applicationUpdate() {
 	// UPDATE CODE HERE
 
 	// Frame Advance Mode
-	if (key == '/') {
+	for (auto& key : keys) if (key == '/') {
 		mIsFrameAdvanceEnabled = true;
 	}
 	while (mIsFrameAdvanceEnabled) {
@@ -69,10 +72,10 @@ void Application::applicationUpdate() {
 
 	while ((mTimerRender.peek() * 1000.0000000f) < (1000.0000000f / mFPSCap));
 
-	if (key == '[') mFPSCap -= 1.0f;
-	if (key == ']') mFPSCap += 1.0f;
-	if (key == '{') mFPSCap -= 10.0f;
-	if (key == '}') mFPSCap += 10.0f;
+	for (auto& key : keys) if (key == '[') mFPSCap -= 1.0f;
+	for (auto& key : keys) if (key == ']') mFPSCap += 1.0f;
+	for (auto& key : keys) if (key == '{') mFPSCap -= 10.0f;
+	for (auto& key : keys) if (key == '}') mFPSCap += 10.0f;
 
 	if (mMaxFPS < 1000.0f / (mTimerRender.peek() * 1000.0000000f)) {
 		mMaxFPS = 1000.0f / (mTimerRender.peek() * 1000.0000000f);
@@ -82,23 +85,23 @@ void Application::applicationUpdate() {
 
 	oss << " [Frames: " << this->mFPSCap << "] " << 1000 / (mTimerRender.mark() * 1000) << '\n';
 
-	if (key == '1') {
+	for (auto& key : keys) if (key == '1') {
 		mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
 		mActors.shrink_to_fit();
 	}
-	if (key == '!') {
+	for (auto& key : keys) if (key == '!') {
 		for (int i = 0; i < 100; i++) mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
 		mActors.shrink_to_fit();
 	}
-	if (key == '2') {
+	for (auto& key : keys) if (key == '2') {
 		mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
 		mActors.shrink_to_fit();
 	}
-	if (key == '@') {
+	for (auto& key : keys) if (key == '@') {
 		for (int i = 0; i < 10; i++) mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
 		mActors.shrink_to_fit();
 	}
-	if (key == '`') {
+	for (auto& key : keys) if (key == '`') {
 		auto iter = mActors.size();
 		for (int i = 0; i < iter; i++) {
 			mActors.pop_back();
@@ -114,41 +117,34 @@ void Application::applicationUpdate() {
 	// Camera Manipulation
 
 	// Up
-	if (key == 'w') mWnd.getGraphicsOutput().getCamera().translate(0.0, 0.5, 0.0);
+	for (auto& key : keys) if (key == 'w') mWnd.getGraphicsOutput().getCamera().translate(0.0, 0.5, 0.0);
 	
 	// Down
-	if (key == 's') mWnd.getGraphicsOutput().getCamera().translate(0.0, -0.5, 0.0);
+	for (auto& key : keys) if (key == 's') mWnd.getGraphicsOutput().getCamera().translate(0.0, -0.5, 0.0);
 	
 	// Left
-	if (key == 'a') mWnd.getGraphicsOutput().getCamera().translate(0.5, 0.0, 0.0);
+	for (auto& key : keys) if (key == 'a') mWnd.getGraphicsOutput().getCamera().translate(0.5, 0.0, 0.0);
 	
 	// Right
-	if (key == 'd') mWnd.getGraphicsOutput().getCamera().translate(-0.5, 0.0, 0.0);
+	for (auto& key : keys) if (key == 'd') mWnd.getGraphicsOutput().getCamera().translate(-0.5, 0.0, 0.0);
 	
 
 	if (mIsCameraModeEnabled) {
-		if (mouse.getType() == Mouse::Event::Type::Move) {
-			std::vector<Mouse::Event> events;
-			events.push_back(mouse);
-			while (!mWnd.mouse.isEmpty()) {
-				events.push_back(mWnd.mouse.readEvent());
-			}
-			while (!events.empty()) {
-				auto event = events.back();
+		for (auto& e : mouse) {
+			if (e.getType() == Mouse::Event::Type::Move) {
 				RECT rc = mWnd.getWindowInfo().rcClient;
 				auto centerX = (rc.right - rc.left) / 2;
 				auto centerY = (rc.bottom - rc.top) / 2;
 				SetCursorPos(centerX + rc.left, centerY + rc.top);
-				auto dx = centerX - event.getX();
-				auto dy = centerY - event.getY();
+				auto dx = centerX - e.getX();
+				auto dy = centerY - e.getY();
 				mWnd.getGraphicsOutput().getCamera().addYaw(0.25f * dx);
 				mWnd.getGraphicsOutput().getCamera().addPitch(0.25f * dy);
-				events.pop_back();
 			}
 		}
 	}
 	
-	if (mouse.getType() == Mouse::Event::Type::LMBPress) {
+	for (auto& e : mouse) if (e.getType() == Mouse::Event::Type::LMBPress) {
 		mIsCameraModeEnabled = !mIsCameraModeEnabled;
 		ShowCursor(!mIsCameraModeEnabled);
 		RECT rc{ mWnd.getWindowInfo().rcClient };
@@ -160,10 +156,10 @@ void Application::applicationUpdate() {
 	}
 
 	// Forward
-	if (mouse.getType() == Mouse::Event::Type::WheelUp) mWnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, -0.5);
+	for (auto& e : mouse) if (e.getType() == Mouse::Event::Type::WheelUp) mWnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, -0.5);
 	
 	// Backward
-	if (mouse.getType() == Mouse::Event::Type::WheelDown) mWnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, 0.5);
+	for (auto& e : mouse) if (e.getType() == Mouse::Event::Type::WheelDown) mWnd.getGraphicsOutput().getCamera().translate(0.0, 0.0, 0.5);
 
 	DirectX::XMFLOAT4X4 proj = {};
 	DirectX::XMStoreFloat4x4(&proj, mWnd.getGraphicsOutput().getCamera().getMatrix());
@@ -186,23 +182,27 @@ void Application::applicationUpdate() {
 
 	// Print Debug Information to Window Title
 	mWnd.setTitle(oss.str());
+
+	for (auto& key : keys) if (key == VK_ESCAPE) return 1;
+
+	return 0;
 }
 
 Application::~Application() {}
 
 Application::Application() : mWnd(1280, 720, L"Window") {
-	for (int i = 0; i < 1; i++) {
-		mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
+	for (int i = 0; i < 100; i++) {
+		mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
 	}
 }
 
 int Application::applicationStart() {
 
 	mWnd.getGraphicsOutput().setProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.25f, 5000.0f));
-	mWnd.getGraphicsOutput().getCamera().translate(0.0, 11.0, 8.5);
+	mWnd.getGraphicsOutput().getCamera().translate(0.0f, 0.0f, 20.0f);
 
 	while (true) {
 		if (const auto msgCode = Window::handleMessages()) return *msgCode;
-		applicationUpdate();
+		if (applicationUpdate() != 0) return 0;
 	}
 }

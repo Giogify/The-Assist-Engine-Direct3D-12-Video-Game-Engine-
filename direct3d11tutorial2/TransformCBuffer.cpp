@@ -28,12 +28,14 @@ void TransformCBuffer::bind(GraphicsOutput& gfx, Object& object) noexcept {
 	PixelCBuffer PCB = {};
 	PCB.materialData = object.getMaterialData();
 
+	auto dt = timer.peek();
+
 	Light::LightData light = {};
-	light.pos = { -4.0f, 12.0f, 5.0f, 1.0f };
-	light.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	light.pos = { 0.0f, 0.0f, 0.0f, 1.0f };
+	light.color = { 1.0f * std::sin(dt), 1.0f * -std::sin(dt), 1.0f * std::cos(dt), 1.0f};
 	light.constAtten = 1.0f;
-	light.linAtten = 0.08f;
-	light.quadAtten = 0.0f;
+	light.linAtten = 0.2f;
+	light.quadAtten = 0.08f;
 	light.isEnabled = true;
 	light.type = Light::POINT_LIGHT;
 

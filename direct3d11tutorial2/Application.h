@@ -27,7 +27,7 @@ private: // Private Fields
 private: // Private Methods
 
 	// Application Logic
-	void applicationUpdate();
+	int applicationUpdate();
 
 public: // Public Methods
 

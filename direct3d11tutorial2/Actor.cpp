@@ -11,7 +11,7 @@ Actor::Actor(GraphicsOutput& gfx, std::string& objPath) {
 	m_model = { gfx, objPath };
 	
 	if (objPath != "ground" && objPath != "frs3") {
-		//scripts_add(new Script_RandomTransform());
+		scripts_add(new Script_RandomTransform());
 		scripts_init(*this);
 	}
 }

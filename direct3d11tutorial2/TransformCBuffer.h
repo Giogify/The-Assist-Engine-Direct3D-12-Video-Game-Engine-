@@ -2,6 +2,7 @@
 #include "ConstantBuffer.h"
 #include "Light.h"
 #include "Object.h"
+#include "Timer.h"
 #include <DirectXMath.h>
 
 class TransformCBuffer {
@@ -42,6 +43,7 @@ private:
 
 	static std::unique_ptr<VertexConstantBuffer<VertexCBuffer>> mptrVCBuffer;
 	static std::unique_ptr<PixelConstantBuffer<PixelCBuffer>> mptrPCBuffer;
+	Timer timer{};
 
 public:
 	

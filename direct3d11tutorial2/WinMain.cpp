@@ -6,6 +6,14 @@ int WINAPI wWinMain(
      LPWSTR    lpCmdLine,
      int       nCmdShow
 ) {
+
+    FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
+
+    AllocConsole();
+    freopen_s(&fpstdin, "CONIN$", "r", stdin);
+    freopen_s(&fpstdout, "CONOUT$", "w", stdout);
+    freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+
     try {
         return Application{}.applicationStart();
     } catch (const TestException& e) {
