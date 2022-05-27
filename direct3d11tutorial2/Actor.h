@@ -1,29 +1,39 @@
 #pragma once
-class Actor;
 #include "Timer.h"
 #include "Model.h"
-#include "Scriptable.h"
+#include "Inputtable.h"
+#include "Script_Info_Actor.h"
+#include "Script_Actor.h"
 #include <memory>
 #include <DirectXMath.h>
 
-class Actor : public Scriptable {
-
-private:
-
-	// Model
-	Model m_model{};
-
-	// Timers
-	Timer startTimer{};
-	Timer updateTimer{};
+class Actor : public Inputtable {
 
 public:
 
-	Actor(GraphicsOutput& gfx, std::string& objPath);
+	typedef struct ACTOR_CREATION_DESC {
+		std::string objFileName{};
+		std::vector<Script_Actor*> scripts{};
+	} ACTOR_CREATION_DESC;
 
-	Model& getModel() noexcept { return m_model; }
+private:
 
+	// model, startTimer, updateTimer
+	Script_Info_Actor mActorInfo{};
+
+	// Scripts
+	std::vector<Script_Actor*> mScripts{};
+
+public:
+
+	Actor(GraphicsOutput& gfx, ACTOR_CREATION_DESC& desc);
+
+	Model& getModel() noexcept { return mActorInfo.model; }
+
+	void input(std::vector<char>& keys, std::vector<Mouse::Event>& mouse) noexcept override;
 	void update() noexcept;
 
-	Timer& getStartTimer() noexcept { return startTimer; }
+	void addScript(Script_Actor* script) noexcept {
+		mScripts.push_back(script);
+	}
 };

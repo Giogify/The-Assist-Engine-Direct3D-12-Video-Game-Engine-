@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -140,7 +140,7 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ShowIncludes>false</ShowIncludes>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -182,6 +182,7 @@
     <ClInclude Include="Bindable.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Collections.h" />
+    <ClInclude Include="Inputtable.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="MaterialParser.h" />
     <ClInclude Include="Material.h" />
@@ -197,10 +198,13 @@
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="PixelShader.h" />
-    <ClInclude Include="Scriptable.h" />
-    <ClInclude Include="Script.h" />
-    <ClInclude Include="scriptActorInitialTransform.h" />
-    <ClInclude Include="Script_RandomTransform.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="Script_Actor.h" />
+    <ClInclude Include="Script_Actor_RandomTransform.h" />
+    <ClInclude Include="Script_Factory.h" />
+    <ClInclude Include="Script_Info_Actor.h" />
+    <ClInclude Include="Script_Scene.h" />
+    <ClInclude Include="Script_Scene_CreateActors.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Mouse.h" />
@@ -255,6 +259,9 @@
   <ItemGroup>
     <None Include="nanosuit.mtl" />
     <None Include="testCube.mtl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="scene00.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

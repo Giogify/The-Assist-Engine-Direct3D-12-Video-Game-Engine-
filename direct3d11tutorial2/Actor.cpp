@@ -1,21 +1,24 @@
 #include "Actor.h"
 #include "Collections.h"
-#include "Script_RandomTransform.h"
 
-Actor::Actor(GraphicsOutput& gfx, std::string& objPath) {
+Actor::Actor(GraphicsOutput& gfx, ACTOR_CREATION_DESC& desc) {
 
 	// Start the Starting Timer (never mark this timer)
-	startTimer.mark();
+	mActorInfo.startTimer.mark();
 
 	// Assign model
-	m_model = { gfx, objPath };
-	
-	if (objPath != "ground" && objPath != "frs3") {
-		scripts_add(new Script_RandomTransform());
-		scripts_init(*this);
+	mActorInfo.model = { gfx, desc.objFileName };
+
+	for (auto& s : desc.scripts) {
+		mScripts.push_back(s);
+		mScripts.back()->init(mActorInfo);
 	}
 }
 
+void Actor::input(std::vector<char>& keys, std::vector<Mouse::Event>& mouse) noexcept {
+
+}
+
 void Actor::update() noexcept {
-	scripts_run(*this);
+	for (auto& s : mScripts) s->run(mActorInfo);
 }

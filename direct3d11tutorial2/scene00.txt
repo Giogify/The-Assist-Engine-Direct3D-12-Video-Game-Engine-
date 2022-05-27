@@ -1,0 +1,8 @@
+actor 0
+file testCube
+count 50
+script Script_Actor_RandomTransform
+
+actor 1
+file nanosuit
+count 1
