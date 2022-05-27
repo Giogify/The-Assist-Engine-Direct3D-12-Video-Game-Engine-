@@ -55,10 +55,8 @@ public:
 	void run(Script_Info_Actor& actorInfo) noexcept override {
 
 		for (auto& o : actorInfo.model.getObjects()) {
-			std::cout << "Start" << '\n';
 			o.getPos().roll = o.getSpeed().droll * actorInfo.startTimer.peek();
 			o.getPos().pitch = o.getSpeed().dpitch * actorInfo.startTimer.peek();
-			std::cout << o.getPos().pitch << '\n';
 			o.getPos().yaw = o.getSpeed().dyaw * actorInfo.startTimer.peek();
 			o.getPos().phi = o.getSpeed().dphi * actorInfo.startTimer.peek();
 			o.getPos().theta = o.getSpeed().dtheta * actorInfo.startTimer.peek();

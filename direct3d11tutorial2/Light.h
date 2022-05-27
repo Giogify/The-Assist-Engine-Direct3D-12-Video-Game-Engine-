@@ -4,9 +4,9 @@ class Light {
 
 public:
 
-	static const unsigned short DIRECTIONAL_LIGHT = 0;
-	static const unsigned short POINT_LIGHT = 1;
-	static const unsigned short SPOT_LIGHT = 2;
+	static const unsigned char DIRECTIONAL_LIGHT = 0;
+	static const unsigned char POINT_LIGHT = 1;
+	static const unsigned char SPOT_LIGHT = 2;
 
 	struct LightData {
 		
@@ -35,7 +35,7 @@ public:
 		float quadAtten{ 0.0f };
 
 		int type{ POINT_LIGHT };
-		int isEnabled{ false };
+		int isEnabled{ true };
 		int padding0{};
 		int padding1{};
 

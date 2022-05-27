@@ -1,4 +1,4 @@
 file testCube
 script RandomTransform
-count 5
+count 20
 end

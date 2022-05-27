@@ -204,9 +204,8 @@ int Application::doRender() noexcept {
 	mWnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f); //sky blue
 	//mWnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f); //black
 
-	mScene->draw(mWnd.getGraphicsOutput());
-
 	for (auto& a : mScene->getActors()) {
+		a.getModel().draw(mWnd.getGraphicsOutput());
 		for (auto& o : a.getModel().getObjects()) {
 			tcb.bind(mWnd.getGraphicsOutput(), o);
 		}

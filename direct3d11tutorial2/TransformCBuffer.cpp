@@ -1,4 +1,5 @@
 #include "TransformCBuffer.h"
+#include <iostream>
 
 TransformCBuffer::TransformCBuffer(GraphicsOutput& gfx) {
 
@@ -14,6 +15,9 @@ void TransformCBuffer::bind(GraphicsOutput& gfx, Object& object) noexcept {
 
 	DirectX::XMFLOAT4X4 proj{};
 	DirectX::XMStoreFloat4x4(&proj, gfx.getProjection());
+
+	std::cout << "Object" << '\n'
+		<< object.getPos().r << '\n' << '\n';
 
 	VertexCBuffer VCB = {};
 	VCB.TransformXM = object.getTransformXM();
@@ -32,13 +36,13 @@ void TransformCBuffer::bind(GraphicsOutput& gfx, Object& object) noexcept {
 	light.pos = { 0.0f, 0.0f, 0.0f, 1.0f };
 	light.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	light.constAtten = 0.0f;
-	light.linAtten = 0.1f;
-	light.quadAtten = 0.0f;
+	light.linAtten = 0.4f;
+	light.quadAtten = 0.01f;
 	light.isEnabled = true;
 	light.type = Light::POINT_LIGHT;
 
 	PCB.eyePos = { gfx.getCamera().mEye.x, gfx.getCamera().mEye.y, gfx.getCamera().mEye.z, 1.0f};
-	PCB.globalAmbient = { 0.1f, 0.1f, 0.1f, 1.0f };
+	PCB.globalAmbient = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	PCB.lights[0].light = light;
 
