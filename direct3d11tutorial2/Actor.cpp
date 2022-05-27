@@ -1,6 +1,7 @@
 #include "Actor.h"
 #include "Collections.h"
-//test
+#include <iostream>
+
 Actor::Actor(GraphicsOutput& gfx, ACTOR_CREATION_DESC& desc) {
 
 	// Start the Starting Timer (never mark this timer)
@@ -15,7 +16,7 @@ Actor::Actor(GraphicsOutput& gfx, ACTOR_CREATION_DESC& desc) {
 	}
 }
 
-void Actor::input(std::vector<char>& keys, std::vector<Mouse::Event>& mouse) noexcept {
+void Actor::input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept {
 
 }
 

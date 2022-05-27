@@ -51,10 +51,8 @@ private: // Private Data Structures
 		
 		// Destructor
 		~WindowClass();
-		WindowClass(const WindowClass&) = delete;
 
 		// Operator Overloads
-		WindowClass& operator=(const WindowClass&) = delete;
 
 	public: // Public Methods
 
@@ -127,7 +125,6 @@ public: // Public Methods
 
 	//Destructor
 	~Window();
-	Window(const Window&) = delete;
 
 	void setTitle(const std::wstring& title);
 
@@ -136,7 +133,6 @@ public: // Public Methods
 	GraphicsOutput& getGraphicsOutput();
 	
 	// Overloading Operators
-	Window& operator=(const Window&) = delete;
 
 	WINDOWINFO getWindowInfo() noexcept;
 

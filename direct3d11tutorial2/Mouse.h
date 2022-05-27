@@ -107,7 +107,6 @@ public: // Public Methods
 
 	// Default Constructor
 	Mouse() = default;
-	Mouse(const Mouse&) = delete;
 
 	// Getters/Setters/Is
 	int					getX()			const noexcept;
@@ -128,6 +127,5 @@ public: // Public Methods
 	bool isInsideWindow() const noexcept;
 
 	// Operator Overloads
-	Mouse& operator=(const Mouse&) = delete;
 
 };

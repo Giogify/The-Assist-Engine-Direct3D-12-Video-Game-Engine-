@@ -10,6 +10,10 @@
 // Top-Level Application Logic
 int Application::applicationUpdate() {
 
+	if (doInput() != 0) return 1;
+	if (doUpdate() != 0) return 1;
+	if (doRender() != 0) return 1;
+
 	/*renderTimer.mark();
 
 	if (doInput() != 0) return 1;
@@ -50,6 +54,10 @@ int Application::applicationUpdate() {
 
 		oneSecondTimer.mark();
 	}*/
+
+	if (mMaxFPS < 1000.0f / (mTimerRender.peek() * 1000.0000000f)) {
+		mMaxFPS = 1000.0f / (mTimerRender.peek() * 1000.0000000f);
+	}
 
 	// Create Debug Information
 	std::wostringstream oss = {};
@@ -106,10 +114,10 @@ Application::Application() : mWnd(1280, 720, L"Window") {
 	
 
 	mWnd.getGraphicsOutput().setProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.25f, 5000.0f));
-	mWnd.getGraphicsOutput().getCamera().translate(0.0f, 0.0f, 1.0f);
+	mWnd.getGraphicsOutput().getCamera().translate(0.0f, 0.0f, 30.0f);
 
 	std::string file{ "scene00" };
-	mScene = std::make_unique<Scene>(mWnd.getGraphicsOutput());
+	mScene = std::make_unique<Scene>(mWnd.getGraphicsOutput(), file);
 }
 
 int Application::applicationStart() {
@@ -193,8 +201,8 @@ int Application::doUpdate() noexcept {
 
 int Application::doRender() noexcept {
 
-	//wnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f); //sky blue
-	mWnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f); //black
+	mWnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f); //sky blue
+	//mWnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f); //black
 
 	mScene->draw(mWnd.getGraphicsOutput());
 
@@ -206,11 +214,7 @@ int Application::doRender() noexcept {
 
 	mWnd.getGraphicsOutput().endFrame();
 
-	while ((mTimerRender.peek() * 1000.0000000f) < (1000.0000000f / mFPSCap));
-
-	if (mMaxFPS < 1000.0f / (mTimerRender.peek() * 1000.0000000f)) {
-		mMaxFPS = 1000.0f / (mTimerRender.peek() * 1000.0000000f);
-	}
+	while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
 
 	return 0;
 }

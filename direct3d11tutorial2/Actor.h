@@ -13,7 +13,7 @@ public:
 
 	typedef struct ACTOR_CREATION_DESC {
 		std::string objFileName{};
-		std::vector<Script_Actor*> scripts{};
+		std::vector<std::shared_ptr<Script_Actor>> scripts{};
 	} ACTOR_CREATION_DESC;
 
 private:
@@ -22,7 +22,7 @@ private:
 	Script_Info_Actor mActorInfo{};
 
 	// Scripts
-	std::vector<Script_Actor*> mScripts{};
+	std::vector<std::shared_ptr<Script_Actor>> mScripts{};
 
 public:
 
@@ -30,10 +30,11 @@ public:
 
 	Model& getModel() noexcept { return mActorInfo.model; }
 
-	void input(std::vector<char>& keys, std::vector<Mouse::Event>& mouse) noexcept override;
+	void input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept override;
 	void update() noexcept;
 
-	void addScript(Script_Actor* script) noexcept {
+	void addScript(std::shared_ptr<Script_Actor>& script) noexcept {
 		mScripts.push_back(script);
+		mScripts.back()->init(mActorInfo);
 	}
 };

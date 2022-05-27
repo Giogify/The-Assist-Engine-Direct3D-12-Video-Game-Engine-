@@ -11,6 +11,6 @@ public:
 
 private:
 
-	virtual void input(std::vector<char>& keys, std::vector<Mouse::Event>& mouse) noexcept = 0;
+	virtual void input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept = 0;
 
 };

@@ -80,9 +80,6 @@ public: // Public Methods
 	// Constructor
 	GraphicsOutput(HWND hWnd, UINT width, UINT height);
 
-	GraphicsOutput(const GraphicsOutput&) = delete;
-	GraphicsOutput& operator=(const GraphicsOutput&) = delete;
-
 	// Destructor
 	~GraphicsOutput() = default;
 
