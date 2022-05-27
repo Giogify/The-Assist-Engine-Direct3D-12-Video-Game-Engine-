@@ -52,9 +52,6 @@
     <Filter Include="Header Files\gfx\geo">
       <UniqueIdentifier>{90c9241b-11b6-4831-91dc-01afa8f47993}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\scripts">
-      <UniqueIdentifier>{a6814e14-3414-4f1f-a739-179da3327ab4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\scripts">
       <UniqueIdentifier>{ec6d7de5-bc03-42e6-85e2-a692c8e1d5ba}</UniqueIdentifier>
     </Filter>
@@ -66,6 +63,18 @@
     </Filter>
     <Filter Include="Resource Files\materials">
       <UniqueIdentifier>{0abe3bde-8734-4d53-9017-13274fe4ed34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\input">
+      <UniqueIdentifier>{0d0f7e9d-cc75-4079-9df4-41ee96b83ab5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\script">
+      <UniqueIdentifier>{a6814e14-3414-4f1f-a739-179da3327ab4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\scene">
+      <UniqueIdentifier>{6c4bee33-2fc3-4ab8-a29d-515849e1c0e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\scene">
+      <UniqueIdentifier>{dc3c1d05-9f49-41c8-ace6-5759b328d656}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -137,19 +146,7 @@
     <ClInclude Include="Window.h">
       <Filter>Header Files\window</Filter>
     </ClInclude>
-    <ClInclude Include="Application.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="Keyboard.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="Mouse.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
     <ClInclude Include="PCWindows.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="TestException.h">
       <Filter>Header Files\window</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsOutput.h">
@@ -218,20 +215,44 @@
     <ClInclude Include="Collections.h">
       <Filter>Header Files\gfx\draw</Filter>
     </ClInclude>
-    <ClInclude Include="Scriptable.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Script_RandomTransform.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Script.h">
-      <Filter>Header Files\scripts</Filter>
+    <ClInclude Include="Script_Actor_RandomTransform.h">
+      <Filter>Header Files\script</Filter>
     </ClInclude>
     <ClInclude Include="Light.h">
       <Filter>Header Files\gfx\draw</Filter>
     </ClInclude>
-    <ClInclude Include="scriptActorInitialTransform.h">
-      <Filter>Header Files\scripts</Filter>
+    <ClInclude Include="Inputtable.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="Mouse.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="Keyboard.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="TestException.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Scene_CreateActors.h">
+      <Filter>Header Files\script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Actor.h">
+      <Filter>Header Files\script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Scene.h">
+      <Filter>Header Files\script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Info_Actor.h">
+      <Filter>Header Files\script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Factory.h">
+      <Filter>Header Files\script</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -260,5 +281,10 @@
     <None Include="nanosuit.mtl">
       <Filter>Resource Files\materials</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="scene00.txt">
+      <Filter>Resource Files\scene</Filter>
+    </Text>
   </ItemGroup>
 </Project>

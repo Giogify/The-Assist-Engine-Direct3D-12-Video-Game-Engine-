@@ -41,7 +41,7 @@ public:
 					nextline.erase(0u, 2u);
 
 					// Add the current size of the indices to the index table.
-					objectIndexTable.push_back(*std::make_unique<unsigned short>(indices.size()));
+					objectIndexTable.push_back(*std::make_unique<unsigned int>(indices.size()));
 
 					// Add name
 					names.push_back(nextline);

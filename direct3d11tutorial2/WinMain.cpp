@@ -10,6 +10,7 @@ int WINAPI wWinMain(
 
     FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
 
+    // Command Console
     AllocConsole();
     freopen_s(&fpstdin, "CONIN$", "r", stdin);
     freopen_s(&fpstdout, "CONOUT$", "w", stdout);
