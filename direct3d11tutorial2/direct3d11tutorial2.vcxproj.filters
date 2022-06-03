@@ -254,6 +254,15 @@
     <ClInclude Include="Script_Factory.h">
       <Filter>Header Files\script</Filter>
     </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineStateObject.h">
+      <Filter>Header Files\gfx\bind</Filter>
+    </ClInclude>
+    <ClInclude Include="RootSignature.h">
+      <Filter>Header Files\gfx\bind</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">
@@ -285,6 +294,9 @@
   <ItemGroup>
     <Text Include="scene00.txt">
       <Filter>Resource Files\scene</Filter>
+    </Text>
+    <Text Include="gfx_config.txt">
+      <Filter>Header Files\gfx</Filter>
     </Text>
   </ItemGroup>
 </Project>

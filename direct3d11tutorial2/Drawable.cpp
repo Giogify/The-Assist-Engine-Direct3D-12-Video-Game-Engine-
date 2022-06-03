@@ -9,7 +9,7 @@ void Drawable::draw(GraphicsOutput& gfx) noexcept {
 	for (auto& b : getStaticBinds()) {
 		b->bind(gfx);
 	}
-	gfx.Draw(m_pVertexBuffer->getCount());
+	gfx.doRender();
 }
 
 void Drawable::addBind(std::unique_ptr<Bindable> bind) noexcept {

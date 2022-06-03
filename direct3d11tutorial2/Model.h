@@ -55,7 +55,7 @@ public:
 
 	void update() noexcept;
 
-	void draw(GraphicsOutput& gfx) noexcept;
+	int onCommand(GraphicsOutput& gfx) noexcept;
 
 	std::vector<Object>& getObjects() noexcept { return m_objects; }
 };

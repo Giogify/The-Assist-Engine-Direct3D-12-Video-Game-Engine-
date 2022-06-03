@@ -30,7 +30,12 @@ public:
 
 	Model& getModel() noexcept { return mActorInfo.model; }
 
-	void input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept override;
+	int input(const Keyboard& kb,
+		const std::vector<Keyboard::Event>& keys,
+		const std::vector<unsigned char>& keysChar,
+		const Mouse& mouse,
+		const std::vector<Mouse::Event>& mouseEvents) noexcept override;
+
 	void update() noexcept;
 
 	void addScript(std::shared_ptr<Script_Actor>& script) noexcept {

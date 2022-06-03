@@ -2,7 +2,9 @@
 #include "Inputtable.h"
 #include "Script_Factory.h"
 #include "Actor.h"
+#include "Camera.h"
 #include <iostream>
+#include <string_view>
 #include <memory>
 #include <fstream>
 
@@ -24,6 +26,7 @@ public:
 
 private:
 
+	Camera mCamera{};
 	std::vector<Actor> mActors{};
 
 public:
@@ -79,7 +82,6 @@ public:
 						Actor::ACTOR_CREATION_DESC actorDesc{};
 						actorDesc.objFileName = tempObjectFileName;
 						for (auto& s : tempScripts) actorDesc.scripts.push_back(Script_Factory::parseActorScript(s));
-						std::cout << i << '\n';
 						mActors.push_back(*std::make_unique<Actor>(gfx, actorDesc));
 					}
 
@@ -93,8 +95,14 @@ public:
 		}
 	}
 	
-	void input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept override {
-		for (auto& a : mActors) a.input(keys, mouse);
+	int input(const Keyboard& kb,
+		const std::vector<Keyboard::Event>& keys,
+		const std::vector<unsigned char>& keysChar,
+		const Mouse& mouse,
+		const std::vector<Mouse::Event>& mouseEvents) noexcept override {
+		for (auto& a : mActors) a.input(kb, keys, keysChar, mouse, mouseEvents);
+
+		return 0;
 	}
 
 	int update() noexcept {
@@ -105,10 +113,11 @@ public:
 	}
 
 	void draw(GraphicsOutput& gfx) noexcept {
-		for (auto& a : mActors) a.getModel().draw(gfx);
+		//for (auto& a : mActors) a.getModel().draw(gfx);
 	}
 
 	std::vector<Actor>& getActors() noexcept {
 		return mActors;
 	}
+	Camera& getCamera() noexcept { return mCamera; }
 };

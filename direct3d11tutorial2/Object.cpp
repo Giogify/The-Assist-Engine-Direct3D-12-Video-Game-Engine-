@@ -7,7 +7,7 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 
 	mObject = *std::make_unique<IndexedTriangleList::Object>(itl_data);
 
-	std::vector<VertexData> ObjectData{};
+	std::vector<GraphicsOutput::VertexData> ObjectData{};
 	ObjectData.resize(mObject.pos.size());
 	for (int i = 0; i < mObject.pos.size(); i++) {
 		ObjectData.at(i).pos.x = mObject.pos.at(i).x;
@@ -43,21 +43,16 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 	mMaterialData.specularPower = itl_data.mtl.NS_exponent;
 	mMaterialData.isTextured = false;
 
-	mBinds.vb = { gfx, ObjectData.data(), (unsigned int)ObjectData.size() };
+	PipelineStateObject::Binds binds{};
+	binds.vs = *std::make_unique<VertexShader>(L"VertexShader.hlsl");
+	binds.ps = *std::make_unique<PixelShader>(L"PixelShader.hlsl");
+	
 
-	mBinds.vs = { gfx, L"VertexShader.cso" };
-	auto pvsbc = mBinds.vs.getBytecode();
+	mPSO = { gfx, binds };
+	mVB = { gfx, ObjectData.data(), (unsigned int)ObjectData.size() };
 
-	mBinds.ps = { gfx, L"PixelShader.cso" };
+	HANDLE hFenceEvent{ CreateEvent(nullptr, FALSE, FALSE, nullptr) };
 
-	mBinds.ied = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-	mBinds.inlay = { gfx, mBinds.ied, pvsbc };
-	mBinds.top = { gfx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST };
 }
 
 void Object::update(float dt) noexcept {

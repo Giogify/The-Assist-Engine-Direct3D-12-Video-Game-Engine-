@@ -1,5 +1,6 @@
 #pragma once
 #include "Mouse.h"
+#include "Keyboard.h"
 
 class Inputtable {
 
@@ -11,6 +12,10 @@ public:
 
 private:
 
-	virtual void input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept = 0;
+	virtual int input(const Keyboard& kb,
+		const std::vector<Keyboard::Event>& keys,
+		const std::vector<unsigned char>& keysChar,
+		const Mouse& mouse,
+		const std::vector<Mouse::Event>& mouseEvents) noexcept = 0;
 
 };

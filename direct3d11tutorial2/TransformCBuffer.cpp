@@ -11,48 +11,44 @@ TransformCBuffer::TransformCBuffer(GraphicsOutput& gfx) {
 	}
 }
 
-void TransformCBuffer::bind(GraphicsOutput& gfx, Object& object) noexcept {
-
-	DirectX::XMFLOAT4X4 proj{};
-	DirectX::XMStoreFloat4x4(&proj, gfx.getProjection());
-
-	std::cout << "Object" << '\n'
-		<< object.getPos().r << '\n' << '\n';
-
-	VertexCBuffer VCB = {};
-	VCB.TransformXM = object.getTransformXM();
-	VCB.cameraMatrix = gfx.getCamera().getMatrix();
-	VCB.projMatrix = gfx.getProjection();
-
-	auto InverseDeterminant = DirectX::XMMatrixDeterminant(object.getTransformXM());
-	auto InverseMatrix = DirectX::XMMatrixTranspose(object.getTransformXM());
-
-	VCB.InverseTranspose = DirectX::XMMatrixInverse(&InverseDeterminant, InverseMatrix);
-
-	PixelCBuffer PCB = {};
-	PCB.materialData = object.getMaterialData();
+void TransformCBuffer::bind(GraphicsOutput& gfx, std::unique_ptr<Scene>& scene) noexcept {
+	
+	auto camera = std::make_unique<Camera>(scene->getCamera());
 
 	Light::LightData light = {};
 	light.pos = { 0.0f, 0.0f, 0.0f, 1.0f };
 	light.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	light.constAtten = 0.0f;
-	light.linAtten = 0.4f;
-	light.quadAtten = 0.01f;
+	light.linAtten = 0.1f;
+	light.quadAtten = 0.0f;
 	light.isEnabled = true;
 	light.type = Light::POINT_LIGHT;
 
-	PCB.eyePos = { gfx.getCamera().mEye.x, gfx.getCamera().mEye.y, gfx.getCamera().mEye.z, 1.0f};
-	PCB.globalAmbient = { 0.0f, 0.0f, 0.0f, 1.0f };
+	for (auto& a : scene->getActors()) {
+		//a.getModel().draw(gfx);
+		
+		for (auto& o : a.getModel().getObjects()) {
+			VertexCBuffer VCB = {};
+			VCB.TransformXM = o.getTransformXM();
+			VCB.cameraMatrix = camera->getMatrix();
+			VCB.projMatrix = gfx.getProjection();
+			auto InverseDeterminant = DirectX::XMMatrixDeterminant(o.getTransformXM());
+			auto InverseMatrix = DirectX::XMMatrixTranspose(o.getTransformXM());
+			VCB.InverseTranspose = DirectX::XMMatrixInverse(&InverseDeterminant, InverseMatrix);
+			
+			PixelCBuffer PCB = {};
+			PCB.materialData = o.getMaterialData();
+			PCB.eyePos = { camera->mEye.x, camera->mEye.y, camera->mEye.z, 1.0f};
+			PCB.globalAmbient = { 0.0f, 0.0f, 0.0f, 1.0f };
+			PCB.lights[0].light = light;
 
-	PCB.lights[0].light = light;
+			mptrVCBuffer->update(gfx, VCB);
+			mptrPCBuffer->update(gfx, PCB);
+			mptrVCBuffer->bind(gfx);
+			mptrPCBuffer->bind(gfx);
 
-	auto test = sizeof(VCB);
-	auto test2 = sizeof(PCB);
-
-	mptrVCBuffer->update(gfx, VCB);
-	mptrPCBuffer->update(gfx, PCB);
-	mptrVCBuffer->bind(gfx);
-	mptrPCBuffer->bind(gfx);
+		}
+	}
 }
 
 std::unique_ptr<VertexConstantBuffer<TransformCBuffer::VertexCBuffer>> TransformCBuffer::mptrVCBuffer;

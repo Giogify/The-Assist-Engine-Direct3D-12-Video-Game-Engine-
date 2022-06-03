@@ -1,52 +1,52 @@
 #pragma once
-#include "Bindable.h"
+#include "GraphicsOutput.h"
 
-class VertexBuffer : public Bindable {
+class VertexBuffer {
 
-protected:
+private:
 
-	UINT m_stride = {};
-	UINT m_offset = { 0u };
-	UINT m_count = { 0u };
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
+	//UINT mStride = { 0u };
+	//UINT mOffset = { 0u };
+	//UINT mCount = { 0u };
+	ComPtr<ID3D12Resource2> mpVertexBuffer{};
+	D3D12_VERTEX_BUFFER_VIEW mVertexBufferView{};
 
 public:
 	
 	VertexBuffer() = default;
-	VertexBuffer(const VertexBuffer& vb) :
-		m_stride(vb.m_stride),
-		m_offset(vb.m_offset),
-		m_count(vb.m_count),
-		m_pVertexBuffer(vb.m_pVertexBuffer) {}
+	VertexBuffer(const VertexBuffer& vb) : 
+		mpVertexBuffer(vb.mpVertexBuffer),
+		mVertexBufferView(vb.mVertexBufferView) {}
 	VertexBuffer(const std::unique_ptr<VertexBuffer> vb) :
-		m_stride(vb.get()->m_stride),
-		m_offset(vb.get()->m_offset),
-		m_count(vb.get()->m_count),
-		m_pVertexBuffer(vb.get()->m_pVertexBuffer) {}
+		mpVertexBuffer(vb.get()->mpVertexBuffer),
+		mVertexBufferView(vb.get()->mVertexBufferView) {}
 
-	template<class V>
-	VertexBuffer(GraphicsOutput& gfx, const V* vertices, unsigned int size) :
-		m_stride(sizeof(V)),
-		m_count(size) {
+	VertexBuffer(GraphicsOutput& gfx, const GraphicsOutput::VertexData* vertices, unsigned int size) /*:
+		mStride(sizeof(Object::VertexData)), mCount(size)*/ {
 
-		// Configure Vertex Buffer Description
-		D3D11_BUFFER_DESC vertexBD = {};
-		vertexBD.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertexBD.Usage = D3D11_USAGE_DEFAULT;
-		vertexBD.CPUAccessFlags = 0u;
-		vertexBD.MiscFlags = 0u;
-		vertexBD.ByteWidth = UINT(sizeof(V) * m_count);
-		vertexBD.StructureByteStride = sizeof(V);
+		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
-		// Vertex Buffer Subresource
-		D3D11_SUBRESOURCE_DATA vertexSD = {};
-		vertexSD.pSysMem = vertices;
+		auto heapDesc = CD3DX12_RESOURCE_DESC::Buffer(size);
 
-		// Fill Vertex Buffer with Vertex Buffer Desc and Subresource
-		getDevice(gfx)->CreateBuffer(&vertexBD, &vertexSD, m_pVertexBuffer.GetAddressOf());
+		gfx.getDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &heapDesc,
+			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, nullptr, 
+			IID_PPV_ARGS(&mpVertexBuffer));
+
+		std::unique_ptr<UINT8> pVertexDataStart{};
+
+		CD3DX12_RANGE readRange(0u, 0u);
+
+		mpVertexBuffer->Map(0u, &readRange, (void**)pVertexDataStart.get());
+		memcpy(pVertexDataStart.get(), vertices, size);
+		mpVertexBuffer->Unmap(0u, nullptr);
+
+		mVertexBufferView.BufferLocation = mpVertexBuffer->GetGPUVirtualAddress();
+		mVertexBufferView.StrideInBytes = sizeof(GraphicsOutput::VertexData);
+		mVertexBufferView.SizeInBytes = sizeof(GraphicsOutput::VertexData) * size;
+
 	}
 
-	void bind(GraphicsOutput& gfx) noexcept override;
-
-	UINT getCount() const noexcept;
+	UINT getCount() const noexcept {
+		return mVertexBufferView.SizeInBytes / sizeof(GraphicsOutput::VertexData);
+	}
 };

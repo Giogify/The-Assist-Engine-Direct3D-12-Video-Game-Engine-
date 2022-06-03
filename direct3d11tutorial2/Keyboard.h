@@ -82,7 +82,7 @@ public:
 
 	// Constructors
 	Keyboard() = default;
-	Keyboard(const Keyboard&) = delete;
+	Keyboard(const Keyboard& kb) = delete;
 	
 	// Key Event
 	bool KeyIsPressed(unsigned char keycode) const noexcept;
@@ -104,6 +104,6 @@ public:
 	bool IsAutoRepeatEnabled() const noexcept;
 
 	// Operator Overloads
-	Keyboard& operator=(const Keyboard&) = delete;
+	Keyboard& operator=(const Keyboard& kb) = delete;
 
 };

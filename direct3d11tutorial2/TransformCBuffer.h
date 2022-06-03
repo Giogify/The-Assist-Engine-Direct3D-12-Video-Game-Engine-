@@ -3,6 +3,7 @@
 #include "Light.h"
 #include "Object.h"
 #include "Timer.h"
+#include "Scene.h"
 #include <DirectXMath.h>
 
 class TransformCBuffer {
@@ -43,12 +44,11 @@ private:
 
 	static std::unique_ptr<VertexConstantBuffer<VertexCBuffer>> mptrVCBuffer;
 	static std::unique_ptr<PixelConstantBuffer<PixelCBuffer>> mptrPCBuffer;
-	Timer timer{};
 
 public:
 	
 	TransformCBuffer() = default;
 	TransformCBuffer(GraphicsOutput& gfx);
-	void bind(GraphicsOutput& gfx, Object& object) noexcept;
+	void bind(GraphicsOutput& gfx, std::unique_ptr<Scene>& scene) noexcept;
 
 };

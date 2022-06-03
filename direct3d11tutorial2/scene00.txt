@@ -1,4 +1,3 @@
-file testCube
-script RandomTransform
-count 20
+file nanosuit
+count 1
 end

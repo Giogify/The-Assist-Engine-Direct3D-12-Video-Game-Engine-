@@ -16,8 +16,13 @@ Actor::Actor(GraphicsOutput& gfx, ACTOR_CREATION_DESC& desc) {
 	}
 }
 
-void Actor::input(const std::vector<char>& keys, const std::vector<Mouse::Event>& mouse) noexcept {
+int Actor::input(const Keyboard& kb,
+	const std::vector<Keyboard::Event>& keys,
+	const std::vector<unsigned char>& keysChar,
+	const Mouse& mouse,
+	const std::vector<Mouse::Event>& mouseEvents) noexcept {
 
+	return 0;
 }
 
 void Actor::update() noexcept {

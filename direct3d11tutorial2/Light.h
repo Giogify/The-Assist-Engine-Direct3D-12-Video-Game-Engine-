@@ -35,7 +35,7 @@ public:
 		float quadAtten{ 0.0f };
 
 		int type{ POINT_LIGHT };
-		int isEnabled{ true };
+		int isEnabled{ false };
 		int padding0{};
 		int padding1{};
 

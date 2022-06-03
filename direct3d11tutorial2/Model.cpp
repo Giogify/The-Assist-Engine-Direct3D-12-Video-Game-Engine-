@@ -25,10 +25,10 @@ void Model::update() noexcept {
 
 }
 
-void Model::draw(GraphicsOutput& gfx) noexcept { 
+int Model::onCommand(GraphicsOutput& gfx) noexcept {
+	std::vector<ComPtr<ID3D12CommandList>> commandLists;
 	for (auto& o : m_objects) {
-		auto test = 1;
-		auto test2 = 2;
-		o.draw(gfx);
+		if (o.onCommand(gfx) != 0) return 1;
 	}
+	return 0;
 }

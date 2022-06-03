@@ -2,49 +2,14 @@
 #include "VertexBuffer.h"
 #include "VertexShader.h"
 #include "PixelShader.h"
-#include "InputLayout.h"
-#include "Topology.h"
 #include "IndexedTriangleList.h"
+#include "PipelineStateObject.h"
 
 class Object {
 
 	friend class Model;
 
 public:
-
-	// Binds
-	struct Binds {
-		VertexBuffer vb{};
-		VertexShader vs{};
-		PixelShader ps{};
-		std::vector<D3D11_INPUT_ELEMENT_DESC> ied{};
-		InputLayout inlay{};
-		Topology top{};
-	};
-
-	// VertexData struct
-	struct VertexData {
-		struct {
-			float x;
-			float y;
-			float z;
-		} pos;
-		struct {
-			float x;
-			float y;
-		} texcoord;
-		struct {
-			float x;
-			float y;
-			float z;
-		} norm;
-		struct {
-			float r;
-			float g;
-			float b;
-			float a;
-		} color;
-	};
 
 	// Material Data
 	struct MaterialData {
@@ -102,10 +67,14 @@ public:
 
 private:
 
-	Binds mBinds{};
-
 	Position mPos{};
 	Speed mSpeed{};
+
+	VertexBuffer mVB{};
+
+	ComPtr<ID3D12PipelineState> mpPipelineState{};
+
+	PipelineStateObject mPSO{};
 
 	// Object Data
 	IndexedTriangleList::Object mObject{};
@@ -115,12 +84,9 @@ public:
 
 	Object() = default;
 
-	Object(const Object& obj) : 
-	mPos(obj.mPos),
-	mSpeed(obj.mSpeed),
-		mObject(obj.mObject),
-		mMaterialData(obj.mMaterialData),
-		mBinds(obj.mBinds) {}
+	Object(const Object& obj) : mPos(obj.mPos), mSpeed(obj.mSpeed), mObject(obj.mObject),
+	mMaterialData(obj.mMaterialData), mVB(obj.mVB), mpPipelineState(obj.mpPipelineState),
+	mPSO(obj.mPSO) {}
 
 	Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data);
 
@@ -134,13 +100,8 @@ public:
 
 	MaterialData& getMaterialData() noexcept { return mMaterialData; }
 
-	void draw(GraphicsOutput& gfx) noexcept {
-		mBinds.vb.bind(gfx);
-		mBinds.vs.bind(gfx);
-		mBinds.ps.bind(gfx);
-		mBinds.inlay.bind(gfx);
-		mBinds.top.bind(gfx);
-		gfx.Draw(mBinds.vb.getCount());
+	int onCommand(GraphicsOutput& gfx) noexcept {
+		
+		return 0;
 	}
-
 };

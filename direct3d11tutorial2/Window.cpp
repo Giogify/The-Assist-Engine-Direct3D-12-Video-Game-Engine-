@@ -82,7 +82,7 @@ LRESULT WINAPI Window::HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 }
 LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept {
     switch (msg) {
-    
+
         // Close Window
     case WM_CLOSE:
         PostQuitMessage(0);
@@ -209,6 +209,14 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
     case WM_KILLFOCUS:
         kb.ClearState();
         break;
+    case WM_SIZE: {
+        RECT clientRc{};
+        GetClientRect(hWnd, &clientRc);
+        UINT width = clientRc.right - clientRc.left;
+        UINT height = clientRc.bottom = clientRc.top;
+        pGraphicsOutput->resizeWindow(width, height);
+        break;
+    }
     }
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -242,11 +250,11 @@ Window::Window(unsigned int width, unsigned int height, const TCHAR* name) :
     );
     if (m_hWnd == nullptr) { throw CHWND_LAST_EXCEPT(); }
 
+    // Define graphics output pointer.
+    pGraphicsOutput = std::make_unique<GraphicsOutput>(m_hWnd);
+
     // Show the window, since it will be hidden on creation.
     ShowWindow(m_hWnd, SW_SHOWDEFAULT);
-
-    // Define graphics output pointer.
-    pGraphicsOutput = std::make_unique<GraphicsOutput>(m_hWnd, width, height);
 
     mRID.usUsagePage = HID_USAGE_PAGE_GENERIC;
     mRID.usUsage = HID_USAGE_GENERIC_MOUSE;

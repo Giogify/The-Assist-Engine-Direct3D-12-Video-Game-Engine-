@@ -18,23 +18,12 @@ private: // Private Fields
 	Timer mTimerRender{};
 
 	bool mIsCameraModeEnabled{ false };
+	bool mDebugEnoughTimeElapsed{ false };
 	
 	TransformCBuffer tcb{ mWnd.getGraphicsOutput() };
 
-	Timer oneSecondTimer{};
-
-	Timer renderTimer{};
-	unsigned int inputcount{};
-	std::vector<float> inputTimes{};
-
-	unsigned int updatecount{};
-	std::vector<float> updateTimes{};
-
-	unsigned int rendercount{};
-	std::vector<float> renderTimes{};
-
-	float mMaxFPS{ 0.0f };
-	float mFPSCap{ 240.0f };
+	float mMaxFPS{ 0.f };
+	float mFPSCap{ 1000.f };
 
 private: // Private Methods
 
@@ -50,7 +39,11 @@ public: // Public Methods
 	// Application Startup Procedures
 	int applicationStart();
 
-	int doPriorityInput(std::vector<char> keys, std::vector<Mouse::Event> mouse) noexcept;
+	int doPriorityInput(const Keyboard& kb,
+		const std::vector<Keyboard::Event>& keys,
+		const std::vector<unsigned char>& keysChar,
+		const Mouse& mouse,
+		const std::vector<Mouse::Event>& mouseEvents) noexcept;
 	
 	// Game Loop
 	int doInput() noexcept;

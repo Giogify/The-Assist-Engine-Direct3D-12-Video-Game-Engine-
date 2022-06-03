@@ -8,13 +8,17 @@ int WINAPI wWinMain(
      int       nCmdShow
 ) {
 
-    FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
+    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-    // Command Console
-    AllocConsole();
-    freopen_s(&fpstdin, "CONIN$", "r", stdin);
-    freopen_s(&fpstdout, "CONOUT$", "w", stdout);
-    freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+    #if defined(_DEBUG)
+        FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
+
+        // Command Console
+        AllocConsole();
+        freopen_s(&fpstdin, "CONIN$", "r", stdin);
+        freopen_s(&fpstdout, "CONOUT$", "w", stdout);
+        freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+    #endif
 
     try {
         return Application{}.applicationStart();

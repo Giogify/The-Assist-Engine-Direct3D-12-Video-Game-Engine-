@@ -11,7 +11,7 @@ public:
 		std::mt19937 rng(std::random_device{}());
 		std::uniform_real_distribution<float> adist(0.0f, 3.1415f * 2.0f);
 		std::uniform_real_distribution<float> ddist(0.0f, 3.1415f * 2.0f);
-		std::uniform_real_distribution<float> odist(0.0f, 3.1415f * 0.1f);
+		std::uniform_real_distribution<float> odist(0.0f, 3.1415f * 0.3f);
 		std::uniform_real_distribution<float> rdist(10.0f, 20.0f);
 		std::uniform_real_distribution<float> bdist(6.0f, 20.0f);
 
@@ -25,18 +25,6 @@ public:
 		float chi = adist(rng);
 		float theta = adist(rng);
 		float phi = adist(rng);
-
-		std::cout << r << '\n'
-			<< r << '\n'
-			<< droll << '\n'
-			<< dpitch << '\n'
-			<< dyaw << '\n'
-			<< dphi << '\n'
-			<< dtheta << '\n'
-			<< dchi << '\n'
-			<< chi << '\n'
-			<< theta << '\n'
-			<< phi << '\n';
 
 		for (auto& o : actorInfo.model.getObjects()) {
 			o.getPos().r = r;
