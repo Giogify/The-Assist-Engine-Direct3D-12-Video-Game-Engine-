@@ -233,12 +233,12 @@ Window::Window(unsigned int width, unsigned int height, const TCHAR* name) :
     rc.right = width + rc.left;
     rc.top = 100;
     rc.bottom = height + rc.top;
-    if (AdjustWindowRect(&rc, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE) == 0) { throw CHWND_LAST_EXCEPT(); }
+    if (AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE) == 0) { throw CHWND_LAST_EXCEPT(); }
     
     m_hWnd = CreateWindow(
         WindowClass::GetName(),
         name,
-        WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
+        WS_OVERLAPPEDWINDOW,
         (1920 / 2) - ((rc.right - rc.left) / 2),
         (1080 / 2) - ((rc.bottom - rc.top) / 2),
         rc.right - rc.left,

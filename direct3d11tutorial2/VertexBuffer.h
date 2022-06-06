@@ -1,52 +1,55 @@
 #pragma once
-#include "GraphicsOutput.h"
+#include "DataStructures.h"
+#include "d3dx12.h"
+#include <d3d12.h>
+#include <wrl.h>
+#include <memory>
+
+using namespace Microsoft::WRL;
+namespace DSU = DataStructsUtil;
 
 class VertexBuffer {
 
 private:
 
-	//UINT mStride = { 0u };
-	//UINT mOffset = { 0u };
-	//UINT mCount = { 0u };
-	ComPtr<ID3D12Resource2> mpVertexBuffer{};
-	D3D12_VERTEX_BUFFER_VIEW mVertexBufferView{};
+	ComPtr<ID3D12Resource2>		mpDestRes{};
+	ComPtr<ID3D12Resource2>		mpIntermedRes{};
+	D3D12_VERTEX_BUFFER_VIEW	mVBView{};
 
 public:
-	
-	VertexBuffer() = default;
-	VertexBuffer(const VertexBuffer& vb) : 
-		mpVertexBuffer(vb.mpVertexBuffer),
-		mVertexBufferView(vb.mVertexBufferView) {}
-	VertexBuffer(const std::unique_ptr<VertexBuffer> vb) :
-		mpVertexBuffer(vb.get()->mpVertexBuffer),
-		mVertexBufferView(vb.get()->mVertexBufferView) {}
 
-	VertexBuffer(GraphicsOutput& gfx, const GraphicsOutput::VertexData* vertices, unsigned int size) /*:
-		mStride(sizeof(Object::VertexData)), mCount(size)*/ {
-
-		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-
-		auto heapDesc = CD3DX12_RESOURCE_DESC::Buffer(size);
-
-		gfx.getDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &heapDesc,
-			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, nullptr, 
-			IID_PPV_ARGS(&mpVertexBuffer));
-
-		std::unique_ptr<UINT8> pVertexDataStart{};
-
-		CD3DX12_RANGE readRange(0u, 0u);
-
-		mpVertexBuffer->Map(0u, &readRange, (void**)pVertexDataStart.get());
-		memcpy(pVertexDataStart.get(), vertices, size);
-		mpVertexBuffer->Unmap(0u, nullptr);
-
-		mVertexBufferView.BufferLocation = mpVertexBuffer->GetGPUVirtualAddress();
-		mVertexBufferView.StrideInBytes = sizeof(GraphicsOutput::VertexData);
-		mVertexBufferView.SizeInBytes = sizeof(GraphicsOutput::VertexData) * size;
-
+	VertexBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DSU::VertexData* vertices, const UINT& size)  {
+		createDestinationResource(pDevice, size);
+		createIntermediateResource(pDevice, size);
+		createVertexBufferView(pCommandList, vertices, size);
 	}
 
+	void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const UINT& size) noexcept {
+		CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof(DSU::VertexData)) };
+		pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
+	}
+	void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const UINT& size) noexcept {
+		CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof(DSU::VertexData)) };
+		pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
+	}
+	void createVertexBufferView(ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DSU::VertexData* vertices, const UINT& size) noexcept {
+		D3D12_SUBRESOURCE_DATA srd{}; {
+			srd.pData = vertices;
+			srd.RowPitch = size * sizeof(DSU::VertexData);
+			srd.SlicePitch = srd.RowPitch;
+		}
+		UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
+		mVBView.BufferLocation = mpDestRes->GetGPUVirtualAddress();
+		mVBView.SizeInBytes = sizeof(DSU::VertexData) * size;
+		mVBView.StrideInBytes = sizeof(DSU::VertexData);
+	}
+
+	ComPtr<ID3D12Resource2>& getDestinationResource() noexcept { return mpDestRes; }
+	ComPtr<ID3D12Resource2>& getIntermediateResource() noexcept { return mpIntermedRes; }
+	D3D12_VERTEX_BUFFER_VIEW& getView() noexcept { return mVBView; }
 	UINT getCount() const noexcept {
-		return mVertexBufferView.SizeInBytes / sizeof(GraphicsOutput::VertexData);
+		return mVBView.SizeInBytes / sizeof(DSU::VertexData);
 	}
 };

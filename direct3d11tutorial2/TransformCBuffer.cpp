@@ -3,12 +3,12 @@
 
 TransformCBuffer::TransformCBuffer(GraphicsOutput& gfx) {
 
-	if (!mptrVCBuffer) {
+	/*if (!mptrVCBuffer) {
 		mptrVCBuffer = std::make_unique<VertexConstantBuffer<VertexCBuffer>>(gfx);
 	}
 	if (!mptrPCBuffer) {
 		mptrPCBuffer = std::make_unique<PixelConstantBuffer<PixelCBuffer>>(gfx);
-	}
+	}*/
 }
 
 void TransformCBuffer::bind(GraphicsOutput& gfx, std::unique_ptr<Scene>& scene) noexcept {
@@ -42,14 +42,14 @@ void TransformCBuffer::bind(GraphicsOutput& gfx, std::unique_ptr<Scene>& scene) 
 			PCB.globalAmbient = { 0.0f, 0.0f, 0.0f, 1.0f };
 			PCB.lights[0].light = light;
 
-			mptrVCBuffer->update(gfx, VCB);
-			mptrPCBuffer->update(gfx, PCB);
-			mptrVCBuffer->bind(gfx);
-			mptrPCBuffer->bind(gfx);
+			//mptrVCBuffer->update(gfx, VCB);
+			//mptrPCBuffer->update(gfx, PCB);
+			//mptrVCBuffer->bind(gfx);
+			//mptrPCBuffer->bind(gfx);
 
 		}
 	}
 }
 
-std::unique_ptr<VertexConstantBuffer<TransformCBuffer::VertexCBuffer>> TransformCBuffer::mptrVCBuffer;
-std::unique_ptr<PixelConstantBuffer<TransformCBuffer::PixelCBuffer>> TransformCBuffer::mptrPCBuffer;
+//std::unique_ptr<VertexConstantBuffer<TransformCBuffer::VertexCBuffer>> TransformCBuffer::mptrVCBuffer;
+//std::unique_ptr<PixelConstantBuffer<TransformCBuffer::PixelCBuffer>> TransformCBuffer::mptrPCBuffer;

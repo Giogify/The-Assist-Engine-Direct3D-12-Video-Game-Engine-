@@ -1,23 +1,26 @@
 #include "Object.h"
+#include "DataStructures.h"
 #include <DirectXMath.h>
 #include <memory>
+
+namespace DSU = DataStructsUtil;
 
 Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 	namespace dx = DirectX;
 
+	// Process data
 	mObject = *std::make_unique<IndexedTriangleList::Object>(itl_data);
-
-	std::vector<GraphicsOutput::VertexData> ObjectData{};
+	std::vector<DSU::VertexData> ObjectData{};
 	ObjectData.resize(mObject.pos.size());
 	for (int i = 0; i < mObject.pos.size(); i++) {
 		ObjectData.at(i).pos.x = mObject.pos.at(i).x;
 		ObjectData.at(i).pos.y = mObject.pos.at(i).y;
-		ObjectData.at(i).pos.z = mObject.pos.at(i).z;
-		ObjectData.at(i).texcoord.x = mObject.tex.at(i).x;
+		//ObjectData.at(i).pos.z = mObject.pos.at(i).z;
+		/*ObjectData.at(i).texcoord.x = mObject.tex.at(i).x;
 		ObjectData.at(i).texcoord.y = mObject.tex.at(i).y;
 		ObjectData.at(i).norm.x = mObject.norm.at(i).x;
 		ObjectData.at(i).norm.y = mObject.norm.at(i).y;
-		ObjectData.at(i).norm.z = mObject.norm.at(i).z;
+		ObjectData.at(i).norm.z = mObject.norm.at(i).z;*/
 	}
 
 	mMaterialData.colorEmissive.r = 0.0f;
@@ -43,15 +46,7 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 	mMaterialData.specularPower = itl_data.mtl.NS_exponent;
 	mMaterialData.isTextured = false;
 
-	PipelineStateObject::Binds binds{};
-	binds.vs = *std::make_unique<VertexShader>(L"VertexShader.hlsl");
-	binds.ps = *std::make_unique<PixelShader>(L"PixelShader.hlsl");
-	
-
-	mPSO = { gfx, binds };
-	mVB = { gfx, ObjectData.data(), (unsigned int)ObjectData.size() };
-
-	HANDLE hFenceEvent{ CreateEvent(nullptr, FALSE, FALSE, nullptr) };
+	// Bind object
 
 }
 

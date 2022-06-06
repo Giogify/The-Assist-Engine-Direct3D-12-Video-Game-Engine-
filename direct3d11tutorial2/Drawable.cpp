@@ -9,7 +9,7 @@ void Drawable::draw(GraphicsOutput& gfx) noexcept {
 	for (auto& b : getStaticBinds()) {
 		b->bind(gfx);
 	}
-	gfx.doRender();
+	//gfx.doRender();
 }
 
 void Drawable::addBind(std::unique_ptr<Bindable> bind) noexcept {

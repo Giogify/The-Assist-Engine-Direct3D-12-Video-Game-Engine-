@@ -1,11 +1,16 @@
 #include "Application.h"
+#include "DataStructures.h"
 #include "Collections.h"
 #include "Scene.h"
+#include "IndexBuffer.h"
 #include <random>
 #include <memory>
 #include <iostream>
 #include <iomanip>
+#include <array>
+#include <dxgidebug.h>
 
+namespace DSU = DataStructsUtil;
 
 // Top-Level Application Logic
 int Application::applicationUpdate() {
@@ -99,7 +104,7 @@ int Application::applicationStart() {
 int Application::doPriorityInput(const Keyboard& kb, const std::vector<Keyboard::Event>& keys, const std::vector<unsigned char>& keysChar, const Mouse& mouse,
 	const std::vector<Mouse::Event>& mouseEvents) noexcept {
 	if (kb.KeyIsPressed(VK_ESCAPE)) {
-		mWnd.getGraphicsOutput().flushGPU(mWnd.getGraphicsOutput().mCurrentFenceValue);
+		mWnd.getGraphicsOutput().flushGPU();
 		CloseHandle(mWnd.getGraphicsOutput().mhFenceEvent);
 		return 1;
 	}
@@ -184,15 +189,40 @@ int Application::doUpdate() noexcept {
 	return 0;
 }
 int Application::doRender() noexcept {
-	
-	HRESULT hr{};
+	std::cout << "[Fence Value] " << mWnd.getGraphicsOutput().mFenceValue << '\n';
+	Timer timer{};
+	//mWnd.getGraphicsOutput().startFrame();
+	std::array<DSU::VertexData, 8u> vertices{}; {
+		vertices[0] = { DX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DX::XMFLOAT3(0.0f, 0.0f, 0.0f) };
+		vertices[1] = { DX::XMFLOAT3(-1.0f, 1.0f, -1.0f), DX::XMFLOAT3(0.0f, 1.0f, 0.0f) };
+		vertices[2] = { DX::XMFLOAT3(1.0f, 1.0f, -1.0f), DX::XMFLOAT3(1.0f, 1.0f, 0.0f) };
+		vertices[3] = { DX::XMFLOAT3(1.0f, -1.0f, -1.0f), DX::XMFLOAT3(1.0f, 0.0f, 0.0f) };
+		vertices[4] = { DX::XMFLOAT3(-1.0f, -1.0f, 1.0f), DX::XMFLOAT3(0.0f, 0.0f, 1.0f) };
+		vertices[5] = { DX::XMFLOAT3(-1.0f, 1.0f, 1.0f), DX::XMFLOAT3(0.0f, 1.0f, 1.0f) };
+		vertices[6] = { DX::XMFLOAT3(1.0f, 1.0f, 1.0f), DX::XMFLOAT3(1.0f, 1.0f, 1.0f) };
+		vertices[7] = { DX::XMFLOAT3(1.0f, -1.0f, 1.0f), DX::XMFLOAT3(1.0f, 0.0f, 1.0f) };
+	}
+	const std::array<WORD, 36u> indices{
+		0, 1, 2, 0, 2, 3,
+		4, 6, 5, 4, 7, 6,
+		4, 5, 1, 4, 1, 0,
+		3, 2, 6, 3, 6, 7,
+		1, 5, 6, 1, 6, 2,
+		4, 0, 3, 4, 3, 7
+	};
+	/*std::array<DSU::VertexData2D, 3u> vertices{}; {
+		vertices[0] = { DX::XMFLOAT2(-0.5f, -0.5f), DX::XMFLOAT3(0.0f, 0.0f, 0.0f) };
+		vertices[1] = { DX::XMFLOAT2(-0.5f, 0.5f), DX::XMFLOAT3(0.0f, 1.0f, 0.0f) };
+		vertices[2] = { DX::XMFLOAT2(0.5f, 0.5f), DX::XMFLOAT3(1.0f, 1.0f, 0.0f) };
+	}*/
+	for (int i = 0; i < vertices.size(); i++) {
+		vertices[i].pos.z += mTimerStart.peek();
+	}
 
-	//mWnd.getGraphicsOutput().flushBackBufferColor(0.5294f, 0.8078f, 0.9216f); //sky blue
-	//mWnd.getGraphicsOutput().flushBackBufferColor(0.0f, 0.0f, 0.0f); //black
-
-	//if (mScene->getActors().size() != 0) tcb.bind(mWnd.getGraphicsOutput(), mScene);
-	if (mWnd.getGraphicsOutput().doRender() != 0) return 1;
-	//mWnd.getGraphicsOutput().endFrame();
+	mWnd.getGraphicsOutput().addVertexBuffer(vertices.data(), vertices.size());
+	mWnd.getGraphicsOutput().addIndexBuffer(indices.data(), indices.size());
+	mWnd.getGraphicsOutput().doFrame();
+	//std::cout << timer.mark() * 1000.f << " ms\n";
 	//while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
 
 	return 0;

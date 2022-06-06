@@ -16,6 +16,9 @@
 #include "TestException.h"
 #include "d3dx12.h"
 #include "Timer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+#include "ConstantBuffer.h"
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -25,6 +28,7 @@
 #include <DirectXMath.h>
 #include <memory>
 #include <iostream>
+#include <thread>
 
 #pragma comment(lib, "D3DCompiler.lib")
 
@@ -37,29 +41,16 @@ class GraphicsOutput {
 
 public:
 
-	// VertexData struct
-	struct VertexData {
-		struct {
-			float x;
-			float y;
-			float z;
-		} pos;
-		struct {
-			float x;
-			float y;
-		} texcoord;
-		struct {
-			float x;
-			float y;
-			float z;
-		} norm;
-		struct {
-			float r;
-			float g;
-			float b;
-			float a;
-		} color;
-	};
+	struct PipelineStateStream
+	{
+		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
+		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
+		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
+		CD3DX12_PIPELINE_STATE_STREAM_VS VS;
+		CD3DX12_PIPELINE_STATE_STREAM_PS PS;
+		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
+		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
+	} mPSS;
 
 private: // Private Fields
 
@@ -105,11 +96,14 @@ private: // Private Fields
 	ComPtr<ID3D12Resource2>							mpDepthStencilTexture{};
 	ComPtr<ID3D12DescriptorHeap>					mpDSVHeap{};
 	UINT											mDSVHeapSize{};
+	// Application Data
+	std::vector<VertexBuffer>						mVecVertexBuffers{};
+	std::vector<IndexBuffer>						mVecIndexBuffers{};
 	// Fence
 	ComPtr<ID3D12Fence1>							mpFence{};
 	HANDLE											mhFenceEvent{};
-	UINT64											mFrameIndex{};
-	std::vector<UINT64>								mFenceValues{};
+	UINT8											mFrameIndex{};
+	UINT64											mFenceValue{};
 	UINT64											mCurrentFenceValue{};
 	// Shaders
 	ComPtr<ID3DBlob>								mpVSBytecode{};
@@ -133,28 +127,44 @@ public: // Public Methods
 	// Destructor
 	~GraphicsOutput() = default;
 
-	int parseGraphicsConfig() noexcept;
-	int createDebugLayer() noexcept;
-	int createInfoQueue() noexcept;
-	int createFactory() noexcept;
-	int enumerateAdapters() noexcept;
-	int createDevice() noexcept;
-	int createCommandQueue() noexcept;
-	int checkTearingSupport() noexcept;
-	int createSwapChain(const HWND&, const UINT, const UINT) noexcept;
-	int createRTV() noexcept;
-	int createCommandAllocatorAndList() noexcept;
-	int createFence() noexcept;
+	void parseGraphicsConfig() noexcept;
+	void createDebugLayer() noexcept;
+	void createInfoQueue() noexcept;
+	void createFactory() noexcept;
+	void enumerateAdapters() noexcept;
+	void createDevice() noexcept;
+	void createCommandQueue() noexcept;
+	void checkTearingSupport() noexcept;
+	void createSwapChain(const HWND&, const UINT16&, const UINT16&) noexcept;
+	void createRTV() noexcept;
+	void createDSV(const UINT16&, const UINT16&) noexcept;
+	void createCommandAllocatorAndList() noexcept;
+	void createFence() noexcept;
 	
 	// Frame sync
-	UINT64 signalFence(UINT64& fenceValue) noexcept;
-	int waitFence(UINT64) noexcept;
-	int flushGPU(UINT64& fenceValue) noexcept;
+	void signalFence() noexcept;
+	int waitFence() noexcept;
+	int flushGPU() noexcept;
 
-	void endFrame();
-	void flushBackBufferColor(float r, float g, float b) noexcept;
-	int doRender() noexcept;
+	// Data
+	int addVertexBuffer(const DSU::VertexData* data, const UINT size) noexcept;
+	int addIndexBuffer(const WORD* data, const UINT size) noexcept;
+	
+	// Prepare
+	void prepareRenderTargetView(ComPtr<ID3D12Resource2>& pCurrentRenderTargetView) noexcept;
+	void prepareDepthStencilView() noexcept;
+	void setRenderTarget() noexcept;
 
+	void prepareVertexBufferViews(std::vector<D3D12_VERTEX_BUFFER_VIEW>& view) noexcept;
+	void prepareIndexBufferViews(std::vector<D3D12_INDEX_BUFFER_VIEW>& view) noexcept;
+	void prepareConstantBufferViews(ConstantBuffer& cb) noexcept;
+
+	// Render
+	int startFrame() noexcept;
+	int doFrame() noexcept;
+	int endFrame() noexcept;
+
+	// Util
 	int resizeWindow(UINT, UINT) noexcept;
 	int setFullscreen() noexcept;
 

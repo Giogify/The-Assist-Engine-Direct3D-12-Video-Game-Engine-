@@ -70,7 +70,7 @@ private:
 	Position mPos{};
 	Speed mSpeed{};
 
-	VertexBuffer mVB{};
+	//VertexBuffer mVB{};
 
 	ComPtr<ID3D12PipelineState> mpPipelineState{};
 
@@ -85,7 +85,7 @@ public:
 	Object() = default;
 
 	Object(const Object& obj) : mPos(obj.mPos), mSpeed(obj.mSpeed), mObject(obj.mObject),
-	mMaterialData(obj.mMaterialData), mVB(obj.mVB), mpPipelineState(obj.mpPipelineState),
+	mMaterialData(obj.mMaterialData), /*mVB(obj.mVB), */mpPipelineState(obj.mpPipelineState),
 	mPSO(obj.mPSO) {}
 
 	Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data);

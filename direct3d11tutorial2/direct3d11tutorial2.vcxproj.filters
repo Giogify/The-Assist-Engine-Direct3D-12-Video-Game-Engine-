@@ -263,12 +263,21 @@
     <ClInclude Include="RootSignature.h">
       <Filter>Header Files\gfx\bind</Filter>
     </ClInclude>
+    <ClInclude Include="DataStructures.h">
+      <Filter>Header Files\gfx</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">
       <Filter>Header Files\gfx\shaders</Filter>
     </FxCompile>
     <FxCompile Include="PixelShader.hlsl">
+      <Filter>Header Files\gfx\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShaderPassThrough.hlsl">
+      <Filter>Header Files\gfx\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShaderPassThrough.hlsl">
       <Filter>Header Files\gfx\shaders</Filter>
     </FxCompile>
   </ItemGroup>

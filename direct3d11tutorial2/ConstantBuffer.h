@@ -1,89 +1,71 @@
 #pragma once
-#include "GraphicsOutput.h"
+#include "DataStructures.h"
+#include "d3dx12.h"
+#include <d3d12.h>
+#include <wrl.h>
+#include <memory>
 
-template<typename C>
+using namespace Microsoft::WRL;
+namespace DSU = DataStructsUtil;
+namespace DX = DirectX;
+
 class ConstantBuffer {
 
-protected:
+private:
 
-	ComPtr<ID3D12Resource2> mpConstantBuffer{};
+	ComPtr<ID3D12Resource2>			mpDestRes{};
+	ComPtr<ID3D12Resource2>			mpIntermedRes{};
+	ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
+	UINT							mpCBVHeapSize{};
 
 public:
 
-	ConstantBuffer(GraphicsOutput& gfx, const C& constants) {
-
-		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-
-		auto heapDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(C));
-
-		gfx.getDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &heapDesc,
-			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, nullptr, 
-			IID_PPV_ARGS(&mpConstantBuffer));
-
-		std::unique_ptr<UINT8> pConstantBufferStart{};
-
-		CD3DX12_RANGE readRange(0u, 0u);
-
-		mpConstantBuffer->Map(0u, &readRange, (void**)pConstantBufferStart.get());
-		memcpy(pConstantBufferStart.get(), constants, sizeof(C));
-		mpConstantBuffer->Unmap(0u, nullptr);
-
+	ConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DX::XMMATRIX& data) {
+		createDestinationResource(pDevice);
+		createIntermediateResource(pDevice);
+		createDescriptorHeap(pDevice);
+		createConstantBufferView(pDevice, pCommandList, data);
 	}
-
-	ConstantBuffer(GraphicsOutput& gfx) {
-
-		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-
-		auto heapDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(C));
-
-		gfx.getDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &heapDesc,
-			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, nullptr,
-			IID_PPV_ARGS(&mpConstantBuffer));
-
-		std::unique_ptr<UINT8> pConstantBufferStart{};
-
-		CD3DX12_RANGE readRange(0u, 0u);
-
-		//mpConstantBuffer->Map(0u, &readRange, (void**)pConstantBufferStart.get());
-		//memcpy(pConstantBufferStart.get(), nullptr, sizeof(C));
-		//mpConstantBuffer->Unmap(0u, nullptr);
 	
+	void createDestinationResource(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(alignBytes()) };
+		pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 	}
-
-	void update(GraphicsOutput& gfx, const C& constants) {
-		std::unique_ptr<UINT8> pConstantBufferStart{};
-		CD3DX12_RANGE readRange(0u, 0u);
-		mpConstantBuffer->Map(0u, &readRange, (void**)pConstantBufferStart.get());
-		memcpy(pConstantBufferStart.get(), &constants, sizeof(constants));
-		mpConstantBuffer->Unmap(0u, nullptr);
+	void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(alignBytes()) };
+		pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 	}
-
-};
-
-template<typename C>
-class VertexConstantBuffer : public ConstantBuffer<C> {
-
-	using ConstantBuffer<C>::mpConstantBuffer;
-
-public:
-
-	using ConstantBuffer<C>::ConstantBuffer;
-	void bind(GraphicsOutput& gfx) noexcept {
-		//getDeviceContext(gfx)->VSSetConstantBuffers(0u, 1u, m_pConstantBuffer.GetAddressOf());
+	void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		D3D12_DESCRIPTOR_HEAP_DESC cbvhd{};
+		cbvhd.NumDescriptors = 1u;
+		cbvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		cbvhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
+		mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 	}
-
-};
-
-template<typename C>
-class PixelConstantBuffer : public ConstantBuffer<C> {
-
-	using ConstantBuffer<C>::mpConstantBuffer;
-
-public:
-
-	using ConstantBuffer<C>::ConstantBuffer;
-	void bind(GraphicsOutput& gfx) noexcept {
-		//getDeviceContext(gfx)->PSSetConstantBuffers(0u, 1u, m_pConstantBuffer.GetAddressOf());
+	void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DX::XMMATRIX& data) noexcept {
+		D3D12_SUBRESOURCE_DATA srd{}; {
+			srd.pData = &data;
+			srd.RowPitch = alignBytes();
+			srd.SlicePitch = srd.RowPitch;
+		}
+		UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{}; {
+			cbvd.BufferLocation = mpDestRes->GetGPUVirtualAddress();
+			cbvd.SizeInBytes = alignBytes();
+		}
+		pDevice->CreateConstantBufferView(&cbvd, getHandle());
 	}
-
+	
+	ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
+	ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
+	D3D12_CPU_DESCRIPTOR_HANDLE& getHandle() noexcept { 
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hCBV(mpCBVHeap->GetCPUDescriptorHandleForHeapStart());
+		return hCBV;
+	}
+	UINT alignBytes() const noexcept {
+		return (UINT)(sizeof(DX::XMMATRIX) % 256 == 0 ? sizeof(DX::XMMATRIX) : 256 - sizeof(DX::XMMATRIX) % 256 + sizeof(DX::XMMATRIX));
+	}
 };
