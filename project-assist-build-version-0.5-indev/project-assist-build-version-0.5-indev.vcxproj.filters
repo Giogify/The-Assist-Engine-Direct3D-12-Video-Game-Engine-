@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\input">
+      <UniqueIdentifier>{d5187658-4a18-49f3-a2bf-125dd7df5754}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{6eab97cd-89a9-4b8d-a85c-45a9162b160a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gfx">
+      <UniqueIdentifier>{fbee6646-f037-412a-a3d6-b3408a3d5f42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gfx\pipeline">
+      <UniqueIdentifier>{9b8b9503-8bbb-4506-aad6-8a982ab34ed7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\scripts">
+      <UniqueIdentifier>{98449b99-c48b-4de2-8315-0d4d0f41c6a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gfx\util">
+      <UniqueIdentifier>{1b32fa15-cb6a-4cda-b068-445f2e6da87d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\window">
+      <UniqueIdentifier>{7a21b07b-fce3-46e6-9bf4-550d3a4caff4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gfx">
+      <UniqueIdentifier>{c59d49cc-8eec-458d-884b-62020442437c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\input">
+      <UniqueIdentifier>{6cb59691-57f8-4fd1-bd7f-d3881839292c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\obj">
+      <UniqueIdentifier>{4f410522-a0e6-439c-8f38-aac9940b7c8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\obj">
+      <UniqueIdentifier>{d7bf3dfa-0fa3-4b2e-b4fa-5aee736d22e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\config">
+      <UniqueIdentifier>{f1473f04-6d2e-4beb-913c-b8a7fb36304e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\shaders">
+      <UniqueIdentifier>{602f191f-b5dc-45b2-97d2-9f02b9daa3d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gfx\pipeline">
+      <UniqueIdentifier>{dae8d9b8-59b9-47ae-b5dd-adb6111d9923}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\window">
+      <UniqueIdentifier>{b92e5b11-c4fc-40c5-a872-292abb6120df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{e7284896-0ce7-497d-b918-c6a408d96dcb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Keyboard.cpp">
+      <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="Mouse.cpp">
+      <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>Source Files\obj</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Source Files\obj</Filter>
+    </ClCompile>
+    <ClCompile Include="Object.cpp">
+      <Filter>Source Files\obj</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexShader.cpp">
+      <Filter>Source Files\gfx\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="TransformCBuffer.cpp">
+      <Filter>Source Files\gfx\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="PixelShader.cpp">
+      <Filter>Source Files\gfx\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="WinMain.cpp">
+      <Filter>Source Files\window</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>Source Files\window</Filter>
+    </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>Source Files\window</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsOutput.cpp">
+      <Filter>Source Files\gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Keyboard.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="Mouse.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="Inputtable.h">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexShader.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBuffer.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformCBuffer.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="RootSignature.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineStateObject.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexBuffer.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Actor.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Actor_RandomTransform.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Factory.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Info_Actor.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Scene.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Scene_CreateActors.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="PixelShader.h">
+      <Filter>Header Files\gfx\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsOutput.h">
+      <Filter>Header Files\gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="Collections.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomGeo.h">
+      <Filter>Header Files\gfx\util</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialParser.h">
+      <Filter>Header Files\gfx\util</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexedTriangleList.h">
+      <Filter>Header Files\gfx\util</Filter>
+    </ClInclude>
+    <ClInclude Include="Window.h">
+      <Filter>Header Files\window</Filter>
+    </ClInclude>
+    <ClInclude Include="PCWindows.h">
+      <Filter>Header Files\window</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>Header Files\window</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files\obj</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="gfx_config.txt">
+      <Filter>Resource Files\config</Filter>
+    </Text>
+    <Text Include="scene00.txt">
+      <Filter>Resource Files\config</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Resource Files\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShaderPassThrough.hlsl">
+      <Filter>Resource Files\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShader.hlsl">
+      <Filter>Resource Files\shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>

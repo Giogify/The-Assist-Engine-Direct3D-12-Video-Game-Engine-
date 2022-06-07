@@ -19,6 +19,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "ConstantBuffer.h"
+#include "Camera.h"
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -114,6 +115,7 @@ private: // Private Fields
 	RECT											mWindowRc{};
 	HRESULT											mHR{};
 	std::string										mLastType{};
+	Camera											mCamera{};
 	// Benchmarking
 	float											sum{};
 	UINT											runInstances{ 0u };

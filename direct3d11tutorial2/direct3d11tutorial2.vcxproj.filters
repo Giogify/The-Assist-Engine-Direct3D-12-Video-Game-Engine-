@@ -274,9 +274,6 @@
     <FxCompile Include="PixelShader.hlsl">
       <Filter>Header Files\gfx\shaders</Filter>
     </FxCompile>
-    <FxCompile Include="VertexShaderPassThrough.hlsl">
-      <Filter>Header Files\gfx\shaders</Filter>
-    </FxCompile>
     <FxCompile Include="PixelShaderPassThrough.hlsl">
       <Filter>Header Files\gfx\shaders</Filter>
     </FxCompile>
