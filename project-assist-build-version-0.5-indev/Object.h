@@ -14,25 +14,31 @@ private:
 
 	DSU::Position mPos{};
 	DSU::Speed mSpeed{};
+	DSU::VertexConstantBuffer mMatrices{};
 
 	VertexBuffer mVertexBuffer{};
+	//IndexBuffer mIndexBuffer{};
+	VertexConstantBuffer mVCB{};
+	PixelConstantBuffer mPCB{};
 
+	DSU::PipelineStateStream mPSS{};
 	ComPtr<ID3D12PipelineState> mpPipelineState{};
+	
+	ComPtr<ID3DBlob> mpVSBytecode{};
+	ComPtr<ID3DBlob> mpPSBytecode{};
 
-	PipelineStateObject mPSO{};
+	ComPtr<ID3D12RootSignature> mpRootSignature{};
+	ComPtr<ID3DBlob> mpRootSignatureBytecode{};
+	ComPtr<ID3DBlob> mpRootSignatureErrorBytecode{};
 
 	// Object Data
 	IndexedTriangleList::Object mObject{};
+	std::vector<DSU::VertexData> mObjectData{};
 	DSU::MaterialData mMaterialData{};
 
 public:
 
 	Object() = default;
-
-	Object(const Object& obj) : mPos(obj.mPos), mSpeed(obj.mSpeed), mObject(obj.mObject),
-	mMaterialData(obj.mMaterialData), /*mVB(obj.mVB), */mpPipelineState(obj.mpPipelineState),
-	mPSO(obj.mPSO) {}
-
 	Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data);
 
 	void update(float dt) noexcept;
@@ -45,8 +51,5 @@ public:
 
 	DSU::MaterialData& getMaterialData() noexcept { return mMaterialData; }
 
-	int onCommand(GraphicsOutput& gfx) noexcept {
-		
-		return 0;
-	}
+	void draw(GraphicsOutput& gfx) noexcept;
 };

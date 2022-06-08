@@ -7,14 +7,14 @@
 */
 
 // Constant Buffer Structure
-cbuffer constantBuffer : register(b0) {
-
-	matrix transform : packoffset(c0);
-	matrix camera : packoffset(c4);
-	matrix projection : packoffset(c8);
-	matrix inversetranspose : packoffset(c12);
-	
+struct matrices {
+	matrix transform;
+	matrix camera;
+	matrix projection;
+	matrix inversetranspose;
 };
+
+ConstantBuffer<matrices> m : register(b0);
 
 // Input Struct (must be like Input Layout)
 struct VS_INPUT {
@@ -38,11 +38,11 @@ VS_OUTPUT main(VS_INPUT input) {
 	VS_OUTPUT output;
 
 	// Positional coords -> world coords
-	output.pos = mul(projection, mul(camera, mul(transform, float4(input.pos, 1.0f))));
-	output.posWS = mul(transform, float4(input.pos, 1.0f));
+	output.pos = mul(m.projection, mul(m.camera, mul(m.transform, float4(input.pos, 1.0f))));
+	output.posWS = mul(m.transform, float4(input.pos, 1.0f));
 
 	// normalize the object's normals to fix the world transform skew
-	output.normWS = mul((float3x3)inversetranspose, input.norm);
+	output.normWS = mul((float3x3)m.inversetranspose, input.norm);
 	output.tex = input.tex;
 
 	return output;

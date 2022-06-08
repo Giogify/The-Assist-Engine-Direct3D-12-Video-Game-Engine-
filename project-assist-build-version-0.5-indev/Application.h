@@ -22,6 +22,8 @@ private: // Private Fields
 	
 	TransformCBuffer tcb{ mWnd.getGraphicsOutput() };
 
+	Object test{};
+
 	float mMaxFPS{ 0.f };
 	float mFPSCap{ 1000.f };
 

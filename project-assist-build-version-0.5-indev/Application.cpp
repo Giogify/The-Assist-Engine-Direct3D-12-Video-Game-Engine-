@@ -92,6 +92,10 @@ Application::Application() : mWnd(1280, 720, L"Window") {
 	
 	mWnd.getGraphicsOutput().setProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.25f, 5000.0f));
 
+	std::string name{ "testCube" };
+	std::vector<Material> mtl{ MaterialParser::make(name) };
+	test = { mWnd.getGraphicsOutput(), CustomGeo::make(name, mtl).m_objects.at(0) };
+
 	//std::string file{ "scene00" };
 	//mScene = std::make_unique<Scene>(mWnd.getGraphicsOutput(), file);
 	//mScene->getCamera().translate(0.0f, 0.0f, 30.0f);
@@ -180,32 +184,17 @@ int Application::doUpdate() noexcept {
 	unsigned int hr{};
 	hr = mScene->getCamera().update();
 	if (hr == 1) return 1;
-
 	hr = mScene->update();
-	
 	if (hr == 1) return 1;
-	if (hr == 2) {
-		// load new scene
-	}
+	//if (hr == 2) // load new scene
 
 	return 0;
 }
 int Application::doRender() noexcept {
 	Timer timer{};
-
-	/*std::array<DSU::VertexData2D, 3u> vertices{}; {
-		vertices[0] = { DX::XMFLOAT2(-0.5f, -0.5f), DX::XMFLOAT3(0.0f, 0.0f, 0.0f) };
-		vertices[1] = { DX::XMFLOAT2(-0.5f, 0.5f), DX::XMFLOAT3(0.0f, 1.0f, 0.0f) };
-		vertices[2] = { DX::XMFLOAT2(0.5f, 0.5f), DX::XMFLOAT3(1.0f, 1.0f, 0.0f) };
-	}*/
-
-	std::string name{ "testCube" };
-	std::vector<Material> mtl{ MaterialParser::make(name) };
-	Object testObj{ mWnd.getGraphicsOutput(), CustomGeo::make(name, mtl).m_objects.at(0) };
-
-	//mWnd.getGraphicsOutput().addVertexBuffer(vertices.data(), vertices.size());
-	//mWnd.getGraphicsOutput().addIndexBuffer(indices.data(), indices.size());
-	mWnd.getGraphicsOutput().doFrame();
+	mWnd.getGraphicsOutput().startFrame();
+	test.draw(mWnd.getGraphicsOutput());
+	mWnd.getGraphicsOutput().endFrame();
 	std::cout << timer.mark() * 1000.f << " ms\n";
 	//while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
 

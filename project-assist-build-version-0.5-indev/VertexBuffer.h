@@ -53,4 +53,14 @@ public:
 	UINT getCount() const noexcept {
 		return mVBView.SizeInBytes / sizeof(DSU::VertexData);
 	}
+	void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		pCommandList->ResourceBarrier(1u, &barrier);
+	}
+	void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+			D3D12_RESOURCE_STATE_COPY_DEST);
+		pCommandList->ResourceBarrier(1u, &barrier);
+	}
 };

@@ -4,7 +4,7 @@
 /
 /  This header / class file implements the Direct 
 /  3D interfaces to configure a graphics pipeline 
-/  and outputs it to the specified window handler.
+/  and outputs it to the specified window handle.
 /  
 /  Currently supports a basic graphics pipeline 
 /  with input assembly, vertex  and constant 
@@ -19,16 +19,19 @@
 #include "IndexBuffer.h"
 #include "ConstantBuffer.h"
 #include "Camera.h"
+#include "Light.h"
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <wrl.h>
-#include <d3dcompiler.h>
 #include <vector>
-#include <DirectXMath.h>
+#include <array>
 #include <memory>
 #include <iostream>
 #include <thread>
+
+#include <DirectXMath.h>
+#include <d3dcompiler.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl.h>
 
 #pragma comment(lib, "D3DCompiler.lib")
 
@@ -38,19 +41,6 @@ namespace DX = DirectX;
 class GraphicsOutput {
 
 	friend class Application;
-
-public:
-
-	struct PipelineStateStream
-	{
-		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
-		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-		CD3DX12_PIPELINE_STATE_STREAM_VS VS;
-		CD3DX12_PIPELINE_STATE_STREAM_PS PS;
-		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
-		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
-	} mPSS;
 
 private: // Private Fields
 
@@ -81,6 +71,7 @@ private: // Private Fields
 	ComPtr<ID3D12GraphicsCommandList6>				mpCommandList{};
 	ComPtr<ID3D12CommandQueue>						mpCommandQueue{};
 	// Pipeline state
+	DSU::PipelineStateStream						mPSS{};
 	ComPtr<ID3D12PipelineState>						mpPipelineState{};
 	// Root Signature
 	ComPtr<ID3D12RootSignature>						mpRootSignature{};
@@ -115,6 +106,7 @@ private: // Private Fields
 	HRESULT											mHR{};
 	std::string										mLastType{};
 	Camera											mCamera{};
+	std::array<Light::LightData, 8u>				mLights{};
 	// Benchmarking
 	float											sum{};
 	UINT											runInstances{ 0u };
@@ -141,7 +133,8 @@ public: // Public Methods
 	void createDSV(const UINT16&, const UINT16&) noexcept;
 	void createCommandAllocatorAndList() noexcept;
 	void createFence() noexcept;
-	
+	void initializePipeline() noexcept;
+
 	// Frame sync
 	void signalFence() noexcept;
 	int waitFence() noexcept;
@@ -152,22 +145,20 @@ public: // Public Methods
 	int addIndexBuffer(const WORD* data, const UINT size) noexcept;
 	
 	// Prepare
-	void prepareRenderTargetView(ComPtr<ID3D12Resource2>& pCurrentRenderTargetView) noexcept;
-	void prepareDepthStencilView() noexcept;
+	void transitionRTVToWrite() noexcept;
+	void transitionRTVToRead() noexcept;
+	void clearRTV() noexcept;
+	void prepareDSV() noexcept;
 	void setRenderTarget() noexcept;
 
-	void prepareVertexBufferViews(std::vector<D3D12_VERTEX_BUFFER_VIEW>& view) noexcept;
-	void prepareIndexBufferViews(std::vector<D3D12_INDEX_BUFFER_VIEW>& view) noexcept;
-	void prepareConstantBufferViews(ConstantBuffer& cb) noexcept;
-
 	// Render
-	int startFrame() noexcept;
-	int doFrame() noexcept;
-	int endFrame() noexcept;
+	void startFrame() noexcept;
+	void endFrame() noexcept;
 
 	// Util
 	int resizeWindow(UINT, UINT) noexcept;
 	int setFullscreen() noexcept;
+	Camera& getCamera() noexcept { return mCamera; }
 
 	void setProjection(const DirectX::XMMATRIX& projection) noexcept { mProjection = projection; }
 	DX::XMMATRIX& getProjection() noexcept { return mProjection; }

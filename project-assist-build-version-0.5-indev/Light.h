@@ -3,10 +3,11 @@
 class Light {
 
 public:
-
-	static const unsigned char DIRECTIONAL_LIGHT = 0;
-	static const unsigned char POINT_LIGHT = 1;
-	static const unsigned char SPOT_LIGHT = 2;
+	
+	static const UINT8 MAX_LIGHTS = 8;
+	static const UINT8 DIRECTIONAL_LIGHT = 0;
+	static const UINT8 POINT_LIGHT = 1;
+	static const UINT8 SPOT_LIGHT = 2;
 
 	struct LightData {
 		

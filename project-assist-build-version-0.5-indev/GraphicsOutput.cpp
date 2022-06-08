@@ -61,6 +61,9 @@ GraphicsOutput::GraphicsOutput(HWND& hWnd) {
 	thread9.join();
 	std::thread thread11([this] { createRTV(); });
 	thread1.join(); thread5.join(); thread6.join(); thread7.join(); thread8.join(); thread10.join(); thread11.join();
+
+	initializePipeline();
+	flushGPU();
 }
 
 // --Creation Methods--
@@ -250,6 +253,49 @@ void GraphicsOutput::createFence() noexcept {
 	mpDevice->CreateFence(0u, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mpFence));
 	mhFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
+void GraphicsOutput::initializePipeline() noexcept {
+	mpCommandList->RSSetViewports(1u, &mViewport);
+	mpCommandList->RSSetScissorRects(1u, &mScissorRc);
+	D3DReadFileToBlob(L"VertexShader.cso", &mpVSBytecode);
+	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
+	std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
+		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	}
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{}; {
+		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	}
+	D3D12_ROOT_SIGNATURE_FLAGS rsFlags = {
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+		| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS };
+	std::array<CD3DX12_ROOT_PARAMETER1, 1u> rp{}; {
+		rp[0].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+	}
+	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
+		rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
+	}
+	D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpSignatureRootBlob, &mpErrorBlob);
+	mpDevice->CreateRootSignature(0u, mpSignatureRootBlob->GetBufferPointer(), mpSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpRootSignature));
+	D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
+		RTVfarr.NumRenderTargets = 1u;
+		RTVfarr.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	}
+	D3D12_PIPELINE_STATE_STREAM_DESC pssd{}; {
+		mPSS.pRootSignature = mpRootSignature.Get();
+		mPSS.InputLayout = { ied.data(), (UINT)ied.size() };
+		mPSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		mPSS.VS = CD3DX12_SHADER_BYTECODE(mpVSBytecode.Get());
+		mPSS.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
+		mPSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+		mPSS.RTVFormats = RTVfarr;
+		pssd.pPipelineStateSubobjectStream = &mPSS;
+		pssd.SizeInBytes = sizeof(DSU::PipelineStateStream);
+		mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
+	}
+	mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
+}
 
 // --Syncronization Methods--
 void GraphicsOutput::signalFence() noexcept {
@@ -286,14 +332,20 @@ int GraphicsOutput::addIndexBuffer(const WORD* indices, const UINT size) noexcep
 }
 
 // --Prepare Methods--
-void GraphicsOutput::prepareRenderTargetView(ComPtr<ID3D12Resource2>& pCurrentRenderTargetView) noexcept {
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pCurrentRenderTargetView.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+void GraphicsOutput::transitionRTVToRead() noexcept {
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpRenderTargets[mFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mpCommandList->ResourceBarrier(1u, &barrier);
+}
+void GraphicsOutput::transitionRTVToWrite() noexcept {
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpRenderTargets[mFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	mpCommandList->ResourceBarrier(1u, &barrier);
+}
+void GraphicsOutput::clearRTV() noexcept {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
 	auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
 	mpCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
 }
-void GraphicsOutput::prepareDepthStencilView() noexcept {
+void GraphicsOutput::prepareDSV() noexcept {
 	// Depth Stencil View
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
 		dsv.Format = DXGI_FORMAT_D32_FLOAT;
@@ -311,165 +363,16 @@ void GraphicsOutput::setRenderTarget() noexcept {
 	mpCommandList->OMSetRenderTargets(1u, &hRTV, FALSE, &hDSV);
 }
 
-void GraphicsOutput::prepareVertexBufferViews(std::vector<D3D12_VERTEX_BUFFER_VIEW>& view) noexcept {
-	for (int i = 0; i < mVecVertexBuffers.size(); i++) {
-		view.push_back(mVecVertexBuffers.at(i).getView());
-		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mVecVertexBuffers.at(i).getDestinationResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST,
-			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		mpCommandList->ResourceBarrier(1u, &barrier);
-	}
-}
-void GraphicsOutput::prepareIndexBufferViews(std::vector<D3D12_INDEX_BUFFER_VIEW>& view) noexcept {
-	for (int i = 0; i < mVecIndexBuffers.size(); i++) {
-		view.push_back(mVecIndexBuffers.at(i).getView());
-		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mVecIndexBuffers.at(i).getDestinationResource().Get(), D3D12_RESOURCE_STATE_COPY_DEST,
-			D3D12_RESOURCE_STATE_INDEX_BUFFER);
-		mpCommandList->ResourceBarrier(1u, &barrier);
-	}
-}
-void GraphicsOutput::prepareConstantBufferViews(ConstantBuffer& cb) noexcept {
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(cb.getDestRes().Get(), D3D12_RESOURCE_STATE_COPY_DEST, 
-		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-	mpCommandList->ResourceBarrier(1u, &barrier);
-}
-
 // --Render Methods--
-int GraphicsOutput::startFrame() noexcept {
-	// Get the current command allocator and RTV
-	auto& pCurrentCommandAllocator = mpCommandAllocator[mFrameIndex];
-	auto& pCurrentRenderTargetView = mpRenderTargets[mFrameIndex];
-	
-	// Reset the current command allocator and the command list w/ current command allocator
-	//pCurrentCommandAllocator->Reset();
-	//mpCommandList->Reset(pCurrentCommandAllocator.Get(), nullptr);
-
-	return 0;
-}
-int GraphicsOutput::doFrame() noexcept {
-
-	// Obtain a command allocator and render target view based on current frame index
-	auto& pCurrentCommandAllocator = mpCommandAllocator[mFrameIndex];
-	auto& pCurrentRenderTargetView = mpRenderTargets[mFrameIndex];
-
-	//DXGI_QUERY_VIDEO_MEMORY_INFO vmi{};
-	//mpHardwareAdapter->QueryVideoMemoryInfo(0u, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &vmi);
-	//std::cout << vmi.Budget * 0.000001f << ' ' << vmi.CurrentUsage * 0.000001f << ' ' << '\n';
-
-	prepareRenderTargetView(pCurrentRenderTargetView);
-	prepareDepthStencilView();
+void GraphicsOutput::startFrame() noexcept {
+	transitionRTVToWrite();
+	clearRTV();
+	prepareDSV();
 	setRenderTarget();
-
-	// Shaders
-	D3DReadFileToBlob(L"VertexShader.cso", &mpVSBytecode);
-	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
-
-	std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
-		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-		ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-		ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	}
-
-	DX::XMMATRIX transformM{
-		DirectX::XMMatrixRotationRollPitchYaw(timerBenchmark.peek(), timerBenchmark.peek(), timerBenchmark.peek())
-		* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f)
-		* DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f)
-		* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f)
-	};
-	auto InvDeterminant = DirectX::XMMatrixDeterminant(transformM);
-	auto InvM = DirectX::XMMatrixTranspose(transformM);
-	DSU::Matrices m{
-		transformM, 
-		mCamera.getMatrix(), 
-		DX::XMMatrixPerspectiveLH(1.f, 9.0f / 16.0f, 0.25f, 5000.f),
-		DirectX::XMMatrixInverse(&InvDeterminant, InvM)
-	};
-
-	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{}; {
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-	}
-	D3D12_ROOT_SIGNATURE_FLAGS rsFlags = {
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-		| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS };
-	std::array<CD3DX12_ROOT_PARAMETER1, 1u> rp{}; {
-		rp[0].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-	}
-	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
-		rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
-	}
-	D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpSignatureRootBlob, &mpErrorBlob);
-	mpDevice->CreateRootSignature(0u, mpSignatureRootBlob->GetBufferPointer(), mpSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpRootSignature));
-	
-	/*D3D12_DEPTH_STENCILOP_DESC dsod{}; {
-		dsod.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-		dsod.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-		dsod.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-		dsod.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-	}
-	D3D12_DEPTH_STENCIL_DESC dsd{}; {
-		dsd.FrontFace = dsod;
-		dsd.BackFace = dsod;
-		dsd.DepthEnable = TRUE;
-		dsd.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-		dsd.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-		dsd.StencilEnable = TRUE;
-		dsd.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-		dsd.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-	}*/
-	D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
-		RTVfarr.NumRenderTargets = 1u;
-		RTVfarr.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	}
-	D3D12_PIPELINE_STATE_STREAM_DESC pssd{}; {
-		mPSS.pRootSignature = mpRootSignature.Get();
-		mPSS.InputLayout = { ied.data(), (UINT)ied.size() };
-		mPSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		mPSS.VS = CD3DX12_SHADER_BYTECODE(mpVSBytecode.Get());
-		mPSS.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
-		mPSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-		mPSS.RTVFormats = RTVfarr;
-		pssd.pPipelineStateSubobjectStream = &mPSS;
-		pssd.SizeInBytes = sizeof(PipelineStateStream);
-		mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
-	}
 	mpCommandList->SetGraphicsRootSignature(mpRootSignature.Get());
-	mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
 	mpCommandList->SetPipelineState(mpPipelineState.Get());
-
-	// Add resources
-	ConstantBuffer constantBuffer(mpDevice, mpCommandList, m);
-	std::vector<D3D12_VERTEX_BUFFER_VIEW> vbViews{};
-	std::vector<D3D12_INDEX_BUFFER_VIEW> ibViews{};
-	prepareVertexBufferViews(vbViews);
-	prepareIndexBufferViews(ibViews);
-	prepareConstantBufferViews(constantBuffer);
-	mpCommandList->SetGraphicsRootConstantBufferView(0u, constantBuffer.getDestRes()->GetGPUVirtualAddress());
-
-	mpCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	mpCommandList->IASetVertexBuffers(0u, 1u, &vbViews.at(0));
-	mpCommandList->IASetIndexBuffer(&ibViews.at(0));
-	mpCommandList->RSSetViewports(1u, &mViewport);
-	mpCommandList->RSSetScissorRects(1u, &mScissorRc);
-	mpCommandList->DrawIndexedInstanced(mVecIndexBuffers.at(0).getCount(), 1u, 0u, 0u, 0u);
-	//mpCommandList->DrawIndexedInstanced(30u, 1u, 0u, 0u, 0u);
-	
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pCurrentRenderTargetView.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	mpCommandList->ResourceBarrier(1u, &barrier);
-	
-	endFrame();
-
-	// For Benchmarking the render function
-	/*sum += timer.mark() * 1000.f; runInstances++;
-	if (timerBenchmark.peek() >= 30.f) {
-		std::ofstream fileBenchmark{};
-		fileBenchmark.open("benchmark.txt", std::ios::out | std::ios::app);
-		fileBenchmark << sum / runInstances << " ms\n";
-		timerBenchmark.mark();
-	}*/
-
-	return 0;
 }
-int GraphicsOutput::endFrame() noexcept {
+void GraphicsOutput::endFrame() noexcept {
 	//DXGI_PRESENT_PARAMETERS pp = {};
 	//pp.DirtyRectsCount = 0u;
 	//pp.pDirtyRects = 0u;
@@ -491,18 +394,13 @@ int GraphicsOutput::endFrame() noexcept {
 	//	mFenceEvent
 	//);
 	//mpCommandList->OMSetRenderTargets(1u, reinterpret_cast<ID3D11RenderTargetView* const*>(m_pRenderTargetView.GetAddressOf()), m_pDepthStencilView.Get());
-	
-	flushGPU();
 
+	transitionRTVToRead();
+	flushGPU();
 	UINT syncInterval = mVSync ? 1u : 0u;
 	UINT presentFlags = mTearingSupport && !mVSync ? DXGI_PRESENT_ALLOW_TEARING : 0u;
 	mpSwapChain->Present(syncInterval, presentFlags);
 	mFrameIndex = mpSwapChain->GetCurrentBackBufferIndex();
-
-	mVecIndexBuffers.clear();
-	mVecVertexBuffers.clear();
-
-	return 0;
 }
 
 int GraphicsOutput::resizeWindow(UINT width, UINT height) noexcept {
