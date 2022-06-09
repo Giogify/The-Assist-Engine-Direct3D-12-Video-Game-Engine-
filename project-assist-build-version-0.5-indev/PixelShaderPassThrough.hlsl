@@ -1,7 +1,7 @@
-#define MAX_LIGHTS 8
-#define DIRECTIONAL_LIGHT 0
-#define POINT_LIGHT 1
-#define SPOT_LIGHT 2
+//#define MAX_LIGHTS 8
+//#define DIRECTIONAL_LIGHT 0
+//#define POINT_LIGHT 1
+//#define SPOT_LIGHT 2
 
 //struct Material {
 //	float4 emissive; //Ke
@@ -37,6 +37,6 @@ struct PS_INPUT {
 	float3 normWS : TEXCOORD2;
 };
 
-float4 main(PS_INPUT input) : SV_TARGET0 {
-	return float4(0.0f, 1.0f, 1.0f, 1.0f);
+float4 main() : SV_TARGET0 {
+	return float4(0.0f, 1.0f, 0.0f, 1.0f);
 }

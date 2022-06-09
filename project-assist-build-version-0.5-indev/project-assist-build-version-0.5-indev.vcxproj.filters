@@ -84,9 +84,6 @@
     <ClCompile Include="TransformCBuffer.cpp">
       <Filter>Source Files\gfx\pipeline</Filter>
     </ClCompile>
-    <ClCompile Include="PixelShader.cpp">
-      <Filter>Source Files\gfx\pipeline</Filter>
-    </ClCompile>
     <ClCompile Include="WinMain.cpp">
       <Filter>Source Files\window</Filter>
     </ClCompile>
@@ -226,6 +223,9 @@
       <Filter>Resource Files\shaders</Filter>
     </FxCompile>
     <FxCompile Include="PixelShader.hlsl">
+      <Filter>Resource Files\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShaderPassThrough.hlsl">
       <Filter>Resource Files\shaders</Filter>
     </FxCompile>
   </ItemGroup>

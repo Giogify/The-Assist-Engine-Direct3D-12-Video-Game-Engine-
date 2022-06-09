@@ -191,11 +191,9 @@ int Application::doUpdate() noexcept {
 	return 0;
 }
 int Application::doRender() noexcept {
-	Timer timer{};
 	mWnd.getGraphicsOutput().startFrame();
 	test.draw(mWnd.getGraphicsOutput());
 	mWnd.getGraphicsOutput().endFrame();
-	std::cout << timer.mark() * 1000.f << " ms\n";
 	//while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
 
 	return 0;

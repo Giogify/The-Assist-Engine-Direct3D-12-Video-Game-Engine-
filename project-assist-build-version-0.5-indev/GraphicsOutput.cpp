@@ -254,14 +254,14 @@ void GraphicsOutput::createFence() noexcept {
 	mhFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
 void GraphicsOutput::initializePipeline() noexcept {
+	D3DReadFileToBlob(L"VertexShaderPassThrough.cso", &mpVSBytecode);
+	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
 	mpCommandList->RSSetViewports(1u, &mViewport);
 	mpCommandList->RSSetScissorRects(1u, &mScissorRc);
-	D3DReadFileToBlob(L"VertexShader.cso", &mpVSBytecode);
-	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
-	std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
+	std::array<D3D12_INPUT_ELEMENT_DESC, 1u> ied{}; {
 		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-		ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-		ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		//ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		//ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	}
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{}; {
 		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -275,10 +275,10 @@ void GraphicsOutput::initializePipeline() noexcept {
 	}
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
 		rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
+		D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpSignatureRootBlob, &mpErrorBlob);
+		mpDevice->CreateRootSignature(0u, mpSignatureRootBlob->GetBufferPointer(), mpSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpRootSignature));
 	}
-	D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpSignatureRootBlob, &mpErrorBlob);
-	mpDevice->CreateRootSignature(0u, mpSignatureRootBlob->GetBufferPointer(), mpSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpRootSignature));
-	D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
+	/*D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
 		RTVfarr.NumRenderTargets = 1u;
 		RTVfarr.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	}
@@ -293,8 +293,21 @@ void GraphicsOutput::initializePipeline() noexcept {
 		pssd.pPipelineStateSubobjectStream = &mPSS;
 		pssd.SizeInBytes = sizeof(DSU::PipelineStateStream);
 		mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
+	}*/
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpsd{}; {
+		gpsd.pRootSignature = mpRootSignature.Get();
+		gpsd.InputLayout = { ied.data(), (UINT)ied.size() };
+		gpsd.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gpsd.VS = CD3DX12_SHADER_BYTECODE(mpVSBytecode.Get());
+		gpsd.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
+		gpsd.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+		gpsd.NumRenderTargets = 1u;
+		gpsd.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		gpsd.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		gpsd.SampleDesc = { 1u, 0u };
+		mpDevice->CreateGraphicsPipelineState(&gpsd, IID_PPV_ARGS(&mpPipelineState));
 	}
-	mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
 }
 
 // --Syncronization Methods--
@@ -318,16 +331,6 @@ int GraphicsOutput::flushGPU() noexcept {
 	waitFence();
 	mpCommandAllocator[mFrameIndex]->Reset();
 	mpCommandList->Reset(mpCommandAllocator[mFrameIndex].Get(), nullptr);
-	return 0;
-}
-
-// --Data Methods--
-int GraphicsOutput::addVertexBuffer(const DSU::VertexData* vertices, const UINT size) noexcept {
-	mVecVertexBuffers.push_back(*std::make_unique<VertexBuffer>(mpDevice, mpCommandList, vertices, size));
-	return 0;
-}
-int GraphicsOutput::addIndexBuffer(const WORD* indices, const UINT size) noexcept {
-	mVecIndexBuffers.push_back(*std::make_unique<IndexBuffer>(mpDevice, mpCommandList, indices, size));
 	return 0;
 }
 
@@ -416,7 +419,7 @@ int GraphicsOutput::resizeWindow(UINT width, UINT height) noexcept {
 	
 	if (clientWidth != width || clientHeight != height) {
 		clientWidth = max(1u, width); clientHeight = max(1u, height);
-		flushGPU(mFenceValue);
+		flushGPU();
 		for (int i = 0; i < mBackBufferCount; i++) {
 			mpRenderTargets[i].Reset();
 		}

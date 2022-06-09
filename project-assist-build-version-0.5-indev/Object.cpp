@@ -55,25 +55,48 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 		mMaterialData.isTextured = false;
 	}
 
-	mVertexBuffer = { gfx.getDevice(), gfx.getCommandList(), mObjectData.data(), mObjectData.size() };
-
 }
 
 void Object::update(float dt) noexcept {
-
+	
 }
 
 void Object::draw(GraphicsOutput& gfx) noexcept {
 
-	DX::XMMATRIX transformM{ DirectX::XMMatrixRotationRollPitchYaw(mPos.pitch, mPos.yaw, mPos.roll) * DirectX::XMMatrixTranslation(mPos.x, mPos.y, mPos.z)
-		* DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f) * DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f) };
+	std::array<DSU::PositionData, 8u> vertices{}; {
+		vertices[0].pos = DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f);
+		vertices[1].pos = DirectX::XMFLOAT3(-1.0f, 1.0f, -1.0f);
+		vertices[2].pos = DirectX::XMFLOAT3(1.0f, 1.0f, -1.0f);
+		vertices[3].pos = DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f);
+		vertices[4].pos = DirectX::XMFLOAT3(-1.0f, -1.0f, 1.0f);
+		vertices[5].pos = DirectX::XMFLOAT3(-1.0f, 1.0f, 1.0f);
+		vertices[6].pos = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
+		vertices[7].pos = DirectX::XMFLOAT3(1.0f, -1.0f, 1.0f);
+	}
+	std::array<WORD, 36u> indices = {
+		0, 1, 2, 0, 2, 3,
+		4, 6, 5, 4, 7, 6,
+		4, 5, 1, 4, 1, 0,
+		3, 2, 6, 3, 6, 7,
+		1, 5, 6, 1, 6, 2,
+		4, 0, 3, 4, 3, 7
+	};
+
+	mVertexBuffer = { gfx.getDevice(), gfx.getCommandList(), vertices.data(), vertices.size() };
+	mIndexBuffer = { gfx.getDevice(), gfx.getCommandList(), indices.data(), indices.size() };
+
+	DX::XMMATRIX transformM{ 
+		DirectX::XMMatrixRotationRollPitchYaw(mPos.pitch, mPos.yaw, mPos.roll) 
+		* DirectX::XMMatrixTranslation(mPos.x, mPos.y, timer.peek())
+		* DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f) 
+		* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f) };
 	
 	auto pDeterminant = std::make_unique<DirectX::XMVECTOR>(DirectX::XMMatrixDeterminant(transformM));
 
 	mMatrices = { transformM, gfx.getCamera().getMatrix(), DX::XMMatrixPerspectiveLH(1.f, 9.0f / 16.0f, 0.25f, 5000.f), 
 		DirectX::XMMatrixInverse(pDeterminant.get(), DirectX::XMMatrixTranspose(transformM))};
 
-	DSU::PixelConstantBuffer pcbData{};
+	/*DSU::PixelConstantBuffer pcbData{};
 	pcbData.mtl = mMaterialData;
 	pcbData.eyePos = DirectX::XMFLOAT4(gfx.getCamera().mEye.x, gfx.getCamera().mEye.y, gfx.getCamera().mEye.z, 1.0f);
 	pcbData.globalAmbient = { 0.f, 0.f, 0.f, 1.f };
@@ -86,24 +109,26 @@ void Object::draw(GraphicsOutput& gfx) noexcept {
 		light.isEnabled = true;
 		light.type = Light::POINT_LIGHT;
 	}
-	pcbData.lights[0] = light;
+	pcbData.lights[0] = light;*/
 
 	mVCB = { gfx.getDevice(), gfx.getCommandList(), mMatrices };
-	mPCB = { gfx.getDevice(), gfx.getCommandList(), pcbData };
+	//mPCB = { gfx.getDevice(), gfx.getCommandList(), pcbData };
 
-	//std::vector<D3D12_INDEX_BUFFER_VIEW> ibViews{};
 	mVertexBuffer.transitionToRead(gfx.getCommandList());
-	//mIndexBuffer.transitionToRead(gfx.getCommandList());
+	mIndexBuffer.transitionToRead(gfx.getCommandList());
 	mVCB.transitionToRead(gfx.getCommandList());
-	mPCB.transitionToRead(gfx.getCommandList());
+	//mPCB.transitionToRead(gfx.getCommandList());
 	gfx.getCommandList()->SetGraphicsRootConstantBufferView(0u, mVCB.getDestRes()->GetGPUVirtualAddress());
-
 	gfx.getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gfx.getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
-	//gfx.getCommandList()->IASetIndexBuffer(&ibViews.at(0));
-	gfx.getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
-
+	gfx.getCommandList()->IASetIndexBuffer(&mIndexBuffer.getView());
+	gfx.getCommandList()->DrawIndexedInstanced(mIndexBuffer.getCount(), 1u, 0u, 0u, 0u);
 	//mConstantBuffer = { gfx.getDevice(), gfx.getCommandList(), mMaterialData };
+
+	mVertexBuffer.transitionToWrite(gfx.getCommandList());
+	mIndexBuffer.transitionToWrite(gfx.getCommandList());
+	mVCB.transitionToWrite(gfx.getCommandList());
+	//mPCB.transitionToRead(gfx.getCommandList());
 }
 
 DirectX::XMMATRIX Object::getTransformXM() const noexcept {

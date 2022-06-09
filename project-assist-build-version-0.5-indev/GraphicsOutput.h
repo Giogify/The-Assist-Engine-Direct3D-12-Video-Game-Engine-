@@ -139,10 +139,6 @@ public: // Public Methods
 	void signalFence() noexcept;
 	int waitFence() noexcept;
 	int flushGPU() noexcept;
-
-	// Data
-	int addVertexBuffer(const DSU::VertexData* data, const UINT size) noexcept;
-	int addIndexBuffer(const WORD* data, const UINT size) noexcept;
 	
 	// Prepare
 	void transitionRTVToWrite() noexcept;
