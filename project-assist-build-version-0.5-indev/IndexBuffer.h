@@ -27,11 +27,13 @@ public:
 		CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 		CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof(WORD)) };
 		pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
+		mpDestRes->SetName(L"[ID3D12Resource] [Destination Resource - IndexBuffer]");
 	}
 	void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const UINT& size) noexcept {
 		CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 		CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof(WORD)) };
 		pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
+		mpIntermedRes->SetName(L"[ID3D12Resource] [Intermediate Resource - IndexBuffer]");
 	}
 	void createIndexBufferView(ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const WORD* indices, const UINT& size) noexcept {
 		D3D12_SUBRESOURCE_DATA srd{};

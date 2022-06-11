@@ -1,13 +1,16 @@
 #include "Application.h"
 #include <iostream>
 
+#include <filesystem>
+#include <shlobj.h>
+
 int WINAPI wWinMain(
      HINSTANCE hInstance,
      HINSTANCE hPrevInstance,
      LPWSTR    lpCmdLine,
      int       nCmdShow
 ) {
-
+    
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
     #if defined(_DEBUG)

@@ -41,7 +41,7 @@ GraphicsOutput::GraphicsOutput(HWND& hWnd) {
 	mViewport = { CD3DX12_VIEWPORT(0.0f, 0.0f, (FLOAT)width, (FLOAT)height) };
 	mScissorRc = { CD3DX12_RECT(0u, 0u, LONG_MAX, LONG_MAX) };
 
-	mCamera.translate(5.0f, 5.0f, 5.0f);
+	mCamera.translate(3.0f, 3.0f, 3.0f);
 
 	std::thread thread0([this] { createFactory(); });
 	std::thread thread1([this] { createDebugLayer(); });
@@ -119,6 +119,7 @@ void GraphicsOutput::createDebugLayer() noexcept {
 	if (mDebug) {
 		D3D12GetDebugInterface(IID_PPV_ARGS(&mpDebugController));
 		mpDebugController->EnableDebugLayer();
+		mpDebugController->SetEnableAutoName(TRUE);
 	}
 }
 void GraphicsOutput::createInfoQueue() noexcept {
@@ -151,6 +152,7 @@ void GraphicsOutput::createDevice() noexcept {
 	// Create the Device
 	if (mUseWARPAdapter) D3D12CreateDevice(mpWARPAdapter.Get(), mFeatureLevel, IID_PPV_ARGS(&mpDevice)); // WARP
 	else D3D12CreateDevice(mpHardwareAdapter.Get(), mFeatureLevel, IID_PPV_ARGS(&mpDevice)); // Hardware
+	mpDevice->SetName(L"[Core] [ID3D12Device9] Member of GraphicsOutput");
 }
 void GraphicsOutput::createCommandQueue() noexcept {
 	// Create the command queue
@@ -159,6 +161,7 @@ void GraphicsOutput::createCommandQueue() noexcept {
 	cqd.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	cqd.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	mpDevice->CreateCommandQueue1(&cqd, __uuidof(ID3D12Device9), IID_PPV_ARGS(&mpCommandQueue));
+	mpCommandQueue->SetName(L"[Command] [ID3D12CommandQueue] Member of GraphicsOutput");
 }
 void GraphicsOutput::checkTearingSupport() noexcept {
 	mpFactory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &mTearingSupport, sizeof(mTearingSupport));
@@ -208,12 +211,16 @@ void GraphicsOutput::createRTV() noexcept {
 	}
 	mpDevice->CreateDescriptorHeap(&RTVHeapDesc, IID_PPV_ARGS(&mpRTVHeap));
 	mRTVHeapSize = mpDevice->GetDescriptorHandleIncrementSize(RTVHeapDesc.Type);
+	mpRTVHeap->SetName(L"[RTV] [ID3D12DescriptorHeap] Member of GraphicsOutput");
 	// Create frame resources
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart());
 	for (UINT i = 0u; i < mBackBufferCount; i++) {
 		mpRenderTargets.push_back(*std::make_unique<ComPtr<ID3D12Resource2>>());
 		mpSwapChain->GetBuffer(i, IID_PPV_ARGS(&mpRenderTargets.at(i)));
 		mpDevice->CreateRenderTargetView(mpRenderTargets[i].Get(), nullptr, hRTV);
+		std::wstringstream woss{};
+		woss << "[RTV] [ID3D12Resource2] [Render Target View #" << i + 1 << "]";
+		mpRenderTargets[i]->SetName(woss.str().c_str());
 		hRTV.Offset(1u, mRTVHeapSize);
 	}
 
@@ -237,29 +244,34 @@ void GraphicsOutput::createDSV(const UINT16& width, const UINT16& height) noexce
 	DSTexHeapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	mHR = mpDevice->CreateCommittedResource(&DSTexHeapProperties, D3D12_HEAP_FLAG_NONE, &DSTexHeapDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &dscv,
 		IID_PPV_ARGS(&mpDepthStencilTexture));
+	mpDepthStencilTexture->SetName(L"[DSV] [ID3D12Resource2] [DepthStencilTexture]");
 }
 void GraphicsOutput::createCommandAllocatorAndList() noexcept {
 	// Setup Graphics Commands
 	for (int i = 0; i < mBackBufferCount; i++) {
 		mpCommandAllocator.push_back(*std::make_unique<ComPtr<ID3D12CommandAllocator>>());
 		mpDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mpCommandAllocator[i]));
+		std::wstringstream woss{};
+		woss << "[Command] [ID3D12CommandAllocator] [Command Allocator #" << i + 1 << "]";
+		mpCommandAllocator[i]->SetName(woss.str().c_str());
 	}
 	mpDevice->CreateCommandList1(0u, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mpCommandList));
+	mpCommandList->SetName(L"[Command] [ID3D12GraphicsCommandList6] [Command List]");
+
 	mpCommandAllocator[0]->Reset();
 	mpCommandList->Reset(mpCommandAllocator[0].Get(), nullptr);
 }
 void GraphicsOutput::createFence() noexcept {
 	// Create the Fence for synchronization
 	mpDevice->CreateFence(0u, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mpFence));
+	mpFence->SetName(L"[Sync] [ID3D12Fence1] [Fence]");
 	mhFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
 void GraphicsOutput::initializePipeline() noexcept {
 	D3DReadFileToBlob(L"VertexShaderPassThrough.cso", &mpVSBytecode);
 	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
-	mpCommandList->RSSetViewports(1u, &mViewport);
-	mpCommandList->RSSetScissorRects(1u, &mScissorRc);
 	std::array<D3D12_INPUT_ELEMENT_DESC, 1u> ied{}; {
-		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 		//ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 		//ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	}
@@ -277,8 +289,9 @@ void GraphicsOutput::initializePipeline() noexcept {
 		rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
 		D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpSignatureRootBlob, &mpErrorBlob);
 		mpDevice->CreateRootSignature(0u, mpSignatureRootBlob->GetBufferPointer(), mpSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpRootSignature));
+		mpRootSignature->SetName(L"[Shaders] [Root Signature]");
 	}
-	/*D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
+	D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
 		RTVfarr.NumRenderTargets = 1u;
 		RTVfarr.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	}
@@ -293,20 +306,14 @@ void GraphicsOutput::initializePipeline() noexcept {
 		pssd.pPipelineStateSubobjectStream = &mPSS;
 		pssd.SizeInBytes = sizeof(DSU::PipelineStateStream);
 		mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
-	}*/
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpsd{}; {
-		gpsd.pRootSignature = mpRootSignature.Get();
-		gpsd.InputLayout = { ied.data(), (UINT)ied.size() };
-		gpsd.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		gpsd.VS = CD3DX12_SHADER_BYTECODE(mpVSBytecode.Get());
-		gpsd.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
-		gpsd.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-		gpsd.NumRenderTargets = 1u;
-		gpsd.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-		gpsd.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-		gpsd.SampleDesc = { 1u, 0u };
-		mpDevice->CreateGraphicsPipelineState(&gpsd, IID_PPV_ARGS(&mpPipelineState));
+	}
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
+		dsv.Format = DXGI_FORMAT_D32_FLOAT;
+		dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		dsv.Texture2D.MipSlice = 0u;
+		dsv.Flags = D3D12_DSV_FLAG_NONE;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE hDSV(mpDSVHeap->GetCPUDescriptorHandleForHeapStart());
+		mpDevice->CreateDepthStencilView(mpDepthStencilTexture.Get(), &dsv, hDSV);
 	}
 }
 
@@ -345,19 +352,12 @@ void GraphicsOutput::transitionRTVToWrite() noexcept {
 }
 void GraphicsOutput::clearRTV() noexcept {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
-	auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
+	//auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
+	auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
 	mpCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
 }
-void GraphicsOutput::prepareDSV() noexcept {
-	// Depth Stencil View
-	D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
-		dsv.Format = DXGI_FORMAT_D32_FLOAT;
-		dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		dsv.Texture2D.MipSlice = 0u;
-		dsv.Flags = D3D12_DSV_FLAG_NONE;
-	}
+void GraphicsOutput::clearDSV() noexcept {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDSV(mpDSVHeap->GetCPUDescriptorHandleForHeapStart());
-	mpDevice->CreateDepthStencilView(mpDepthStencilTexture.Get(), &dsv, hDSV);
 	mpCommandList->ClearDepthStencilView(hDSV, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0u, 0u, nullptr);
 }
 void GraphicsOutput::setRenderTarget() noexcept {
@@ -370,10 +370,59 @@ void GraphicsOutput::setRenderTarget() noexcept {
 void GraphicsOutput::startFrame() noexcept {
 	transitionRTVToWrite();
 	clearRTV();
-	prepareDSV();
+	clearDSV();
 	setRenderTarget();
 	mpCommandList->SetGraphicsRootSignature(mpRootSignature.Get());
 	mpCommandList->SetPipelineState(mpPipelineState.Get());
+	mpCommandList->RSSetViewports(1u, &mViewport);
+	mpCommandList->RSSetScissorRects(1u, &mScissorRc);
+}
+void GraphicsOutput::doFrame() noexcept {
+
+	//const std::array<DSU::PositionData, 8u> vertices{
+	//	DX::XMFLOAT3(-1.0f, -1.0f, -1.0f),
+	//	DX::XMFLOAT3(-1.0f, 1.0f, -1.0f),
+	//	DX::XMFLOAT3(1.0f, 1.0f, -1.0f),
+	//	DX::XMFLOAT3(1.0f, -1.0f, -1.0f),
+	//	DX::XMFLOAT3(-1.0f, -1.0f, 1.0f),
+	//	DX::XMFLOAT3(-1.0f, 1.0f, 1.0f),
+	//	DX::XMFLOAT3(1.0f, 1.0f, 1.0f),
+	//	DX::XMFLOAT3(1.0f, -1.0f, 1.0f),
+	//};
+	//const std::array<WORD, 36u> indices{
+	//	0, 1, 2, 0, 2, 3,
+	//	4, 6, 5, 4, 7, 6,
+	//	4, 5, 1, 4, 1, 0,
+	//	3, 2, 6, 3, 6, 7,
+	//	1, 5, 6, 1, 6, 2,
+	//	4, 0, 3, 4, 3, 7
+	//};
+
+	//DX::XMMATRIX transformM{
+	//	DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f)
+	//	* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f)
+	//	* DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f)
+	//	* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f)
+	//};
+	//auto InvDeterminant = DirectX::XMMatrixDeterminant(transformM);
+	//auto InvM = DirectX::XMMatrixTranspose(transformM);
+	//DSU::VertexConstantBuffer mx{ transformM, mCamera.getMatrix(), DX::XMMatrixPerspectiveLH(1.f, 9.0f / 16.0f, 0.25f, 5000.f), 
+	//	DirectX::XMMatrixInverse(&InvDeterminant, InvM) };
+
+	//// Add resources
+	//VertexBuffer vb(mpDevice, mpCommandList, vertices.data(), vertices.size());
+	//IndexBuffer ib(mpDevice, mpCommandList, indices.data(), indices.size());
+	//VertexConstantBuffer vcb(mpDevice, mpCommandList, mx);
+	//vb.transitionToRead(mpCommandList);
+	//ib.transitionToRead(mpCommandList);
+	//vcb.transitionToRead(mpCommandList);
+	//mpCommandList->SetGraphicsRootConstantBufferView(0u, vcb.getDestRes()->GetGPUVirtualAddress());
+
+	//mpCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//mpCommandList->IASetVertexBuffers(0u, 1u, &vb.getView());
+	//mpCommandList->IASetIndexBuffer(&ib.getView());
+	//mpCommandList->DrawIndexedInstanced(ib.getCount(), 1u, 0u, 0u, 0u);
+	//endFrame();
 }
 void GraphicsOutput::endFrame() noexcept {
 	//DXGI_PRESENT_PARAMETERS pp = {};
@@ -397,7 +446,6 @@ void GraphicsOutput::endFrame() noexcept {
 	//	mFenceEvent
 	//);
 	//mpCommandList->OMSetRenderTargets(1u, reinterpret_cast<ID3D11RenderTargetView* const*>(m_pRenderTargetView.GetAddressOf()), m_pDepthStencilView.Get());
-
 	transitionRTVToRead();
 	flushGPU();
 	UINT syncInterval = mVSync ? 1u : 0u;

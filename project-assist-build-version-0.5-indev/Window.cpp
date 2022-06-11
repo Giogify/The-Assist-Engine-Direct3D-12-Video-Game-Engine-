@@ -24,7 +24,7 @@ Window::WindowClass::WindowClass() noexcept : hInst(GetModuleHandle(nullptr)) {
     wcex.hIconSm = nullptr;
 
     // Register Window
-    RegisterClassExW(&wcex);
+    RegisterClassEx(&wcex);
 }
 Window::WindowClass::~WindowClass() { UnregisterClass(wndClassName, GetInstance()); }
 const TCHAR* Window::WindowClass::GetName() noexcept { return wndClassName; }
@@ -50,6 +50,8 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
 
         // Close Window
     case WM_CLOSE:
+        pGraphicsOutput->flushGPU();
+        CloseHandle(pGraphicsOutput->mhFenceEvent);
         PostQuitMessage(0);
         return 0;
     
@@ -65,23 +67,23 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
         // When System Key is Pressed
     case WM_SYSKEYDOWN:
         if (!(lParam & 0x40000000) || kb.IsAutoRepeatEnabled()) {
-            kb.OnKeyPressed(static_cast<unsigned char>(wParam));
+            kb.OnKeyPressed((unsigned char)wParam);
         }
         break;
     
         // When Key is Released
     case WM_KEYUP:
-        kb.OnKeyReleased(static_cast<unsigned char>(wParam));
+        kb.OnKeyReleased((unsigned char)wParam);
         break;
     
         // When System Key is Released
     case WM_SYSKEYUP:
-        kb.OnKeyReleased(static_cast<unsigned char>(wParam));
+        kb.OnKeyReleased((unsigned char)wParam);
         break;
 
         // The Value of the Pressed Key
     case WM_CHAR:
-        kb.OnChar(static_cast<unsigned char>(wParam));
+        kb.OnChar((unsigned char)wParam);
         break;
 
     // ---- MOUSE MESSAGES ---- //

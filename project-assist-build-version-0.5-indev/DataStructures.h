@@ -82,4 +82,8 @@ namespace DataStructsUtil {
 		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
 	};
+	struct ObjectDrawStaticMatrices {
+		DirectX::XMMATRIX camera;
+		DirectX::XMMATRIX projection;
+	};
 }

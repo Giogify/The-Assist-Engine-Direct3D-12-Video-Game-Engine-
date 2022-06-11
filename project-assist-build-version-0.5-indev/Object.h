@@ -14,7 +14,6 @@ private:
 
 	DSU::Position mPos{};
 	DSU::Speed mSpeed{};
-	DSU::VertexConstantBuffer mMatrices{};
 
 	VertexBuffer mVertexBuffer{};
 	IndexBuffer mIndexBuffer{};

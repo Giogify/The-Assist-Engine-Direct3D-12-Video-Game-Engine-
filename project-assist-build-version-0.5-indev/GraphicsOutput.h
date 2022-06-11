@@ -41,6 +41,7 @@ namespace DX = DirectX;
 class GraphicsOutput {
 
 	friend class Application;
+	friend class Window;
 
 private: // Private Fields
 
@@ -87,9 +88,6 @@ private: // Private Fields
 	ComPtr<ID3D12Resource2>							mpDepthStencilTexture{};
 	ComPtr<ID3D12DescriptorHeap>					mpDSVHeap{};
 	UINT											mDSVHeapSize{};
-	// Application Data
-	std::vector<VertexBuffer>						mVecVertexBuffers{};
-	std::vector<IndexBuffer>						mVecIndexBuffers{};
 	// Fence
 	ComPtr<ID3D12Fence1>							mpFence{};
 	HANDLE											mhFenceEvent{};
@@ -107,10 +105,6 @@ private: // Private Fields
 	std::string										mLastType{};
 	Camera											mCamera{};
 	std::array<Light::LightData, 8u>				mLights{};
-	// Benchmarking
-	float											sum{};
-	UINT											runInstances{ 0u };
-	Timer											timerBenchmark{};
 
 public: // Public Methods
 
@@ -144,11 +138,12 @@ public: // Public Methods
 	void transitionRTVToWrite() noexcept;
 	void transitionRTVToRead() noexcept;
 	void clearRTV() noexcept;
-	void prepareDSV() noexcept;
+	void clearDSV() noexcept;
 	void setRenderTarget() noexcept;
 
 	// Render
 	void startFrame() noexcept;
+	void doFrame() noexcept;
 	void endFrame() noexcept;
 
 	// Util
@@ -163,36 +158,36 @@ public: // Public Methods
 
 	void doDebug(HRESULT& hr, const char* type, const char* element, const char* verb) {
 		if (hr == S_OK) {
-			std::cout << '[' << type << "] " << element << ' ' << verb << " Sucessfully!\n";
+			std::cout << '[' << type << "] " << element << ' ' << verb << " Successfully!\n";
 		}
 		else {
-			std::cout << '[' << type << "] " << element << ' ' << verb << " Unsucessfully!" << " [ERROR CODE] " << hr << '\n';
+			std::cout << '[' << type << "] " << element << ' ' << verb << " Unsuccessfully!" << " [ERROR CODE] " << hr << '\n';
 		}
 		mLastType = type;
 	}
 	void doDebug(HRESULT& hr, const char* element, const char* verb) {
 		if (hr == S_OK) {
-			std::cout << '[' << mLastType << "] " << element << ' ' << verb << " Sucessfully!\n";
+			std::cout << '[' << mLastType << "] " << element << ' ' << verb << " Successfully!\n";
 		}
 		else {
-			std::cout << '[' << mLastType << "] " << element << ' ' << verb << " Unsucessfully!" << " [ERROR CODE] " << hr << '\n';
+			std::cout << '[' << mLastType << "] " << element << ' ' << verb << " Unsuccessfully!" << " [ERROR CODE] " << hr << '\n';
 		}
 	}
 	void doDebug(HRESULT& hr, const char* type, const char* element, const char* verb, int amount) {
 		if (hr == S_OK) {
-			std::cout << '[' << type << "] " << element << " #" << amount << ' ' << verb << " Sucessfully!\n";
+			std::cout << '[' << type << "] " << element << " #" << amount << ' ' << verb << " Successfully!\n";
 		}
 		else {
-			std::cout << '[' << type << "] " << element << " #" << amount << ' ' << verb << " Unsucessfully!" << " [ERROR CODE] " << hr << '\n';
+			std::cout << '[' << type << "] " << element << " #" << amount << ' ' << verb << " Unsuccessfully!" << " [ERROR CODE] " << hr << '\n';
 		}
 		mLastType = type;
 	}
 	void doDebug(HRESULT& hr, const char* element, const char* verb, int amount) {
 		if (hr == S_OK) {
-			std::cout << '[' << mLastType << "] " << element << " #" << amount << ' ' << verb << " Sucessfully!\n";
+			std::cout << '[' << mLastType << "] " << element << " #" << amount << ' ' << verb << " Successfully!\n";
 		}
 		else {
-			std::cout << '[' << mLastType << "] " << element << " #" << amount << ' ' << verb << " Unsucessfully!" << " [ERROR CODE] " << hr << '\n';
+			std::cout << '[' << mLastType << "] " << element << " #" << amount << ' ' << verb << " Unsuccessfully!" << " [ERROR CODE] " << hr << '\n';
 		}
 	}
 	

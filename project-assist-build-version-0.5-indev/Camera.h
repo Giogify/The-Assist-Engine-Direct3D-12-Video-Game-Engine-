@@ -15,7 +15,7 @@ class Camera {
 private:
 
 	DirectX::XMVECTOR X_ROTATION_AXIS = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f);
-	DirectX::XMVECTOR Y_ROTATION_AXIS = DirectX::XMVectorSet(0.0f, std::sin(DirectX::XMConvertToRadians(45.f)), std::cos(DirectX::XMConvertToRadians(45.f)), 1.0f);
+	DirectX::XMVECTOR Y_ROTATION_AXIS = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
 	DirectX::XMVECTOR Z_ROTATION_AXIS = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
 
 public:

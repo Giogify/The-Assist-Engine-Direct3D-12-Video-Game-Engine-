@@ -30,13 +30,13 @@
 //	float4 globalAmbient : packoffset(c6);
 //	Light lights[MAX_LIGHTS] : packoffset(c7);
 //}
-
-struct PS_INPUT {
-	float2 tex : TEXCOORD0;
-	float4 posWS : TEXCOORD1;
-	float3 normWS : TEXCOORD2;
-};
+//
+//struct PS_INPUT {
+//	float2 tex : TEXCOORD0;
+//	float4 posWS : TEXCOORD1;
+//	float3 normWS : TEXCOORD2;
+//};
 
 float4 main() : SV_TARGET0 {
-	return float4(0.0f, 1.0f, 0.0f, 1.0f);
+	return float4(0.0f, 1.0f, 1.0f, 1.0f);
 }

@@ -27,6 +27,11 @@ private: // Private Fields
 	float mMaxFPS{ 0.f };
 	float mFPSCap{ 1000.f };
 
+	// Benchmarking
+	float sum{};
+	UINT runInstances{ 0u };
+	Timer timerBenchmark{};
+
 private: // Private Methods
 
 	// Application Logic

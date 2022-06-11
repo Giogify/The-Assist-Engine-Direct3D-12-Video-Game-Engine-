@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iomanip>
 #include <array>
+#include <fstream>
 #include <dxgidebug.h>
 
 namespace DSU = DataStructsUtil;
@@ -17,20 +18,23 @@ namespace DSU = DataStructsUtil;
 // Top-Level Application Logic
 int Application::applicationUpdate() {
 
-	if (mTimer.peek() * 1000.f >= 500.f) {
-		mDebugEnoughTimeElapsed = true;
-		mTimer.mark();
-	}
-
-	Timer timer{};
 	if (doInput() != 0) return 1;
-	//if (mDebugEnoughTimeElapsed) std::cout << "[Input]  " << timer.mark() * 1000.f << " ms" << '\n';
 	//if (doUpdate() != 0) return 1;
-	//if (mDebugEnoughTimeElapsed) std::cout << "[Update] " << timer.mark() * 1000.f << " ms" << '\n';
 	if (doRender() != 0) return 1;
-	//if (mDebugEnoughTimeElapsed) std::cout << "[Render] " << timer.mark() * 1000.f << " ms" << '\n';
 
-	mDebugEnoughTimeElapsed = false;
+	// For benchmarking the render function
+	/*{
+		timerBenchmark.mark();
+		if (doRender() != 0) return 1;
+		sum += timerBenchmark.mark() * 1000.f;
+		runInstances++;
+		if (mTimerStart.peek() >= 30.f) {
+			std::ofstream file("benchmark.txt", std::ios::out | std::ios::app);
+			file << "[Render Time] " << sum / runInstances << " ms\n";
+			file.close();
+			return 1;
+		}
+	}*/
 
 	bool wndTitleDebug{ true };
 	// Create Debug Information
@@ -91,7 +95,7 @@ Application::~Application() {}
 Application::Application() : mWnd(1280, 720, L"Window") {
 	
 	mWnd.getGraphicsOutput().setProjection(DirectX::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.25f, 5000.0f));
-
+	
 	std::string name{ "testCube" };
 	std::vector<Material> mtl{ MaterialParser::make(name) };
 	test = { mWnd.getGraphicsOutput(), CustomGeo::make(name, mtl).m_objects.at(0) };
@@ -103,21 +107,26 @@ Application::Application() : mWnd(1280, 720, L"Window") {
 int Application::applicationStart() {
 	while (true) {
 		if (const auto msgCode = Window::handleMessages()) return *msgCode;
-		if (applicationUpdate() != 0) return 0;
+		if (applicationUpdate() != 0) {
+			mWnd.getGraphicsOutput().flushGPU();
+			CloseHandle(mWnd.getGraphicsOutput().mhFenceEvent);
+			return 0;
+		}
 	}
 }
 
 int Application::doPriorityInput(const Keyboard& kb, const std::vector<Keyboard::Event>& keys, const std::vector<unsigned char>& keysChar, const Mouse& mouse,
 	const std::vector<Mouse::Event>& mouseEvents) noexcept {
-	if (kb.KeyIsPressed(VK_ESCAPE)) {
-		mWnd.getGraphicsOutput().flushGPU();
-		CloseHandle(mWnd.getGraphicsOutput().mhFenceEvent);
-		return 1;
-	}
-	for (auto& key : keysChar) if (key == 'v') mWnd.getGraphicsOutput().mVSync = !mWnd.getGraphicsOutput().mVSync; // VK_OEM_4 is '['
+	if (kb.KeyIsPressed(VK_ESCAPE)) return 1;
+	
+	for (auto& key : keysChar) if (key == 'v') mWnd.getGraphicsOutput().mVSync = !mWnd.getGraphicsOutput().mVSync;
+	
 	if (kb.KeyIsPressed(VK_RETURN) && kb.KeyIsPressed(VK_MENU)) mWnd.getGraphicsOutput().setFullscreen();
+	
 	for (auto& key : keysChar) if (key == '[') mFPSCap -= 1.0f; // VK_OEM_4 is '['
+	for (auto& key : keysChar) if (key == '{') mFPSCap -= 10.0f; // VK_OEM_4 is '['
 	for (auto& key : keysChar) if (key == ']') mFPSCap += 1.0f; // VK_OEM_6 is ']'
+	for (auto& key : keysChar) if (key == '}') mFPSCap += 10.0f; // VK_OEM_6 is ']'
 
 	return 0;
 }
@@ -193,6 +202,7 @@ int Application::doUpdate() noexcept {
 int Application::doRender() noexcept {
 	mWnd.getGraphicsOutput().startFrame();
 	test.draw(mWnd.getGraphicsOutput());
+	//mWnd.getGraphicsOutput().doFrame();
 	mWnd.getGraphicsOutput().endFrame();
 	//while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
 
