@@ -2,9 +2,6 @@
 #include "Material.h"
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <DirectXMath.h>
-#include <vector>
 
 class MaterialParser {
 

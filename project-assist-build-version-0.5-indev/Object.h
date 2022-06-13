@@ -1,10 +1,11 @@
 #pragma once
-#include "VertexBuffer.h"
-#include "VertexShader.h"
-#include "PixelShader.h"
+#include "GraphicsOutput.h"
 #include "IndexedTriangleList.h"
-#include "PipelineStateObject.h"
+#include "VertexBuffer.h"
+#include "ConstantBuffer.h"
 #include "DataStructures.h"
+#include "Timer.h"
+#include <DirectXMath.h>
 
 class Object {
 
@@ -16,7 +17,6 @@ private:
 	DSU::Speed mSpeed{};
 
 	VertexBuffer mVertexBuffer{};
-	IndexBuffer mIndexBuffer{};
 	VertexConstantBuffer mVCB{};
 	//PixelConstantBuffer mPCB{};
 
@@ -31,16 +31,11 @@ public:
 
 	Object() = default;
 	Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data);
-
-	void update(float dt) noexcept;
-
-	DirectX::XMMATRIX getTransformXM() const noexcept;
-
+	
 	DSU::Position& getPos() noexcept { return mPos; }
-
 	DSU::Speed& getSpeed() noexcept { return mSpeed; }
-
 	DSU::MaterialData& getMaterialData() noexcept { return mMaterialData; }
-
+	
+	void update() noexcept;
 	void draw(GraphicsOutput& gfx) noexcept;
 };

@@ -2,7 +2,6 @@
 #include "Window.h"
 #include "Timer.h"
 #include "Actor.h"
-#include "TransformCBuffer.h"
 #include "Scene.h"
 
 class Application {
@@ -19,13 +18,12 @@ private: // Private Fields
 
 	bool mIsCameraModeEnabled{ false };
 	bool mDebugEnoughTimeElapsed{ false };
-	
-	TransformCBuffer tcb{ mWnd.getGraphicsOutput() };
 
-	Object test{};
+	std::vector<Actor> mVecActors{};
 
-	float mMaxFPS{ 0.f };
-	float mFPSCap{ 1000.f };
+	float mMaxFPS{ 0.0f };
+	float mFPSCap{ 60.0f };
+	float viewingAngle{ 70.0f };
 
 	// Benchmarking
 	float sum{};

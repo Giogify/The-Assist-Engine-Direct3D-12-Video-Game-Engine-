@@ -134,22 +134,7 @@
     <ClInclude Include="IndexBuffer.h">
       <Filter>Header Files\gfx\pipeline</Filter>
     </ClInclude>
-    <ClInclude Include="Script_Actor.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
     <ClInclude Include="Script_Actor_RandomTransform.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Script_Factory.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Script_Info_Actor.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Script_Scene.h">
-      <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Script_Scene_CreateActors.h">
       <Filter>Header Files\scripts</Filter>
     </ClInclude>
     <ClInclude Include="PixelShader.h">
@@ -205,6 +190,15 @@
     </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>Header Files\obj</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_Camera_Follow.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_BasicActorMove.h">
+      <Filter>Header Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Script_BasicGravity.h">
+      <Filter>Header Files\scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

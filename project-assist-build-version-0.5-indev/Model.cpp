@@ -2,14 +2,17 @@
 #include "CustomGeo.h"
 #include "Collections.h"
 #include "MaterialParser.h"
+#include "GraphicsOutput.h"
 
 Model::Model(GraphicsOutput& gfx, std::string& objPath) {
 	namespace dx = DirectX;
 
 	bool found{ false };
 	for (auto& itl : ITL_Collection::getCollection()) {
-		if (itl.first == objPath) mITLData = *std::make_unique<IndexedTriangleList>(itl.second);
-		found = true;
+		if (itl.first == objPath) {
+			mITLData = *std::make_unique<IndexedTriangleList>(itl.second);
+			found = true;
+		}
 	}
 	if (!found) {
 		mITLData = *std::make_unique<IndexedTriangleList>(CustomGeo::make(objPath, *std::make_unique<std::vector<Material>>(MaterialParser::make(objPath))));
@@ -22,10 +25,9 @@ Model::Model(GraphicsOutput& gfx, std::string& objPath) {
 }
 
 void Model::update() noexcept {
-
+	for (auto& o : mObjects) o.update();
 }
 
-int Model::onCommand(GraphicsOutput& gfx) noexcept {
+void Model::draw(GraphicsOutput& gfx) noexcept {
 	for (auto& o : mObjects) o.draw(gfx);
-	return 0;
 }

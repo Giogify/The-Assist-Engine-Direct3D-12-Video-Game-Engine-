@@ -6,6 +6,7 @@ class Timer {
 private:
 
 	std::chrono::steady_clock::time_point previous;
+	static inline float mSpeedMult{ 1.0f };
 
 public: // Public Methods
 
@@ -14,5 +15,7 @@ public: // Public Methods
 	
 	float mark();
 	float peek() const;
+	static void incSpeedMult() noexcept;
+	static void decSpeedMult() noexcept;
 
 };

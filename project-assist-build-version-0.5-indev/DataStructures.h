@@ -5,7 +5,7 @@
 #include <DirectXMath.h>
 
 // VertexData struct
-namespace DataStructsUtil {
+namespace DSU {
 	struct VertexData {
 		DirectX::XMFLOAT3 pos{};
 		DirectX::XMFLOAT2 texcoord{};
@@ -61,17 +61,18 @@ namespace DataStructsUtil {
 		float x{};
 		float y{};
 		float z{};
-		float roll{};
 		float pitch{};
 		float yaw{};
+		float roll{};
+		DirectX::XMFLOAT3 center{};
 	};
 	struct Speed {
-		float droll{};
+		float dx{};
+		float dy{};
+		float dz{};
 		float dpitch{};
 		float dyaw{};
-		float dtheta{};
-		float dphi{};
-		float dchi{};
+		float droll{};
 	};
 	struct PipelineStateStream {
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
@@ -81,6 +82,7 @@ namespace DataStructsUtil {
 		CD3DX12_PIPELINE_STATE_STREAM_PS PS;
 		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
+		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER RS;
 	};
 	struct ObjectDrawStaticMatrices {
 		DirectX::XMMATRIX camera;

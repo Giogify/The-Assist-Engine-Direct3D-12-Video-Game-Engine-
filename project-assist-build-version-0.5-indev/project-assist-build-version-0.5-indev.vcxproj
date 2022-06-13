@@ -57,12 +57,10 @@
     <ClInclude Include="PixelShader.h" />
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="Script_Actor.h" />
     <ClInclude Include="Script_Actor_RandomTransform.h" />
-    <ClInclude Include="Script_Factory.h" />
-    <ClInclude Include="Script_Info_Actor.h" />
-    <ClInclude Include="Script_Scene.h" />
-    <ClInclude Include="Script_Scene_CreateActors.h" />
+    <ClInclude Include="Script_BasicActorMove.h" />
+    <ClInclude Include="Script_BasicGravity.h" />
+    <ClInclude Include="Script_Camera_Follow.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="TransformCBuffer.h" />
     <ClInclude Include="VertexBuffer.h" />

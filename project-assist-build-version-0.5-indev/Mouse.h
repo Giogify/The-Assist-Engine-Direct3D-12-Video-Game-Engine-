@@ -53,11 +53,11 @@ public: // Public Data Structures
 
 		// Empty Constructor
 		Event() noexcept :
-			m_type			(Type::Invalid),
-			m_isLMBPressed	(false),
-			m_isRMBPressed	(false),
-			m_xPos			(0),
-			m_yPos			(0) {}
+			m_type(Type::Invalid),
+			m_xPos(0),
+			m_yPos(0),
+			m_isLMBPressed(false),
+			m_isRMBPressed(false) {}
 
 		// Expected Constructor
 		Event(Type type, const Mouse& mouse) noexcept :

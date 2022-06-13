@@ -2,14 +2,18 @@
 #include <DirectXMath.h>
 #include <memory>
 
-namespace DSU = DataStructsUtil;
-
 Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 	namespace dx = DirectX;
 
 	// Process data
 	mObject = *std::make_unique<IndexedTriangleList::Object>(itl_data);
 	mObjectData.resize(mObject.pos.size());
+	float highX{ mObject.pos.at(0).x };
+	float lowX{ mObject.pos.at(0).x };
+	float highY{ mObject.pos.at(0).y };
+	float lowY{ mObject.pos.at(0).y };
+	float highZ{ mObject.pos.at(0).z };
+	float lowZ{ mObject.pos.at(0).z };
 	for (int i = 0; i < mObject.pos.size(); i++) {
 		mObjectData.at(i).pos.x = mObject.pos.at(i).x;
 		mObjectData.at(i).pos.y = mObject.pos.at(i).y;
@@ -19,6 +23,13 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 		mObjectData.at(i).norm.x = mObject.norm.at(i).x;
 		mObjectData.at(i).norm.y = mObject.norm.at(i).y;
 		mObjectData.at(i).norm.z = mObject.norm.at(i).z;
+
+		if (mObjectData.at(i).pos.x > highX) highX = mObjectData.at(i).pos.x;
+		if (mObjectData.at(i).pos.x < lowX) lowX = mObjectData.at(i).pos.x;
+		if (mObjectData.at(i).pos.x > highY) highY = mObjectData.at(i).pos.y;
+		if (mObjectData.at(i).pos.x < lowY) lowY = mObjectData.at(i).pos.y;
+		if (mObjectData.at(i).pos.x > highZ) highZ = mObjectData.at(i).pos.z;
+		if (mObjectData.at(i).pos.x < lowZ) lowZ = mObjectData.at(i).pos.z;
 	}
 	
 	// Emissive Color
@@ -55,18 +66,54 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 		mMaterialData.isTextured = false;
 	}
 
+	/*DirectX::XMFLOAT3 tri1_0 = { 1.0f, -1.0f, -1.0f };
+	DirectX::XMFLOAT3 tri1_1 = { -1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT3 tri1_2 = { -1.0f, -1.0f, -1.0f };
+	DirectX::XMFLOAT3 tri2_0 = { 1.0f, -1.0f, -1.0f };
+	DirectX::XMFLOAT3 tri2_1 = { 1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT3 tri2_2 = { -1.0f, -1.0f, -1.0f };
+
+	std::array<DirectX::XMFLOAT3, 6u> tris = {
+		DirectX::XMFLOAT3(-1.0f, -1.0f, 0.0f),
+		DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f),
+		DirectX::XMFLOAT3(1.0f, -1.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f),
+		DirectX::XMFLOAT3(1.0f, -0.5f, -1.0f),
+		DirectX::XMFLOAT3(0.5f, -1.0f, -1.0f)
+	};
+
+	DirectX::XMVECTOR triA0 = DirectX::XMVectorSet(-1.0f, -1.0f, 0.0f, 1.0f);
+	DirectX::XMVECTOR triA1 = DirectX::XMVectorSet(1.0f, 1.0f, 0.0f, 1.0f);
+	DirectX::XMVECTOR triA2 = DirectX::XMVectorSet(1.0f, -1.0f, 0.0f, 1.0f);
+	DirectX::XMVECTOR triB0 = DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 1.0f);
+	DirectX::XMVECTOR triB1 = DirectX::XMVectorSet(1.0f, -0.5f, -1.0f, 1.0f);
+	DirectX::XMVECTOR triB2 = DirectX::XMVectorSet(0.5f, -1.0f, -1.0f, 1.0f);
+	bool test{};
+	test = DirectX::TriangleTests::Intersects(triA0, triA1, triA2, triB0, triB1, triB2);*/
+
+	mPos.center = { (highX + lowX) / 2, (highY + lowY) / 2, (highZ + lowZ) / 2 };
+
 	mVertexBuffer = { gfx.getDevice(), gfx.getCommandList(), mObjectData.data(), mObjectData.size() };
 
 }
 
-void Object::update(float dt) noexcept {
-	
+void Object::update() noexcept {
+	mPos.x += mSpeed.dx;
+	mPos.y += mSpeed.dy;
+	mPos.z += mSpeed.dz;
+	mPos.pitch += mSpeed.dpitch;
+	mPos.yaw += mSpeed.dyaw;
+	mPos.roll += mSpeed.droll;
+
+	mPos.center.x += mSpeed.dx;
+	mPos.center.y += mSpeed.dy;
+	mPos.center.z += mSpeed.dz;
 }
 void Object::draw(GraphicsOutput& gfx) noexcept {
 
 	DX::XMMATRIX transformM{ 
 		DirectX::XMMatrixRotationRollPitchYaw(mPos.pitch, mPos.yaw, mPos.roll)
-		* DirectX::XMMatrixTranslation(mPos.x, mPos.y, mPos.y)
+		* DirectX::XMMatrixTranslation(mPos.x, mPos.y, mPos.z)
 		* DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f) 
 		* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f) };
 	auto pDeterminant = std::make_unique<DirectX::XMVECTOR>(DirectX::XMMatrixDeterminant(transformM));
@@ -105,11 +152,4 @@ void Object::draw(GraphicsOutput& gfx) noexcept {
 
 	mVertexBuffer.transitionToWrite(gfx.getCommandList());
 	mVCB.transitionToWrite(gfx.getCommandList());
-}
-
-DirectX::XMMATRIX Object::getTransformXM() const noexcept {
-	return DirectX::XMMatrixRotationRollPitchYaw(mPos.pitch, mPos.yaw, mPos.roll)
-		* DirectX::XMMatrixTranslation(mPos.x, mPos.y, mPos.z)
-		* DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f)
-		* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
 }

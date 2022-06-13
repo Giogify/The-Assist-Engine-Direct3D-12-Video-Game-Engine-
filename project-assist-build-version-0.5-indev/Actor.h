@@ -2,44 +2,56 @@
 #include "Timer.h"
 #include "Model.h"
 #include "Inputtable.h"
-#include "Script_Info_Actor.h"
-#include "Script_Actor.h"
+#include "GraphicsOutput.h"
 #include <memory>
 #include <DirectXMath.h>
+
 
 class Actor : public Inputtable {
 
 public:
 
-	typedef struct ACTOR_CREATION_DESC {
-		std::string objFileName{};
-		std::vector<std::shared_ptr<Script_Actor>> scripts{};
-	} ACTOR_CREATION_DESC;
+	enum ActorGroundState {
+		GROUND,
+		AIR,
+		WATER,
+		INVALID
+	};
 
 private:
 
-	// model, startTimer, updateTimer
-	Script_Info_Actor mActorInfo{};
-
-	// Scripts
-	std::vector<std::shared_ptr<Script_Actor>> mScripts{};
+	Model mModel{};
+	ActorGroundState mGroundState{ AIR };
 
 public:
 
-	Actor(GraphicsOutput& gfx, ACTOR_CREATION_DESC& desc);
+	Timer mInitTimer{};
+	Timer mCurrentStateTimer{};
 
-	Model& getModel() noexcept { return mActorInfo.model; }
+public:
 
-	int input(const Keyboard& kb,
-		const std::vector<Keyboard::Event>& keys,
-		const std::vector<unsigned char>& keysChar,
-		const Mouse& mouse,
-		const std::vector<Mouse::Event>& mouseEvents) noexcept override;
+	Actor() = default;
+	Actor(GraphicsOutput& gfx, std::string& objPath) {
+		mModel = { gfx, objPath };
+		mCurrentStateTimer.mark();
+		mInitTimer.mark();
+	}
 
-	void update() noexcept;
+	Model& getModel() noexcept { 
+		return mModel;
+	}
 
-	void addScript(std::shared_ptr<Script_Actor>& script) noexcept {
-		mScripts.push_back(script);
-		mScripts.back()->init(mActorInfo);
+	int input(const Keyboard& kb, const std::vector<Keyboard::Event>& keys, const std::vector<unsigned char>& keysChar, const Mouse& mouse,
+		const std::vector<Mouse::Event>& mouseEvents) noexcept override {
+		return 0;
+	}
+	void update() noexcept {
+		mModel.update();
+	}
+	void draw(GraphicsOutput& gfx) noexcept {
+		mModel.draw(gfx);
+	}
+	ActorGroundState& getGroundState() noexcept {
+		return mGroundState;
 	}
 };

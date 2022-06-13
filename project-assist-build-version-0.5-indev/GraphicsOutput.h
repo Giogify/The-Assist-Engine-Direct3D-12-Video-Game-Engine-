@@ -15,11 +15,8 @@
 #pragma once
 #include "d3dx12.h"
 #include "Timer.h"
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
-#include "ConstantBuffer.h"
 #include "Camera.h"
-#include "Light.h"
+#include "DataStructures.h"
 
 #include <vector>
 #include <array>
@@ -104,7 +101,6 @@ private: // Private Fields
 	HRESULT											mHR{};
 	std::string										mLastType{};
 	Camera											mCamera{};
-	std::array<Light::LightData, 8u>				mLights{};
 
 public: // Public Methods
 

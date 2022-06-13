@@ -41,8 +41,6 @@ GraphicsOutput::GraphicsOutput(HWND& hWnd) {
 	mViewport = { CD3DX12_VIEWPORT(0.0f, 0.0f, (FLOAT)width, (FLOAT)height) };
 	mScissorRc = { CD3DX12_RECT(0u, 0u, LONG_MAX, LONG_MAX) };
 
-	mCamera.translate(3.0f, 3.0f, 3.0f);
-
 	std::thread thread0([this] { createFactory(); });
 	std::thread thread1([this] { createDebugLayer(); });
 	thread0.join();
@@ -270,10 +268,10 @@ void GraphicsOutput::createFence() noexcept {
 void GraphicsOutput::initializePipeline() noexcept {
 	D3DReadFileToBlob(L"VertexShaderPassThrough.cso", &mpVSBytecode);
 	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
-	std::array<D3D12_INPUT_ELEMENT_DESC, 1u> ied{}; {
+	std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
 		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-		//ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-		//ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	}
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{}; {
 		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -303,9 +301,13 @@ void GraphicsOutput::initializePipeline() noexcept {
 		mPSS.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
 		mPSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 		mPSS.RTVFormats = RTVfarr;
+		if (mDebug) mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+		else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		pssd.pPipelineStateSubobjectStream = &mPSS;
 		pssd.SizeInBytes = sizeof(DSU::PipelineStateStream);
 		mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
+		mpPipelineState->SetName(L"[Pipeline State]");
 	}
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
 		dsv.Format = DXGI_FORMAT_D32_FLOAT;
@@ -352,8 +354,8 @@ void GraphicsOutput::transitionRTVToWrite() noexcept {
 }
 void GraphicsOutput::clearRTV() noexcept {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
-	//auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
-	auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
+	auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
+	//auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
 	mpCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
 }
 void GraphicsOutput::clearDSV() noexcept {
