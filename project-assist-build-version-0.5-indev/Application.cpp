@@ -226,9 +226,7 @@ int Application::doUpdate() noexcept {
 }
 int Application::doRender() noexcept {
 	mWnd.getGraphicsOutput().startFrame();
-	for (auto& a : mVecActors) {
-		a.draw(mWnd.getGraphicsOutput());
-	}
+	for (auto& a : mVecActors) a.draw(mWnd.getGraphicsOutput());
 	//mWnd.getGraphicsOutput().doFrame();
 	mWnd.getGraphicsOutput().endFrame();
 	//while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
