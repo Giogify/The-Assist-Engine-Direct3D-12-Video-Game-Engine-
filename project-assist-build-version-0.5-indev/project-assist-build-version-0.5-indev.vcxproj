@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="AssistMath.cpp" />
     <ClCompile Include="GraphicsOutput.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -35,6 +36,7 @@
   <ItemGroup>
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Application.h" />
+    <ClInclude Include="AssistMath.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Collections.h" />
     <ClInclude Include="ConstantBuffer.h" />
@@ -57,10 +59,14 @@
     <ClInclude Include="PixelShader.h" />
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="Script_Actor_RandomTransform.h" />
-    <ClInclude Include="Script_BasicActorMove.h" />
-    <ClInclude Include="Script_BasicGravity.h" />
-    <ClInclude Include="Script_Camera_Follow.h" />
+    <ClInclude Include="Scriptable.h" />
+    <ClInclude Include="ScriptBase.h" />
+    <ClInclude Include="ScriptBasicCollision.h" />
+    <ClInclude Include="ScriptFactory.h" />
+    <ClInclude Include="ScriptActorRandomTransform.h" />
+    <ClInclude Include="ScriptBasicActorMove.h" />
+    <ClInclude Include="ScriptBasicGravity.h" />
+    <ClInclude Include="ScriptCameraFollow.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="TransformCBuffer.h" />
     <ClInclude Include="VertexBuffer.h" />
@@ -200,7 +206,7 @@
     <ClCompile>
       <WarningLevel>Level1</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -217,7 +223,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <AssemblerOutput>NoListing</AssemblerOutput>
-      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -235,10 +241,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -247,10 +253,10 @@
       <SmallerTypeCheck>false</SmallerTypeCheck>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <ControlFlowGuard>Guard</ControlFlowGuard>
-      <FloatingPointModel>Precise</FloatingPointModel>
+      <FloatingPointModel>Fast</FloatingPointModel>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <AssemblerOutput>NoListing</AssemblerOutput>
       <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -259,6 +265,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

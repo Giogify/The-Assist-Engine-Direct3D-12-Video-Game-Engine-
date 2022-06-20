@@ -8,25 +8,28 @@ class Application {
 	
 private: // Private Fields
 
-	std::unique_ptr<Scene> mScene{};
+	Scene mScene{};
 
 	Window mWnd;
 
 	Timer mTimerStart{};
 	Timer mTimer{};
 	Timer mTimerRender{};
+	Timer mTickTimer{};
 
 	bool mIsCameraModeEnabled{ false };
 	bool mDebugEnoughTimeElapsed{ false };
 
 	std::vector<Actor> mVecActors{};
 
-	float mMaxFPS{ 0.0f };
-	float mFPSCap{ 60.0f };
-	float viewingAngle{ 70.0f };
+	double mMaxFPS{ 0.0 };
+	double mFPSCap{ 60.0 };
+	double viewingAngle{ 70.0 };
+
+	double rem{};
 
 	// Benchmarking
-	float sum{};
+	double sum{};
 	UINT runInstances{ 0u };
 	Timer timerBenchmark{};
 

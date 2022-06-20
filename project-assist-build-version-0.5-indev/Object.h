@@ -5,7 +5,7 @@
 #include "ConstantBuffer.h"
 #include "DataStructures.h"
 #include "Timer.h"
-#include <DirectXMath.h>
+#include "AssistMath.h"
 
 class Object {
 
@@ -15,10 +15,11 @@ private:
 
 	DSU::Position mPos{};
 	DSU::Speed mSpeed{};
+	DSU::SphereCollisionCheckData mCollision{};
 
 	VertexBuffer mVertexBuffer{};
 	VertexConstantBuffer mVCB{};
-	//PixelConstantBuffer mPCB{};
+	PixelConstantBuffer mPCB{};
 
 	// Object Data
 	IndexedTriangleList::Object mObject{};
@@ -38,4 +39,6 @@ public:
 	
 	void update() noexcept;
 	void draw(GraphicsOutput& gfx) noexcept;
+
+	AMMATRIX getTransformMx() noexcept;
 };

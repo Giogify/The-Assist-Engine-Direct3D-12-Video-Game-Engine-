@@ -16,3 +16,25 @@ public:
 	}
 
 };
+
+class ActorID_Collection {
+
+	static inline std::vector<std::pair<std::string, UINT>> mRegisteredActorIDs{};
+
+public:
+
+	static auto& getCollection() noexcept { return mRegisteredActorIDs; }
+	static UINT addCollection(std::string& actorID) noexcept {
+		
+		for (auto& s : mRegisteredActorIDs) {
+			if (actorID == s.first) {
+				s.second++;
+				return s.second;
+			}
+		}
+		std::pair<std::string, UINT> newActorID{ actorID, 1u };
+		mRegisteredActorIDs.push_back(newActorID);
+		return 1u;
+	}
+
+};

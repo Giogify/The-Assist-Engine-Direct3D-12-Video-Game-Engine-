@@ -11,7 +11,6 @@
 #pragma comment(lib, "dxguid.lib")
 
 namespace wrl = Microsoft::WRL;
-namespace DX = DirectX;
 
 GraphicsOutput::GraphicsOutput(HWND& hWnd) {
 
@@ -72,6 +71,7 @@ void GraphicsOutput::parseGraphicsConfig() noexcept {
 		BUseWARPAdapter,
 		BVSync,
 		BFullScreenOnStartup,
+		BEnableWireframe,
 		Invalid
 	};
 	if (mDebug) std::cout << "[CONFIG] Parsing Graphics Configuration File...\n";
@@ -85,6 +85,7 @@ void GraphicsOutput::parseGraphicsConfig() noexcept {
 			else if (strCurrentLine.starts_with("BUseWARPAdapter")) currentData = BUseWARPAdapter;
 			else if (strCurrentLine.starts_with("BVSync")) currentData = BVSync;
 			else if (strCurrentLine.starts_with("BFullScreenOnStartup")) currentData = BFullScreenOnStartup;
+			else if (strCurrentLine.starts_with("BEnableWireframe")) currentData = BEnableWireframe;
 			else currentData = Invalid;
 			switch (currentData) {
 			case UIBackBufferCount:
@@ -103,6 +104,9 @@ void GraphicsOutput::parseGraphicsConfig() noexcept {
 				strCurrentLine.erase(0u, 22u);
 				if (strCurrentLine == "TRUE") mFullscreen = true;
 				break;
+			case BEnableWireframe:
+				strCurrentLine.erase(0u, 18u);
+				if (strCurrentLine == "TRUE") mWireframe = true;
 			case Invalid:
 				if (mDebug) std::cout << "[WARNING] Invalid line parsed from \"gfx_config.txt\"\n"
 					<< "[LINE] " << strCurrentLine;
@@ -266,8 +270,8 @@ void GraphicsOutput::createFence() noexcept {
 	mhFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 }
 void GraphicsOutput::initializePipeline() noexcept {
-	D3DReadFileToBlob(L"VertexShaderPassThrough.cso", &mpVSBytecode);
-	D3DReadFileToBlob(L"PixelShaderPassThrough.cso", &mpPSBytecode);
+	D3DReadFileToBlob(L"VertexShader.cso", &mpVSBytecode);
+	D3DReadFileToBlob(L"PixelShader.cso", &mpPSBytecode);
 	std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
 		ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 		ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
@@ -278,10 +282,10 @@ void GraphicsOutput::initializePipeline() noexcept {
 	}
 	D3D12_ROOT_SIGNATURE_FLAGS rsFlags = {
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-		| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS };
-	std::array<CD3DX12_ROOT_PARAMETER1, 1u> rp{}; {
+		| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS };
+	std::array<CD3DX12_ROOT_PARAMETER1, 2u> rp{}; {
 		rp[0].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+		rp[1].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 	}
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
 		rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
@@ -301,8 +305,16 @@ void GraphicsOutput::initializePipeline() noexcept {
 		mPSS.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
 		mPSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 		mPSS.RTVFormats = RTVfarr;
-		if (mDebug) mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
-			D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+		if (mDebug) {
+			if (mWireframe) {
+				mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			}
+			else {
+				mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+					D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			}
+		}
 		else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		pssd.pPipelineStateSubobjectStream = &mPSS;
 		pssd.SizeInBytes = sizeof(DSU::PipelineStateStream);
@@ -354,8 +366,8 @@ void GraphicsOutput::transitionRTVToWrite() noexcept {
 }
 void GraphicsOutput::clearRTV() noexcept {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
-	auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
-	//auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
+	//auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
+	auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
 	mpCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
 }
 void GraphicsOutput::clearDSV() noexcept {

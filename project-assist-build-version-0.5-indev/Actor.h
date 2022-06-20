@@ -3,11 +3,13 @@
 #include "Model.h"
 #include "Inputtable.h"
 #include "GraphicsOutput.h"
+#include "Scriptable.h"
+#include "Collections.h"
+#include "AssistMath.h"
 #include <memory>
-#include <DirectXMath.h>
 
 
-class Actor : public Inputtable {
+class Actor : public Inputtable, public Scriptable {
 
 public:
 
@@ -27,11 +29,14 @@ public:
 
 	Timer mInitTimer{};
 	Timer mCurrentStateTimer{};
+	std::pair<std::string, UINT> mActorID{};
 
 public:
 
 	Actor() = default;
 	Actor(GraphicsOutput& gfx, std::string& objPath) {
+		mActorID.first = objPath;
+		mActorID.second = ActorID_Collection::addCollection(objPath);
 		mModel = { gfx, objPath };
 		mCurrentStateTimer.mark();
 		mInitTimer.mark();
@@ -51,7 +56,7 @@ public:
 	void draw(GraphicsOutput& gfx) noexcept {
 		mModel.draw(gfx);
 	}
-	ActorGroundState& getGroundState() noexcept {
+	auto& getGroundState() noexcept {
 		return mGroundState;
 	}
 };

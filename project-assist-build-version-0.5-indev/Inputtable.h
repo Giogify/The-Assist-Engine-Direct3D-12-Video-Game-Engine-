@@ -1,14 +1,11 @@
 #pragma once
 #include "Mouse.h"
 #include "Keyboard.h"
+#include <vector>
 
 class Inputtable {
 
 public:
-
-	typedef struct INPUT_CREATION_DESC {
-
-	} INPUT_CREATION_DESC;
 
 private:
 

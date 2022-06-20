@@ -22,5 +22,6 @@ public:
 	void update() noexcept;
 	void draw(GraphicsOutput& gfx) noexcept;
 
+	IndexedTriangleList& getITLData() noexcept { return mITLData; }
 	std::vector<Object>& getObjects() noexcept { return mObjects; }
 };

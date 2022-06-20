@@ -13,38 +13,39 @@
 #define SPOT_LIGHT 2
 
 // Texture and Sampler
-Texture2D Texture : register(t0);
-sampler Sampler : register(s0);
+//Texture2D Texture : register(t0);
+//sampler Sampler : register(s0);
 
-// Material Struct (5 vectors)
+// Material Struct (9 vectors)
 struct Material {
 	
-	float4 emissive; //Ke
+	double4 emissive; //Ke
 
-	float4 ambient; //Ka
+	double4 ambient; //Ka
 
-	float4 diffuse; //Kd
+	double4 diffuse; //Kd
 
-	float4 specular; //Ks
+	double4 specular; //Ks
 	
-	float specularPower; //Ns
+	double specularPower; //Ns
 	bool isTextured;
-	int2 padding;
+	int padding;
 };
 
-// Light Struct (5 vectors)
+// Light Struct (9 vectors)
 struct Light {
 	
-	float4 pos;
+	double4 pos;
 	
-	float4 direction;
+	double4 direction;
 
-	float4 color;
+	double4 color;
 
-	float spotAngle;
-	float constAtten;
-	float linAtten;
-	float quadAtten;
+	double spotAngle;
+	double constAtten;
+
+	double linAtten;
+	double quadAtten;
 
 	int type;
 	bool isEnabled;
@@ -56,54 +57,54 @@ struct Light {
 cbuffer pixelCBuffer : register(b0) {
 
 	Material mtl : packoffset(c0);
-	float4 eyePos : packoffset(c5);
-	float4 globalAmbient : packoffset(c6);
-	Light lights[MAX_LIGHTS] : packoffset(c7);
+	double4 eyePos : packoffset(c10);
+	double4 globalAmbient : packoffset(c12);
+	Light lights[MAX_LIGHTS] : packoffset(c14);
 
 }
 
 // Lighting Result Struct
 struct LightingResult {
-	float4 diffuse;
-	float4 specular;
+	double4 diffuse;
+	double4 specular;
 };
 
 // ---Helper Functions---
 
 // Diffuse
-float4 doDiffuse(Light light, float3 L, float3 N) {
-	float NdotL = max(0, dot(N, L));
+double4 doDiffuse(Light light, double3 L, double3 N) {
+	double NdotL = max(0, dot(N, L));
 	return light.color * NdotL;
 }
 
 // Specular
-float4 doSpecular(Light light, float3 V, float3 L, float3 N) {
+double4 doSpecular(Light light, double3 V, double3 L, double3 N) {
 
 	// Phong Lighting
-	float3 R = normalize(reflect(-L, N));
-	float RdotV = max(0, dot(R, V));
+	double3 R = normalize(reflect(-L, N));
+	double RdotV = max(0, dot(R, V));
 
 	//Blinn-Phong Lighting
-	float3 H = normalize(L + V);
-	float NdotH = max(0, dot(N, H));
+	double3 H = normalize(L + V);
+	double NdotH = max(0, dot(N, H));
 
 	return light.color * pow(NdotH, mtl.specularPower);
 }
 
 // Attentuation
-float doAttenuation(Light light, float d) {
+double doAttenuation(Light light, double d) {
 	return 1.0f / (light.constAtten + light.linAtten * d + light.quadAtten * d * d);
 }
 
 // Point Light
-LightingResult doPointLight(Light light, float3 V, float4 P, float3 N) {
+LightingResult doPointLight(Light light, double3 V, double4 P, double3 N) {
 	LightingResult result;
 
-	float3 L = (light.pos - P).xyz;
-	float distance = length(L);
+	double3 L = (light.pos - P).xyz;
+	double distance = length(L);
 	L = L / distance;
 
-	float attenuation = doAttenuation(light, distance);
+	double attenuation = doAttenuation(light, distance);
 
 	result.diffuse = doDiffuse(light, L, N) * attenuation;
 	result.specular = doSpecular(light, V, L, N) * attenuation;
@@ -112,10 +113,10 @@ LightingResult doPointLight(Light light, float3 V, float4 P, float3 N) {
 }
 
 // Directional Light
-LightingResult doDirectionalLight(Light light, float3 V, float4 P, float3 N) {
+LightingResult doDirectionalLight(Light light, double3 V, double4 P, double3 N) {
 	LightingResult result;
 
-	float3 L = -light.direction.xyz;
+	double3 L = -light.direction.xyz;
 
 	result.diffuse = doDiffuse(light, L, N);
 	result.specular = doSpecular(light, V, L, N);
@@ -124,21 +125,21 @@ LightingResult doDirectionalLight(Light light, float3 V, float4 P, float3 N) {
 }
 
 // Spot Light
-float doSpotCone(Light light, float3 L) {
-	float minCos = cos(light.spotAngle);
-	float maxCos = (minCos + 1.0f) / 2.0f;
-	float cosAngle = dot(light.direction.xyz, -L);
+double doSpotCone(Light light, double3 L) {
+	double minCos = cos(light.spotAngle);
+	double maxCos = (minCos + 1.0f) / 2.0f;
+	double cosAngle = dot(light.direction.xyz, -L);
 	return smoothstep(minCos, maxCos, cosAngle);
 }
-LightingResult doSpotLight(Light light, float3 V, float4 P, float3 N) {
+LightingResult doSpotLight(Light light, double3 V, double4 P, double3 N) {
 	LightingResult result;
 
-	float3 L = (light.pos - P).xyz;
-	float distance = length(L);
+	double3 L = (light.pos - P).xyz;
+	double distance = length(L);
 	L = L / distance;
 
-	float attenuation = doAttenuation(light, distance);
-	float spotIntensity = doSpotCone(light, L);
+	double attenuation = doAttenuation(light, distance);
+	double spotIntensity = doSpotCone(light, L);
 
 	result.diffuse = doDiffuse(light, L, N) * attenuation * spotIntensity;
 	result.specular = doSpecular(light, V, L, N) * attenuation * spotIntensity;
@@ -147,8 +148,8 @@ LightingResult doSpotLight(Light light, float3 V, float4 P, float3 N) {
 }
 
 // Compute Lighting
-LightingResult computeLighting(float4 P, float3 N) {
-	float3 V = normalize(eyePos - P).xyz;
+LightingResult computeLighting(double4 P, double3 N) {
+	double3 V = normalize(eyePos - P).xyz;
 
 	LightingResult totalResult = { {0, 0, 0, 0}, {0, 0, 0, 0} };
 
@@ -197,16 +198,16 @@ float4 main(PS_INPUT input) : SV_TARGET0 {
 
 	LightingResult lit = computeLighting(input.posWS, normalize(input.normWS));
 
-	float4 emissive = mtl.emissive;
-	float4 ambient = mtl.ambient * globalAmbient;
-	float4 diffuse = mtl.diffuse * lit.diffuse;
-	float4 specular = mtl.specular * lit.specular;
+	double4 emissive = mtl.emissive;
+	double4 ambient = mtl.ambient * globalAmbient;
+	double4 diffuse = mtl.diffuse * lit.diffuse;
+	double4 specular = mtl.specular * lit.specular;
 
-	float4 texColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	double4 texColor = double4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	if (mtl.isTextured)	texColor = Texture.Sample(Sampler, input.tex);
+	//if (mtl.isTextured)	texColor = Texture.Sample(Sampler, input.tex);
 
-	float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
+	double4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
 
 	return finalColor;
 

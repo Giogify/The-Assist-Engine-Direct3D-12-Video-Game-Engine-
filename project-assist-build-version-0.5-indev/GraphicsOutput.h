@@ -17,6 +17,7 @@
 #include "Timer.h"
 #include "Camera.h"
 #include "DataStructures.h"
+#include "AssistMath.h"
 
 #include <vector>
 #include <array>
@@ -24,7 +25,6 @@
 #include <iostream>
 #include <thread>
 
-#include <DirectXMath.h>
 #include <d3dcompiler.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -33,7 +33,6 @@
 #pragma comment(lib, "D3DCompiler.lib")
 
 using namespace Microsoft::WRL;
-namespace DX = DirectX;
 
 class GraphicsOutput {
 
@@ -53,6 +52,7 @@ private: // Private Fields
 	UINT											mShaderDebugCompileFlags{ D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION };
 	UINT											mShaderReleaseCompileFlags{ 0u };
 	D3D_FEATURE_LEVEL								mFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
+	bool											mWireframe{ false };
 
 	// Debug
 	ComPtr<ID3D12Debug5>							mpDebugController{};
@@ -95,7 +95,7 @@ private: // Private Fields
 	ComPtr<ID3DBlob>								mpVSBytecode{};
 	ComPtr<ID3DBlob>								mpPSBytecode{};
 	// Projection Matrix
-	DirectX::XMMATRIX								mProjection{};
+	AssistMath::AMMATRIX							mProjection{};
 	// Misc
 	RECT											mWindowRc{};
 	HRESULT											mHR{};
@@ -147,8 +147,8 @@ public: // Public Methods
 	int setFullscreen() noexcept;
 	Camera& getCamera() noexcept { return mCamera; }
 
-	void setProjection(const DirectX::XMMATRIX& projection) noexcept { mProjection = projection; }
-	DX::XMMATRIX& getProjection() noexcept { return mProjection; }
+	void setProjection(const AssistMath::AMMATRIX& projection) noexcept { mProjection = projection; }
+	AssistMath::AMMATRIX& getProjection() noexcept { return mProjection; }
 	ComPtr<ID3D12GraphicsCommandList6>& getCommandList() noexcept { return mpCommandList; }
 	ComPtr<ID3D12Device9>& getDevice() noexcept { return mpDevice; }
 

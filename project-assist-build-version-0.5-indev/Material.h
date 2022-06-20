@@ -45,10 +45,10 @@
 */
 
 #pragma once
+#include "AssistMath.h"
 #include <vector>
 #include <memory>
 #include <string>
-#include <DirectXMath.h>
 
 class Material {
 
@@ -66,12 +66,12 @@ public:
 	bool isMaterialKAXYZ{ false };
 
 	// Material KA values
-	std::vector<float> KA_RGB{0.0f, 0.0f, 0.0f};
+	std::vector<double> KA_RGB{0.0f, 0.0f, 0.0f};
 
 	std::string KA_file{};
-	float KA_factor{};
+	double KA_factor{};
 
-	std::vector<float> KA_XYZ{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> KA_XYZ{ 0.0f, 0.0f, 0.0f };
 
 	// Material KD type
 	bool isMaterialKDRGB{ false };
@@ -82,12 +82,12 @@ public:
 	bool isMaterialKDXYZ{ false };
 
 	// Material KD values
-	std::vector<float> KD_RGB{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> KD_RGB{ 0.0f, 0.0f, 0.0f };
 
 	std::string KD_file{};
-	float KD_factor{};
+	double KD_factor{};
 
-	std::vector<float> KD_XYZ{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> KD_XYZ{ 0.0f, 0.0f, 0.0f };
 
 	// Material KS type
 	bool isMaterialKSRGB{ false };
@@ -98,12 +98,12 @@ public:
 	bool isMaterialKSXYZ{ false };
 
 	// Material KS values
-	std::vector<float> KS_RGB{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> KS_RGB{ 0.0f, 0.0f, 0.0f };
 
 	std::string KS_file{};
-	float KS_factor{};
+	double KS_factor{};
 
-	std::vector<float> KS_XYZ{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> KS_XYZ{ 0.0f, 0.0f, 0.0f };
 
 	// Material TF type
 	bool isMaterialTFRGB{ false };
@@ -114,28 +114,28 @@ public:
 	bool isMaterialTFXYZ{ false };
 
 	// Material TF values
-	std::vector<float> TF_RGB{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> TF_RGB{ 0.0f, 0.0f, 0.0f };
 
 	std::string TF_file{};
-	float TF_factor{};
+	double TF_factor{};
 
-	std::vector<float> TF_XYZ{ 0.0f, 0.0f, 0.0f };
+	std::vector<double> TF_XYZ{ 0.0f, 0.0f, 0.0f };
 
 	// Illumination Flags
 	std::vector<bool> isIllumFlags{ false, false, false, false, false, false, false, false, false, false, false };
 
 	// D
-	float D_factor{};
+	double D_factor{};
 	bool isDHalo{ false };
 
 	// Material NS values
-	float NS_exponent{};
+	double NS_exponent{};
 
 	// Material Sharpness
-	float sharpness{};
+	double sharpness{};
 
 	// Material NI values
-	float NI_optical_density{};
+	double NI_optical_density{};
 
 	// Material Textures /* Implement later */
 

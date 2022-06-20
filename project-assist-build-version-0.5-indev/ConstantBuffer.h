@@ -6,7 +6,6 @@
 #include <memory>
 
 using namespace Microsoft::WRL;
-namespace DX = DirectX;
 
 class VertexConstantBuffer {
 

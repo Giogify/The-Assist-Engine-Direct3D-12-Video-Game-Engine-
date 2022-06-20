@@ -1,78 +1,78 @@
 #pragma once
 #include "d3dx12.h"
 #include "Light.h"
+#include "AssistMath.h"
 #include <array>
-#include <DirectXMath.h>
 
 // VertexData struct
 namespace DSU {
 	struct VertexData {
-		DirectX::XMFLOAT3 pos{};
-		DirectX::XMFLOAT2 texcoord{};
-		DirectX::XMFLOAT3 norm{};
+		AssistMath::AMDOUBLE3 pos{};
+		AssistMath::AMDOUBLE2 texcoord{};
+		AssistMath::AMDOUBLE3 norm{};
 	};
 	struct PositionData {
-		DirectX::XMFLOAT3 pos{};
+		AssistMath::AMDOUBLE3 pos{};
 	};
 	struct MaterialData {
 		struct {
-			float r{};
-			float g{};
-			float b{};
-			float a{};
+			double r{};
+			double g{};
+			double b{};
+			double a{};
 		} colorEmissive;
 		struct {
-			float r{};
-			float g{};
-			float b{};
-			float a{};
+			double r{};
+			double g{};
+			double b{};
+			double a{};
 		} colorAmbient;
 		struct {
-			float r{};
-			float g{};
-			float b{};
-			float a{};
+			double r{};
+			double g{};
+			double b{};
+			double a{};
 		} colorDiffuse;
 		struct {
-			float r{};
-			float g{};
-			float b{};
-			float a{};
+			double r{};
+			double g{};
+			double b{};
+			double a{};
 		} colorSpecular;
 
-		float specularPower{};
+		double specularPower{};
 		int isTextured{ false };
 		int padding0{};
 		int padding1{};
 	};
 	struct VertexConstantBuffer {
-		DirectX::XMMATRIX transform{};
-		DirectX::XMMATRIX camera{};
-		DirectX::XMMATRIX projection{};
-		DirectX::XMMATRIX invtpose{};
+		AssistMath::AMMATRIX transform{};
+		AssistMath::AMMATRIX camera{};
+		AssistMath::AMMATRIX projection{};
+		AssistMath::AMMATRIX invtpose{};
 	};
 	struct PixelConstantBuffer {
 		MaterialData mtl{};
-		DirectX::XMFLOAT4 eyePos{};
-		DirectX::XMFLOAT4 globalAmbient{};
+		AssistMath::AMDOUBLE4 eyePos{};
+		AssistMath::AMDOUBLE4 globalAmbient{};
 		std::array<Light::LightData, Light::MAX_LIGHTS> lights{};
 	};
 	struct Position {
-		float x{};
-		float y{};
-		float z{};
-		float pitch{};
-		float yaw{};
-		float roll{};
-		DirectX::XMFLOAT3 center{};
+		double x{};
+		double y{};
+		double z{};
+		double pitch{};
+		double yaw{};
+		double roll{};
+		AssistMath::AMDOUBLE3 center{};
 	};
 	struct Speed {
-		float dx{};
-		float dy{};
-		float dz{};
-		float dpitch{};
-		float dyaw{};
-		float droll{};
+		double dx{};
+		double dy{};
+		double dz{};
+		double dpitch{};
+		double dyaw{};
+		double droll{};
 	};
 	struct PipelineStateStream {
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
@@ -85,7 +85,11 @@ namespace DSU {
 		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER RS;
 	};
 	struct ObjectDrawStaticMatrices {
-		DirectX::XMMATRIX camera;
-		DirectX::XMMATRIX projection;
+		AssistMath::AMMATRIX camera;
+		AssistMath::AMMATRIX projection;
+	};
+	struct SphereCollisionCheckData {
+		AssistMath::AMDOUBLE3 center{};
+		double radius{};
 	};
 }

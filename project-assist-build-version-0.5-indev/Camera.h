@@ -6,13 +6,14 @@
 #include "Keyboard.h"
 #include "Timer.h"
 #include "DataStructures.h"
+#include "Scriptable.h"
+#include "AssistMath.h"
 
-#include <DirectXMath.h>
 #include <math.h>
 #include <memory>
 #include <iostream>
 
-class Camera {
+class Camera : public Scriptable {
 
 public:
 
@@ -23,20 +24,20 @@ public:
 
 private:
 
-	DirectX::XMVECTOR Y_AXIS = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+	AssistMath::AMVECTOR Y_AXIS{ 0.0f, 1.0f, 0.0f, 1.0f };
 
 public:
 
-	DirectX::XMFLOAT3 mEye{};
-	DirectX::XMFLOAT3 mFocus{};
+	AssistMath::AMDOUBLE3 mEye{ 0.0f, 0.0f, -5.0f };
+	AssistMath::AMDOUBLE3 mFocus{ 0.0f, 0.0f, 0.0f };
 
-	float mRoll{};
-	float mPitch{};
-	float mYaw{};
+	double mRoll{};
+	double mPitch{};
+	double mYaw{};
 
-	float mdx{};
-	float mdy{};
-	float mdz{};
+	double mdx{};
+	double mdy{};
+	double mdz{};
 
 	bool mbMouseControl{ false };
 	bool mbFollow{ false };
@@ -47,40 +48,38 @@ public:
 public:
 
 	Camera() = default;
-	Camera(BOOL bFollow) : mbFollow(bFollow) {
-		mEye = { 0.0f, 0.0f, -5.0f };
-	}
 
-	DirectX::XMMATRIX getMatrix() const noexcept {
-		namespace DX = DirectX;
-		DX::XMVECTOR eye = DX::XMVectorSet(mEye.x, mEye.y, mEye.z, 1.0f);
-		//DX::XMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
-		DX::XMVECTOR look = DX::XMVectorSet(
-			std::sin(DX::XMConvertToRadians(mYaw)) * std::cos(DX::XMConvertToRadians(mPitch)),
-			std::sin(DX::XMConvertToRadians(mPitch)),
-			std::cos(DX::XMConvertToRadians(mYaw)) * std::cos(DX::XMConvertToRadians(mPitch)),
-			1.0f
-		);
-		DX::XMMATRIX cameraMatrix = DX::XMMatrixLookToLH(eye, look, Y_AXIS);
-		return cameraMatrix;
+	AssistMath::AMMATRIX getMatrix() const noexcept {
+		using namespace AssistMath;
+		AMMATRIX cameraMatrix{};
+		if (mbFollow) {
+			AMVECTOR eye{ mEye.x, mEye.y, mEye.z, 1.0f };
+			AMVECTOR focus{ mFocus.x, mFocus.y, mFocus.z, 1.0f };
+			return { AMMatrixLookAtLH(eye, focus, Y_AXIS) };
+		}
+		if (!mbFollow) {
+			AMVECTOR eye{ mEye.x, mEye.y, mEye.z, 1.0f };
+			//AMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
+			AMVECTOR look{
+				std::sin(AMConvertToRadians(mYaw)) * std::cos(AMConvertToRadians(mPitch)),
+				std::sin(AMConvertToRadians(mPitch)),
+				std::cos(AMConvertToRadians(mYaw)) * std::cos(AMConvertToRadians(mPitch)),
+				1.0f
+			};
+			return { AMMatrixLookToLH(eye, look, Y_AXIS) };
+		}
 	}
-	void addPitch(float delta) noexcept {
+	void addPitch(double delta) noexcept {
 		mPitch += delta;
-		while (mPitch > 360) mPitch -= 360;
-		while (mPitch < -360) mPitch += 360;
-
-		/*DirectX::XMFLOAT4 Y_AXIS{};
-		DirectX::XMStoreFloat4(&Y_AXIS, Y_ROTATION_AXIS);
-		Y_AXIS.z -= delta;
-		Y_ROTATION_AXIS = DirectX::XMLoadFloat4(&Y_AXIS);*/
-
+		if (mPitch > 90.0f) mPitch = 89.999f;
+		if (mPitch < -90.0f) mPitch = -89.999f;
 	}
-	void addYaw(float delta) noexcept {
+	void addYaw(double delta) noexcept {
 		mYaw -= delta;
 		while (mYaw > 360) mYaw -= 360;
 		while (mYaw < -360) mYaw += 360;
 	}
-	void translate(float dx, float dy, float dz) noexcept {
+	void translate(double dx, double dy, double dz) noexcept {
 		mEye.x += dx;
 		mEye.y += dy;
 		mEye.z += dz;
@@ -92,36 +91,36 @@ public:
 		const Mouse& mouse, const std::vector<Mouse::Event>& mouseEvents, const RECT& rc) noexcept {
 
 		if (!mbFollow) {
+			using namespace AssistMath;
 			BOOL shift = kb.KeyIsPressed(VK_SHIFT);
 			shift++;
-			float dt = moveTimer2.mark();
 
-			if (kb.KeyIsPressed('W')) {
+			/*if (kb.KeyIsPressed('W')) {
 				float xcom = std::sin(DirectX::XMConvertToRadians(mYaw));
 				float zcom = std::cos(DirectX::XMConvertToRadians(mYaw));
-				mdx += dt * xcom * shift;
-				mdz += dt * zcom * shift;
-			}
+				mdx += 0.00025f * xcom * shift;
+				mdz += 0.00025f * zcom * shift;
+			}*/
 			if (kb.KeyIsPressed('S')) {
-				float xcom = std::sin(DirectX::XMConvertToRadians(mYaw));
-				float zcom = std::cos(DirectX::XMConvertToRadians(mYaw));
-				mdx += dt * -xcom * shift;
-				mdz += dt * -zcom * shift;
+				double xcom = std::sin(AMConvertToRadians(mYaw));
+				double zcom = std::cos(AMConvertToRadians(mYaw));
+				mdx += 0.00025f * -xcom * shift;
+				mdz += 0.00025f * -zcom * shift;
 			}
 			if (kb.KeyIsPressed('A')) {
-				float xcom = std::sin(DirectX::XMConvertToRadians(mYaw - 90.0f));
-				float zcom = std::cos(DirectX::XMConvertToRadians(mYaw - 90.0f));
-				mdx += dt * xcom * shift;
-				mdz += dt * zcom * shift;
+				double xcom = std::sin(AMConvertToRadians(mYaw - 90.0f));
+				double zcom = std::cos(AMConvertToRadians(mYaw - 90.0f));
+				mdx += 0.00025f * xcom * shift;
+				mdz += 0.00025f * zcom * shift;
 			}
 			if (kb.KeyIsPressed('D')) {
-				float xcom = std::sin(DirectX::XMConvertToRadians(mYaw + 90.0f));
-				float zcom = std::cos(DirectX::XMConvertToRadians(mYaw + 90.0f));
-				mdx += dt * xcom * shift;
-				mdz += dt * zcom * shift;
+				double xcom = std::sin(AMConvertToRadians(mYaw + 90.0f));
+				double zcom = std::cos(AMConvertToRadians(mYaw + 90.0f));
+				mdx += 0.00025f * xcom * shift;
+				mdz += 0.00025f * zcom * shift;
 			}
-			if (kb.KeyIsPressed(VK_SPACE)) mdy += dt * 1.0f * shift;
-			if (kb.KeyIsPressed(VK_TAB)) mdy -= dt * 1.0f * shift;
+			if (kb.KeyIsPressed(VK_SPACE)) mdy += 0.00025f * shift;
+			if (kb.KeyIsPressed(VK_TAB)) mdy -= 0.00025f * shift;
 
 			if (kb.KeyIsPressed(VK_LEFT)) addYaw(0.25f);
 			if (kb.KeyIsPressed(VK_RIGHT)) addYaw(-0.25f);
@@ -161,12 +160,13 @@ public:
 			translate(mdx, mdy, mdz);
 			//std::cout << "[X] " << mdx << " " << " [Y] " << mdy << " " << " [Z] " << mdz << '\n';
 			if (mdx < 0.0001f && mdx > -0.0001f) mdx = 0.0f;
-			else mdx /= 1.1f;
+			else mdx /= 1.02f;
 			if (mdy < 0.0001f && mdy > -0.0001f) mdy = 0.0f;
-			else mdy /= 1.1f;
+			else mdy /= 1.02f;
 			if (mdz < 0.0001f && mdz > -0.0001f) mdz = 0.0f;
-			else mdz /= 1.1f;
+			else mdz /= 1.02f;
 		}
 		return 0;
 	}
+
 };

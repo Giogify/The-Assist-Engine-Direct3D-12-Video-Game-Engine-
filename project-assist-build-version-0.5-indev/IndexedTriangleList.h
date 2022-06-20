@@ -1,9 +1,11 @@
 #pragma once
 #include "Material.h"
+#include "AssistMath.h"
 #include <vector>
 #include <memory>
 #include <string>
-#include <DirectXMath.h>
+
+using namespace AssistMath;
 
 class IndexedTriangleList {
 
@@ -11,19 +13,19 @@ public:
 
 	struct Object {
 		std::string name{};
-		std::vector<DirectX::XMFLOAT3> pos{};
-		std::vector<DirectX::XMFLOAT2> tex{};
-		std::vector<DirectX::XMFLOAT3> norm{};
+		std::vector<AMDOUBLE3> pos{};
+		std::vector<AMDOUBLE2> tex{};
+		std::vector<AMDOUBLE3> norm{};
 		Material mtl{};
 	};
 
 public: // Public Fields
 
 	std::vector<std::string> m_names{};
-	std::vector<DirectX::XMFLOAT3> m_pos{};
-	std::vector<DirectX::XMFLOAT2> m_tex{};
-	std::vector<DirectX::XMFLOAT3> m_norm{};
-	std::vector<DirectX::XMFLOAT3X3> m_indices{};
+	std::vector<AMDOUBLE3> m_pos{};
+	std::vector<AMDOUBLE2> m_tex{};
+	std::vector<AMDOUBLE3> m_norm{};
+	std::vector<AMDOUBLE3X3> m_indices{};
 	std::vector<unsigned int> m_objectIndexTable{};
 
 	std::vector<Object> m_objects{};
@@ -54,10 +56,10 @@ public: // Public Methods
 		m_objects(pitl->m_objects) {}
 	
 	IndexedTriangleList(std::vector<std::string> names, std::vector<Material> mtls,
-		std::vector<DirectX::XMFLOAT3> pos,
-		std::vector<DirectX::XMFLOAT2> tex,
-		std::vector<DirectX::XMFLOAT3> norm,
-		std::vector<DirectX::XMFLOAT3X3> indices,
+		std::vector<AMDOUBLE3> pos,
+		std::vector<AMDOUBLE2> tex,
+		std::vector<AMDOUBLE3> norm,
+		std::vector<AMDOUBLE3X3> indices,
 		std::vector<unsigned int> objectIndexTable) :
 		m_names(std::move(names)),
 		m_mtls(std::move(mtls)),
@@ -81,26 +83,23 @@ public: // Public Methods
 			
 			for (int j = m_objectIndexTable.at(i); j < m_objectIndexTable.at(i + 1); j++) {
 				for (int k = 0; k < 3; k++) {
-					
 					if (!(m_indices.at(j).m[k][0] < 0.0f)) {
 						objectTemp.pos.push_back(std::move(m_pos.at(m_indices.at(j).m[k][0])));
 					}
 					else {
-						objectTemp.pos.push_back(*std::make_unique<DirectX::XMFLOAT3>(0.0f, 0.0f, 0.0f));
+						objectTemp.pos.push_back(*std::make_unique<AMDOUBLE3>(0.0f, 0.0f, 0.0f));
 					}
-					
 					if (!(m_indices.at(j).m[k][1] < 0.0f)) {
 						objectTemp.tex.push_back(std::move(m_tex.at(m_indices.at(j).m[k][1])));
 					}
 					else {
-						objectTemp.tex.push_back(*std::make_unique<DirectX::XMFLOAT2>(0.0f, 0.0f));
+						objectTemp.tex.push_back(*std::make_unique<AMDOUBLE2>(0.0f, 0.0f));
 					}
-
 					if (!(m_indices.at(j).m[k][2] < 0.0f)) {
 						objectTemp.norm.push_back(std::move(m_norm.at(m_indices.at(j).m[k][2])));
 					}
 					else {
-						objectTemp.norm.push_back(*std::make_unique<DirectX::XMFLOAT3>(0.0f, 0.0f, 0.0f));
+						objectTemp.norm.push_back(*std::make_unique<AMDOUBLE3>(0.0f, 0.0f, 0.0f));
 					}
 				}
 			}

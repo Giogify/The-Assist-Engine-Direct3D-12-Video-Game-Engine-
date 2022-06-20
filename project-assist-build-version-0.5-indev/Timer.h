@@ -5,16 +5,16 @@ class Timer {
 
 private:
 
-	std::chrono::steady_clock::time_point previous;
-	static inline float mSpeedMult{ 1.0f };
+	std::chrono::high_resolution_clock::time_point previous;
+	static inline double mSpeedMult{ 1.0f };
 
 public: // Public Methods
 
 	// Constructor
 	Timer();
 	
-	float mark();
-	float peek() const;
+	double mark();
+	double peek() const;
 	static void incSpeedMult() noexcept;
 	static void decSpeedMult() noexcept;
 

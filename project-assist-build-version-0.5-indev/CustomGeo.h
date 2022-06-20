@@ -1,10 +1,10 @@
 #pragma once
 #include "IndexedTriangleList.h"
 #include "Material.h"
+#include "AssistMath.h"
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <DirectXMath.h>
 
 class CustomGeo {
 
@@ -13,12 +13,14 @@ public:
 	using itl = IndexedTriangleList;
 	static IndexedTriangleList make(std::string& file, std::vector<Material>& mtl) {
 
+		using namespace AssistMath;
+
 		std::vector<std::string> names{};
 		std::vector<Material> mtls{};
-		std::vector<DirectX::XMFLOAT3> pos{};
-		std::vector<DirectX::XMFLOAT2> tex{};
-		std::vector<DirectX::XMFLOAT3> norm{};
-		std::vector<DirectX::XMFLOAT3X3> indices{};
+		std::vector<AMDOUBLE3> pos{};
+		std::vector<AMDOUBLE2> tex{};
+		std::vector<AMDOUBLE3> norm{};
+		std::vector<AMDOUBLE3X3> indices{};
 		std::vector<unsigned int> objectIndexTable{};
 
 		std::string nextline{};
@@ -50,9 +52,9 @@ public:
 				else if (nextline.starts_with("v ")) {
 
 					// Temporary floats for storing the indivdual x, y, z values
-					float vFirst{};
-					float vSecond{};
-					float vThird{};
+					double vFirst{};
+					double vSecond{};
+					double vThird{};
 
 					// Erase "v "
 					nextline.erase(0u, 2u);
@@ -81,13 +83,13 @@ public:
 					}
 					
 					// Add the number to the position vector
-					pos.push_back(*std::make_unique<DirectX::XMFLOAT3>(vFirst, vSecond, vThird));
+					pos.push_back(*std::make_unique<AMDOUBLE3>(vFirst, vSecond, vThird));
 				}
 				else if (nextline.starts_with("vt ")) {
 					
 					// Temporary floats for storing the indivdual x, y values
-					float vFirst{};
-					float vSecond{};
+					double vFirst{};
+					double vSecond{};
 
 					// Erase "vt "
 					nextline.erase(0u, 3u);
@@ -113,15 +115,15 @@ public:
 					}
 
 					// Add the number to the tex vector
-					tex.push_back(*std::make_unique<DirectX::XMFLOAT2>(vFirst, vSecond));
+					tex.push_back(*std::make_unique<AMDOUBLE2>(vFirst, vSecond));
 
 				}
 				else if (nextline.starts_with("vn ")) {
 
 					// Temporary floats for storing the indivdual x, y, z values
-					float vFirst{};
-					float vSecond{};
-					float vThird{};
+					double vFirst{};
+					double vSecond{};
+					double vThird{};
 
 					// Erase "vn "
 					nextline.erase(0u, 3u);
@@ -150,11 +152,11 @@ public:
 					}
 
 					// Add the number to the normal vector
-					norm.push_back(*std::make_unique<DirectX::XMFLOAT3>(vFirst, vSecond, vThird));
+					norm.push_back(*std::make_unique<AMDOUBLE3>(vFirst, vSecond, vThird));
 				}
 				else if (nextline.starts_with("f ")) {
 
-					indices.push_back(*std::make_unique<DirectX::XMFLOAT3X3>());
+					indices.push_back(*std::make_unique<AMDOUBLE3X3>());
 
 					unsigned int row = 0u;
 					unsigned int col = 0u;

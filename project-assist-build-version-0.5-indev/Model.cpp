@@ -5,7 +5,6 @@
 #include "GraphicsOutput.h"
 
 Model::Model(GraphicsOutput& gfx, std::string& objPath) {
-	namespace dx = DirectX;
 
 	bool found{ false };
 	for (auto& itl : ITL_Collection::getCollection()) {
