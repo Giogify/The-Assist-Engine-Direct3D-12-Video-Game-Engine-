@@ -13,19 +13,19 @@ public:
 
 	struct Object {
 		std::string name{};
-		std::vector<AMDOUBLE3> pos{};
-		std::vector<AMDOUBLE2> tex{};
-		std::vector<AMDOUBLE3> norm{};
+		std::vector<AMFLOAT3> pos{};
+		std::vector<AMFLOAT2> tex{};
+		std::vector<AMFLOAT3> norm{};
 		Material mtl{};
 	};
 
 public: // Public Fields
 
 	std::vector<std::string> m_names{};
-	std::vector<AMDOUBLE3> m_pos{};
-	std::vector<AMDOUBLE2> m_tex{};
-	std::vector<AMDOUBLE3> m_norm{};
-	std::vector<AMDOUBLE3X3> m_indices{};
+	std::vector<AMFLOAT3> m_pos{};
+	std::vector<AMFLOAT2> m_tex{};
+	std::vector<AMFLOAT3> m_norm{};
+	std::vector<AMFLOAT3X3> m_indices{};
 	std::vector<unsigned int> m_objectIndexTable{};
 
 	std::vector<Object> m_objects{};
@@ -56,10 +56,10 @@ public: // Public Methods
 		m_objects(pitl->m_objects) {}
 	
 	IndexedTriangleList(std::vector<std::string> names, std::vector<Material> mtls,
-		std::vector<AMDOUBLE3> pos,
-		std::vector<AMDOUBLE2> tex,
-		std::vector<AMDOUBLE3> norm,
-		std::vector<AMDOUBLE3X3> indices,
+		std::vector<AMFLOAT3> pos,
+		std::vector<AMFLOAT2> tex,
+		std::vector<AMFLOAT3> norm,
+		std::vector<AMFLOAT3X3> indices,
 		std::vector<unsigned int> objectIndexTable) :
 		m_names(std::move(names)),
 		m_mtls(std::move(mtls)),
@@ -87,19 +87,19 @@ public: // Public Methods
 						objectTemp.pos.push_back(std::move(m_pos.at(m_indices.at(j).m[k][0])));
 					}
 					else {
-						objectTemp.pos.push_back(*std::make_unique<AMDOUBLE3>(0.0f, 0.0f, 0.0f));
+						objectTemp.pos.push_back(*std::make_unique<AMFLOAT3>(0.0f, 0.0f, 0.0f));
 					}
 					if (!(m_indices.at(j).m[k][1] < 0.0f)) {
 						objectTemp.tex.push_back(std::move(m_tex.at(m_indices.at(j).m[k][1])));
 					}
 					else {
-						objectTemp.tex.push_back(*std::make_unique<AMDOUBLE2>(0.0f, 0.0f));
+						objectTemp.tex.push_back(*std::make_unique<AMFLOAT2>(0.0f, 0.0f));
 					}
 					if (!(m_indices.at(j).m[k][2] < 0.0f)) {
 						objectTemp.norm.push_back(std::move(m_norm.at(m_indices.at(j).m[k][2])));
 					}
 					else {
-						objectTemp.norm.push_back(*std::make_unique<AMDOUBLE3>(0.0f, 0.0f, 0.0f));
+						objectTemp.norm.push_back(*std::make_unique<AMFLOAT3>(0.0f, 0.0f, 0.0f));
 					}
 				}
 			}

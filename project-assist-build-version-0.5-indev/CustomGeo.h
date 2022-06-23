@@ -17,10 +17,10 @@ public:
 
 		std::vector<std::string> names{};
 		std::vector<Material> mtls{};
-		std::vector<AMDOUBLE3> pos{};
-		std::vector<AMDOUBLE2> tex{};
-		std::vector<AMDOUBLE3> norm{};
-		std::vector<AMDOUBLE3X3> indices{};
+		std::vector<AMFLOAT3> pos{};
+		std::vector<AMFLOAT2> tex{};
+		std::vector<AMFLOAT3> norm{};
+		std::vector<AMFLOAT3X3> indices{};
 		std::vector<unsigned int> objectIndexTable{};
 
 		std::string nextline{};
@@ -52,15 +52,15 @@ public:
 				else if (nextline.starts_with("v ")) {
 
 					// Temporary floats for storing the indivdual x, y, z values
-					double vFirst{};
-					double vSecond{};
-					double vThird{};
+					float vFirst{};
+					float vSecond{};
+					float vThird{};
 
 					// Erase "v "
 					nextline.erase(0u, 2u);
 
 					std::string temp{};
-					for (short i = 0; !nextline.empty(); i++) {
+					for (unsigned short i = 0; !nextline.empty(); i++) {
 						while (!nextline.starts_with(" ") && !nextline.empty()) {
 							temp.append(nextline.substr(0u, 1u));
 							nextline.erase(0u, 1u);
@@ -83,19 +83,19 @@ public:
 					}
 					
 					// Add the number to the position vector
-					pos.push_back(*std::make_unique<AMDOUBLE3>(vFirst, vSecond, vThird));
+					pos.push_back(*std::make_unique<AMFLOAT3>(vFirst, vSecond, vThird));
 				}
 				else if (nextline.starts_with("vt ")) {
 					
 					// Temporary floats for storing the indivdual x, y values
-					double vFirst{};
-					double vSecond{};
+					float vFirst{};
+					float vSecond{};
 
 					// Erase "vt "
 					nextline.erase(0u, 3u);
 
 					std::string temp{};
-					for (short i = 0; !nextline.empty(); i++) {
+					for (unsigned short i = 0; !nextline.empty(); i++) {
 						while (!nextline.starts_with(" ") && !nextline.empty()) {
 							temp.append(nextline.substr(0u, 1u));
 							nextline.erase(0u, 1u);
@@ -115,21 +115,21 @@ public:
 					}
 
 					// Add the number to the tex vector
-					tex.push_back(*std::make_unique<AMDOUBLE2>(vFirst, vSecond));
+					tex.push_back(*std::make_unique<AMFLOAT2>(vFirst, vSecond));
 
 				}
 				else if (nextline.starts_with("vn ")) {
 
 					// Temporary floats for storing the indivdual x, y, z values
-					double vFirst{};
-					double vSecond{};
-					double vThird{};
+					float vFirst{};
+					float vSecond{};
+					float vThird{};
 
 					// Erase "vn "
 					nextline.erase(0u, 3u);
 
 					std::string temp{};
-					for (short i = 0; !nextline.empty(); i++) {
+					for (unsigned short i = 0; !nextline.empty(); i++) {
 						while (!nextline.starts_with(" ") && !nextline.empty()) {
 							temp.append(nextline.substr(0u, 1u));
 							nextline.erase(0u, 1u);
@@ -152,11 +152,11 @@ public:
 					}
 
 					// Add the number to the normal vector
-					norm.push_back(*std::make_unique<AMDOUBLE3>(vFirst, vSecond, vThird));
+					norm.push_back(*std::make_unique<AMFLOAT3>(vFirst, vSecond, vThird));
 				}
 				else if (nextline.starts_with("f ")) {
 
-					indices.push_back(*std::make_unique<AMDOUBLE3X3>());
+					indices.push_back(*std::make_unique<AMFLOAT3X3>());
 
 					unsigned int row = 0u;
 					unsigned int col = 0u;

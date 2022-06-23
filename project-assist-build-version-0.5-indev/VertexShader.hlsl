@@ -8,10 +8,10 @@
 
 // Constant Buffer Structure
 struct matrices {
-	matrix transform;
-	matrix camera;
-	matrix projection;
-	matrix inversetranspose;
+	row_major matrix transform;
+	row_major matrix camera;
+	row_major matrix projection;
+	row_major matrix inversetranspose;
 };
 
 ConstantBuffer<matrices> m : register(b0);
@@ -38,11 +38,12 @@ VS_OUTPUT main(VS_INPUT input) {
 	VS_OUTPUT output;
 
 	// Positional coords -> world coords
-	output.pos = mul(m.projection, mul(m.camera, mul(m.transform, float4(input.pos, 1.0f))));
-	output.posWS = mul(m.transform, float4(input.pos, 1.0f));
+	//output.pos = mul(m.projection, mul(m.camera, mul(m.transform, float4(input.pos, 1.0f))));
+	output.pos = mul(mul(mul(float4(input.pos, 1.0f), m.transform), m.camera), m.projection);
+	output.posWS = mul(float4(input.pos, 1.0f), m.transform);
 
 	// normalize the object's normals to fix the world transform skew
-	output.normWS = mul((float3x3)m.inversetranspose, input.norm);
+	output.normWS = mul(input.norm, (float3x3)m.inversetranspose);
 	output.tex = input.tex;
 
 	return output;

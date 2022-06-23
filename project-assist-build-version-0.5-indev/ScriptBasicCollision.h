@@ -214,22 +214,18 @@ namespace Scripts {
 
 		using namespace AssistMath;
 
-		struct Vertex {
-			double x{};
-			double y{};
-			double z{};
-		};
 		struct Triangle {
-			Vertex p1{};
-			Vertex p2{};
-			Vertex p3{};
+			FAMVECTOR p1{};
+			FAMVECTOR p2{};
+			FAMVECTOR p3{};
 		};
 		struct Line {
-			Vertex p1{};
-			Vertex p2{};
+			FAMVECTOR p1{};
+			FAMVECTOR p2{};
 		};
 
-		void doBasicCollisionH2(Actor& actor0, Actor& actor1, std::vector<Triangle>& actor0tris, std::vector<Triangle>& actor1tris) {
+		std::optional<float> doBasicCollisionH2(Actor& actor0, Actor& actor1, std::vector<Triangle>& actor0tris, 
+			std::vector<Triangle>& actor1tris) {
 
 			for (auto& tri0 : actor0tris) {
 				for (auto& tri1 : actor1tris) {
@@ -243,42 +239,56 @@ namespace Scripts {
 					};
 
 					for (UINT i = 0; i < lines.size(); i++) {
+						
+						enum Point {
+							x,
+							y,
+							z
+						};
+						AMFLOAT3 V{ 
+							tri1.p2.m128_f32[x] - tri1.p1.m128_f32[x], 
+							tri1.p2.m128_f32[y] - tri1.p1.m128_f32[y],
+							tri1.p2.m128_f32[z] - tri1.p1.m128_f32[z]
+						};
+						
+						AMFLOAT3 W{ 
+							tri1.p3.m128_f32[x] - tri1.p1.m128_f32[x], 
+							tri1.p3.m128_f32[y] - tri1.p1.m128_f32[y],
+							tri1.p3.m128_f32[z] - tri1.p1.m128_f32[z]
+						};
 
-						AMDOUBLE3 V{ tri1.p2.x - tri1.p1.x, tri1.p2.y - tri1.p1.y, tri1.p2.z - tri1.p1.z };
-						AMDOUBLE3 W{ tri1.p3.x - tri1.p1.x, tri1.p3.y - tri1.p1.y, tri1.p3.z - tri1.p1.z };
+						float normX = (V.y * W.z) - (V.z * W.y);
+						float normY = (V.z * W.x) - (V.x * W.z);
+						float normZ = (V.x * W.y) - (V.y * W.x);
 
-						double normX = (V.y * W.z) - (V.z * W.y);
-						double normY = (V.z * W.x) - (V.x * W.z);
-						double normZ = (V.x * W.y) - (V.y * W.x);
+						float normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
 
-						double normConst = std::sqrt(normX * normX + normY * normY + normZ * normZ);
+						float Ax = normX / normConst;
+						float Ay = normY / normConst;
+						float Az = normZ / normConst;
 
-						double Ax = normX / normConst;
-						double Ay = normY / normConst;
-						double Az = normZ / normConst;
+						float test = std::sqrtf(Ax * Ax + Ay * Ay + Az * Az);
 
-						double test = std::sqrt(Ax * Ax + Ay * Ay + Az * Az);
+						float A = Ax;
+						float B = Ay;
+						float C = Az;
+						float a = tri1.p1.m128_f32[x];
+						float b = tri1.p1.m128_f32[y];
+						float c = tri1.p1.m128_f32[z];
+						float D = -(A * a + B * b + C * c);
 
-						double A = Ax;
-						double B = Ay;
-						double C = Az;
-						double a = tri1.p1.x;
-						double b = tri1.p1.y;
-						double c = tri1.p1.z;
-						double D = -(A * a + B * b + C * c);
+						float result0 = (A * lines[i].p1.m128_f32[x] + B * lines[i].p1.m128_f32[y] + C * lines[i].p1.m128_f32[z] + D)
+							/ std::sqrtf(A * A + B * B + C * C);
 
-						double result0 = (A * lines[i].p1.x + B * lines[i].p1.y + C * lines[i].p1.z + D)
-							/ std::sqrt(A * A + B * B + C * C);
-
-						double result1 = (A * lines[i].p2.x + B * lines[i].p2.y + C * lines[i].p2.z + D)
-							/ std::sqrt(A * A + B * B + C * C);
+						float result1 = (A * lines[i].p2.m128_f32[x] + B * lines[i].p2.m128_f32[y] + C * lines[i].p2.m128_f32[z] + D)
+							/ std::sqrtf(A * A + B * B + C * C);
 
 						bool isDifferentSign{ (signbit(result0) == signbit(result1)) ? false : true };
 
 						if (isDifferentSign) {
-
-							Vertex outsidePoint{ (result1 > 0.0f) ? lines[i].p2 : lines[i].p1 };
-							Vertex insidePoint{ (result1 > 0.0f) ? lines[i].p1 : lines[i].p2 };
+							
+							AssistMath::FAMVECTOR outsidePoint{ (result1 > 0.0f) ? lines[i].p2 : lines[i].p1 };
+							AssistMath::FAMVECTOR insidePoint{ (result1 > 0.0f) ? lines[i].p1 : lines[i].p2 };
 
 							Triangle plane0tri{};
 							plane0tri.p1 = outsidePoint;
@@ -289,51 +299,53 @@ namespace Scripts {
 							plane1tri.p2 = tri1.p3;
 							plane1tri.p3 = tri1.p2;
 							Triangle plane2tri{};
-							plane1tri.p1 = outsidePoint;
-							plane1tri.p2 = tri1.p1;
-							plane1tri.p3 = tri1.p3;
+							plane2tri.p1 = outsidePoint;
+							plane2tri.p2 = tri1.p1;
+							plane2tri.p3 = tri1.p3;
 
-							AMDOUBLE3 vector0 = 
-							{ plane0tri.p2.x - plane0tri.p1.x, 
-								plane0tri.p2.y - plane0tri.p1.y, 
-								plane0tri.p2.z - plane0tri.p1.z };
-							AMDOUBLE3 vector1 =
-							{ plane0tri.p3.x - plane0tri.p1.x,
-								plane0tri.p3.y - plane0tri.p1.y,
-								plane0tri.p3.z - plane0tri.p1.z };
+							AMFLOAT3 vector0{ 
+								plane0tri.p2.m128_f32[x] - plane0tri.p1.m128_f32[x],
+								plane0tri.p2.m128_f32[y] - plane0tri.p1.m128_f32[y],
+								plane0tri.p2.m128_f32[z] - plane0tri.p1.m128_f32[z] };
+							AMFLOAT3 vector1{ 
+								plane0tri.p3.m128_f32[x] - plane0tri.p1.m128_f32[x],
+								plane0tri.p3.m128_f32[y] - plane0tri.p1.m128_f32[y],
+								plane0tri.p3.m128_f32[z] - plane0tri.p1.m128_f32[z] };
 
-							double normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
-							double normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
-							double normZ = (vector0.x * vector1.y) - (vector0.y * vector1.x);
+							float normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
+							float normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
+							float normZ = (vector0.x * vector1.y) - (vector0.y * vector1.x);
 
-							double normConst = std::sqrt(normX * normX + normY * normY + normZ * normZ);
+							float normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
 
-							double Ax = normX / normConst;
-							double Ay = normY / normConst;
-							double Az = normZ / normConst;
+							float Ax = normX / normConst;
+							float Ay = normY / normConst;
+							float Az = normZ / normConst;
 
-							double A = Ax;
-							double B = Ay;
-							double C = Az;
-							double a = outsidePoint.x;
-							double b = outsidePoint.y;
-							double c = outsidePoint.z;
-							double D = -(A * a + B * b + C * c);
+							float A = Ax;
+							float B = Ay;
+							float C = Az;
+							float a = outsidePoint.m128_f32[x];
+							float b = outsidePoint.m128_f32[y];
+							float c = outsidePoint.m128_f32[z];
+							float D = -(A * a + B * b + C * c);
 
-							double result = (A * insidePoint.x + B * insidePoint.y + C * insidePoint.z + D)
+							float result = (A * insidePoint.m128_f32[x] + B * insidePoint.m128_f32[y] + C * insidePoint.m128_f32[z] + D)
 								/ std::sqrt(A * A + B * B + C * C);
 
 							if (result < 0.0f) continue;
 
-							 vector0 =
-							{ plane1tri.p2.x - plane1tri.p1.x,
-								plane1tri.p2.y - plane1tri.p1.y,
-								plane1tri.p2.z - plane1tri.p1.z };
+							 vector0 = { 
+								 plane1tri.p2.m128_f32[x] - plane1tri.p1.m128_f32[x],
+								 plane1tri.p2.m128_f32[y] - plane1tri.p1.m128_f32[y],
+								 plane1tri.p2.m128_f32[z] - plane1tri.p1.m128_f32[z] 
+							 };
 
-							vector1 =
-							{ plane1tri.p3.x - plane1tri.p1.x,
-								plane1tri.p3.y - plane1tri.p1.y,
-								plane1tri.p3.z - plane1tri.p1.z };
+							vector1 = { 
+								plane1tri.p3.m128_f32[x] - plane1tri.p1.m128_f32[x],
+								plane1tri.p3.m128_f32[y] - plane1tri.p1.m128_f32[y],
+								plane1tri.p3.m128_f32[z] - plane1tri.p1.m128_f32[z]
+							};
 
 							normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
 							normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
@@ -348,31 +360,33 @@ namespace Scripts {
 							A = Ax;
 							B = Ay;
 							C = Az;
-							a = outsidePoint.x;
-							b = outsidePoint.y;
-							c = outsidePoint.z;
+							a = outsidePoint.m128_f32[x];
+							b = outsidePoint.m128_f32[y];
+							c = outsidePoint.m128_f32[z];
 							D = -(A * a + B * b + C * c);
 
-							result = (A * insidePoint.x + B * insidePoint.y + C * insidePoint.z + D)
-								/ std::sqrt(A * A + B * B + C * C);
+							result = (A * insidePoint.m128_f32[x] + B * insidePoint.m128_f32[y] + C * insidePoint.m128_f32[z] + D)
+								/ std::sqrtf(A * A + B * B + C * C);
 
 							if (result < 0.0f) continue;
 
-							vector0 =
-							{ plane2tri.p2.x - plane2tri.p1.x,
-								plane2tri.p2.y - plane2tri.p1.y,
-								plane2tri.p2.z - plane2tri.p1.z };
+							vector0 = { 
+								plane2tri.p2.m128_f32[x] - plane2tri.p1.m128_f32[x],
+								plane2tri.p2.m128_f32[y] - plane2tri.p1.m128_f32[y],
+								plane2tri.p2.m128_f32[z] - plane2tri.p1.m128_f32[z]
+							};
 
-							vector1 =
-							{ plane2tri.p3.x - plane2tri.p1.x,
-								plane2tri.p3.y - plane2tri.p1.y,
-								plane2tri.p3.z - plane2tri.p1.z };
+							vector1 = { 
+								plane2tri.p3.m128_f32[x] - plane2tri.p1.m128_f32[x],
+								plane2tri.p3.m128_f32[y] - plane2tri.p1.m128_f32[y],
+								plane2tri.p3.m128_f32[z] - plane2tri.p1.m128_f32[z]
+							};
 
 							normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
 							normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
 							normZ = (vector0.x * vector1.y) - (vector0.y * vector1.x);
 
-							normConst = std::sqrt(normX * normX + normY * normY + normZ * normZ);
+							normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
 
 							Ax = normX / normConst;
 							Ay = normY / normConst;
@@ -381,36 +395,38 @@ namespace Scripts {
 							A = Ax;
 							B = Ay;
 							C = Az;
-							a = outsidePoint.x;
-							b = outsidePoint.y;
-							c = outsidePoint.z;
+							a = outsidePoint.m128_f32[x];
+							b = outsidePoint.m128_f32[y];
+							c = outsidePoint.m128_f32[z];
 							D = -(A * a + B * b + C * c);
 
-							result = (A * insidePoint.x + B * insidePoint.y + C * insidePoint.z + D)
-								/ std::sqrt(A * A + B * B + C * C);
-
+							result = (A * insidePoint.m128_f32[x] + B * insidePoint.m128_f32[y] + C * insidePoint.m128_f32[z] + D)
+								/ std::sqrtf(A * A + B * B + C * C);
+							if (result >= 0.0f)
+								return (result0 > 0.0f) ? result1 : result0;
 						}
 					}
 				}
 			}
+			return std::nullopt;
 		}
 
 		std::vector<Triangle> doBasicCollisionH1(Actor& actor) {
 			std::vector<Triangle> tris{};
-			AMMATRIX transformMx = actor.getModel().getObjects().at(0).getTransformMx();
+			AssistMath::FAMMATRIX transformMx = actor.getModel().getObjects().at(0).getTransformMx();
 			UINT iter = 0u;
-			Vertex v0{};
-			Vertex v1{};
-			Vertex v2{};
+			AssistMath::FAMVECTOR v0{};
+			AssistMath::FAMVECTOR v1{};
+			AssistMath::FAMVECTOR v2{};
 			for (auto& v : actor.getModel().getITLData().m_objects.at(0).pos) {
 				
-				AMVECTOR vector = { v.x, v.y, v.z, 1.0f };
-				vector = AMVector4Transform(vector, transformMx);
+				AssistMath::FAMVECTOR vector{ AssistMath::AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
+				vector = FAMVector4Transform(vector, transformMx);
 				
-				if (iter == 0) v0 = { vector.m256d_f64[0], vector.m256d_f64[1], vector.m256d_f64[2] };
-				if (iter == 1) v1 = { vector.m256d_f64[0], vector.m256d_f64[1], vector.m256d_f64[2] };
+				if (iter == 0) v0 = { AssistMath::AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
+				if (iter == 1) v1 = { AssistMath::AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
 				if (iter == 2) {
-					v2 = { vector.m256d_f64[0], vector.m256d_f64[1], vector.m256d_f64[2] };
+					v2 = { vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] };
 					iter = 0;
 					tris.push_back({ v0, v1, v2 });
 					continue;
@@ -423,7 +439,12 @@ namespace Scripts {
 		void doBasicCollisionH0(Actor& actor0, Actor& actor1) {
 			std::vector<Triangle> actor0Tris{ doBasicCollisionH1(actor0) };
 			std::vector<Triangle> actor1Tris{ doBasicCollisionH1(actor1) };
-			doBasicCollisionH2(actor0, actor1, actor0Tris, actor1Tris);
+			std::optional<float> result{ doBasicCollisionH2(actor0, actor1, actor0Tris, actor1Tris) };
+			if (result != std::nullopt) {
+				//std::cout << "Collision detected!!! Reactionary movement: " << result.value() << '\n';
+				actor0.getModel().getObjects().at(0).getSpeed().deltaTranslation.m128_f32[1]
+					= -actor0.getModel().getObjects().at(0).getSpeed().deltaTranslation.m128_f32[1];
+			}
 		}
 
 		void doBasicCollision(Actor& actor, std::vector<Actor>& actors) {

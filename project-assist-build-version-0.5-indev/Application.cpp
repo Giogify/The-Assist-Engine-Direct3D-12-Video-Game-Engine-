@@ -58,12 +58,12 @@ int Application::applicationUpdate() {
 		oss << " [Frames: " << this->mFPSCap << "] " << 1000 / (mTimerRender.mark() * 1000) << '\n';
 		DSU::Position temppos = mScene.getActors().at(0).getModel().getObjects().at(0).getPos();
 		DSU::Speed temp = mScene.getActors().at(0).getModel().getObjects().at(0).getSpeed();
-		oss << " [x] " << temppos.x << " [y] " << temppos.y << " [z] " << temppos.z;
-		oss << " [dX] " << temp.dx << " [dY] " << temp.dy << " [dZ] " << temp.dz;
+		oss << " [x] " << temppos.translation.m128_f32[0] << " [y] " << temppos.translation.m128_f32[1] << " [z] " << temppos.translation.m128_f32[2];
+		oss << " [dX] " << temp.deltaTranslation.m128_f32[0] << " [dY] " << temp.deltaTranslation.m128_f32[1] << " [dZ] " << temp.deltaTranslation.m128_f32[2];
 		oss << ' '
-			<< camera.mPitch << ' '
-			<< camera.mYaw << ' '
-			<< camera.mRoll << '\n';
+			<< camera.mRotation.m128_f32[Camera::Rotation::Pitch] << ' '
+			<< camera.mRotation.m128_f32[Camera::Rotation::Yaw] << ' '
+			<< camera.mRotation.m128_f32[Camera::Rotation::Roll] << '\n';
 
 		/*oss << " [Actors] " << mScene.getActors().size();
 		oss << " [X: " << camera.mEye.x << "]"
@@ -107,7 +107,7 @@ int Application::applicationUpdate() {
 Application::~Application() {}
 Application::Application() : mWnd(1280, 720, L"Window") {
 	
-	mWnd.getGraphicsOutput().mProjection = { AMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f) };
+	mWnd.getGraphicsOutput().mProjection = { FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f) };
 
 	//mWnd.getGraphicsOutput().getCamera().mbFollow = Camera::FOLLOW;
 
@@ -147,11 +147,11 @@ int Application::doPriorityInput(const Keyboard& kb, const std::vector<Keyboard:
 	for (auto& e : mouseEvents) {
 		if (e.getType() == Mouse::Event::Type::WheelUp) {
 			viewingAngle -= 10.0f;
-			mWnd.getGraphicsOutput().setProjection(AMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f));
+			mWnd.getGraphicsOutput().setProjection(FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f));
 		}
 		if (e.getType() == Mouse::Event::Type::WheelDown) {
 			viewingAngle += 10.0f;
-			mWnd.getGraphicsOutput().setProjection(AMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f));
+			mWnd.getGraphicsOutput().setProjection(FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f));
 		}
 	}
 

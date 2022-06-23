@@ -17,6 +17,18 @@ class Camera : public Scriptable {
 
 public:
 
+	enum Rotation {
+		Pitch,
+		Yaw,
+		Roll
+	};
+
+	enum Translation {
+		X,
+		Y,
+		Z
+	};
+
 	enum FollowMode {
 		NO_FOLLOW,
 		FOLLOW
@@ -24,20 +36,15 @@ public:
 
 private:
 
-	AssistMath::AMVECTOR Y_AXIS{ 0.0f, 1.0f, 0.0f, 1.0f };
+	AssistMath::FAMVECTOR Y_AXIS{ 0.0f, 1.0f, 0.0f, 0.0f };
 
 public:
 
-	AssistMath::AMDOUBLE3 mEye{ 0.0f, 0.0f, -5.0f };
-	AssistMath::AMDOUBLE3 mFocus{ 0.0f, 0.0f, 0.0f };
+	AssistMath::FAMVECTOR mEye{ 0.0f, 0.0f, -5.0f, 1.0f };
+	AssistMath::FAMVECTOR mFocus{ 0.0f, 0.0f, 0.0f, 0.0f };
 
-	double mRoll{};
-	double mPitch{};
-	double mYaw{};
-
-	double mdx{};
-	double mdy{};
-	double mdz{};
+	AssistMath::FAMVECTOR mRotation{};
+	AssistMath::FAMVECTOR mDTranslation{};
 
 	bool mbMouseControl{ false };
 	bool mbFollow{ false };
@@ -49,43 +56,38 @@ public:
 
 	Camera() = default;
 
-	AssistMath::AMMATRIX getMatrix() const noexcept {
+	AssistMath::FAMMATRIX getMatrix() noexcept {
 		using namespace AssistMath;
-		AMMATRIX cameraMatrix{};
 		if (mbFollow) {
-			AMVECTOR eye{ mEye.x, mEye.y, mEye.z, 1.0f };
-			AMVECTOR focus{ mFocus.x, mFocus.y, mFocus.z, 1.0f };
-			return { AMMatrixLookAtLH(eye, focus, Y_AXIS) };
+			return { FAMMatrixLookAtLH(mEye, mFocus, Y_AXIS) };
 		}
 		if (!mbFollow) {
-			AMVECTOR eye{ mEye.x, mEye.y, mEye.z, 1.0f };
 			//AMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
-			AMVECTOR look{
-				std::sin(AMConvertToRadians(mYaw)) * std::cos(AMConvertToRadians(mPitch)),
-				std::sin(AMConvertToRadians(mPitch)),
-				std::cos(AMConvertToRadians(mYaw)) * std::cos(AMConvertToRadians(mPitch)),
-				1.0f
+			FAMVECTOR rotationRad{ _mm_mul_ps(mRotation, _mm_set_ps1((float)AM_PI / 180.0f)) };
+			FAMVECTOR cosvec{};
+			FAMVECTOR sinvec{ _mm_sincos_ps(&cosvec, rotationRad) };
+			FAMVECTOR look{
+				sinvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
+				sinvec.m128_f32[Rotation::Pitch],
+				cosvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
+				0.0f
 			};
-			return { AMMatrixLookToLH(eye, look, Y_AXIS) };
+			return { FAMMatrixLookToLH(mEye, look, Y_AXIS) };
 		}
 	}
-	void addPitch(double delta) noexcept {
-		mPitch += delta;
-		if (mPitch > 90.0f) mPitch = 89.999f;
-		if (mPitch < -90.0f) mPitch = -89.999f;
+	void addPitch(float delta) noexcept {
+		mRotation.m128_f32[Rotation::Pitch] += delta;
+		if (mRotation.m128_f32[Rotation::Pitch] > 90.0f) mRotation.m128_f32[Rotation::Pitch] = 89.999f;
+		if (mRotation.m128_f32[Rotation::Pitch] < -90.0f) mRotation.m128_f32[Rotation::Pitch] = -89.999f;
 	}
-	void addYaw(double delta) noexcept {
-		mYaw -= delta;
-		while (mYaw > 360) mYaw -= 360;
-		while (mYaw < -360) mYaw += 360;
+	void addYaw(float delta) noexcept {
+		mRotation.m128_f32[Rotation::Yaw] -= delta;
+		while (mRotation.m128_f32[Rotation::Yaw] > 360) mRotation.m128_f32[Rotation::Yaw] -= 360;
+		while (mRotation.m128_f32[Rotation::Yaw] < -360) mRotation.m128_f32[Rotation::Yaw] += 360;
 	}
-	void translate(double dx, double dy, double dz) noexcept {
-		mEye.x += dx;
-		mEye.y += dy;
-		mEye.z += dz;
-		mFocus.x += dx;
-		mFocus.y += dy;
-		mFocus.z += dz;
+	void translate(AssistMath::FAMVECTOR& translation) noexcept {
+		mEye = _mm_add_ps(mEye, translation);
+		mFocus = _mm_add_ps(mFocus, translation);
 	}
 	void input(const Keyboard& kb, const std::vector<Keyboard::Event>& keys, const std::vector<unsigned char>& keysChar, 
 		const Mouse& mouse, const std::vector<Mouse::Event>& mouseEvents, const RECT& rc) noexcept {
@@ -102,25 +104,25 @@ public:
 				mdz += 0.00025f * zcom * shift;
 			}*/
 			if (kb.KeyIsPressed('S')) {
-				double xcom = std::sin(AMConvertToRadians(mYaw));
-				double zcom = std::cos(AMConvertToRadians(mYaw));
-				mdx += 0.00025f * -xcom * shift;
-				mdz += 0.00025f * -zcom * shift;
+				float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+				float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+				mDTranslation.m128_f32[Translation::X] += 0.00025f * -xcom * shift;
+				mDTranslation.m128_f32[Translation::Z] += 0.00025f * -zcom * shift;
 			}
 			if (kb.KeyIsPressed('A')) {
-				double xcom = std::sin(AMConvertToRadians(mYaw - 90.0f));
-				double zcom = std::cos(AMConvertToRadians(mYaw - 90.0f));
-				mdx += 0.00025f * xcom * shift;
-				mdz += 0.00025f * zcom * shift;
+				double xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
+				double zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
+				mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
+				mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
 			}
 			if (kb.KeyIsPressed('D')) {
-				double xcom = std::sin(AMConvertToRadians(mYaw + 90.0f));
-				double zcom = std::cos(AMConvertToRadians(mYaw + 90.0f));
-				mdx += 0.00025f * xcom * shift;
-				mdz += 0.00025f * zcom * shift;
+				double xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
+				double zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
+				mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
+				mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
 			}
-			if (kb.KeyIsPressed(VK_SPACE)) mdy += 0.00025f * shift;
-			if (kb.KeyIsPressed(VK_TAB)) mdy -= 0.00025f * shift;
+			if (kb.KeyIsPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 0.00025f * shift;
+			if (kb.KeyIsPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 0.00025f * shift;
 
 			if (kb.KeyIsPressed(VK_LEFT)) addYaw(0.25f);
 			if (kb.KeyIsPressed(VK_RIGHT)) addYaw(-0.25f);
@@ -157,14 +159,25 @@ public:
 	
 	int update() noexcept {
 		if (!mbFollow) {
-			translate(mdx, mdy, mdz);
+			translate(mDTranslation);
 			//std::cout << "[X] " << mdx << " " << " [Y] " << mdy << " " << " [Z] " << mdz << '\n';
-			if (mdx < 0.0001f && mdx > -0.0001f) mdx = 0.0f;
-			else mdx /= 1.02f;
-			if (mdy < 0.0001f && mdy > -0.0001f) mdy = 0.0f;
-			else mdy /= 1.02f;
-			if (mdz < 0.0001f && mdz > -0.0001f) mdz = 0.0f;
-			else mdz /= 1.02f;
+			if (mDTranslation.m128_f32[Translation::X] < 0.0001f 
+				&& mDTranslation.m128_f32[Translation::X] > -0.0001f) 
+				mDTranslation.m128_f32[Translation::X] = 0.0f;
+			
+			else mDTranslation.m128_f32[Translation::X] /= 1.02f;
+			
+			if (mDTranslation.m128_f32[Translation::Y] < 0.0001f 
+				&& mDTranslation.m128_f32[Translation::Y] > -0.0001f) 
+				mDTranslation.m128_f32[Translation::Y] = 0.0f;
+			
+			else mDTranslation.m128_f32[Translation::Y] /= 1.02f;
+			
+			if (mDTranslation.m128_f32[Translation::Z] < 0.0001f 
+				&& mDTranslation.m128_f32[Translation::Z] > -0.0001f) 
+				mDTranslation.m128_f32[Translation::Z] = 0.0f;
+			
+			else mDTranslation.m128_f32[Translation::Z] /= 1.02f;
 		}
 		return 0;
 	}

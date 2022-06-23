@@ -40,5 +40,5 @@ public:
 	void update() noexcept;
 	void draw(GraphicsOutput& gfx) noexcept;
 
-	AMMATRIX getTransformMx() noexcept;
+	FAMMATRIX getTransformMx() noexcept;
 };

@@ -3,17 +3,16 @@
 
 Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 	using namespace AssistMath;
-
 	// Process data
 	mObject = *std::make_unique<IndexedTriangleList::Object>(itl_data);
 	mObjectData.resize(mObject.pos.size());
-	double highX{ mObject.pos.at(0).x };
-	double lowX{ mObject.pos.at(0).x };
-	double highY{ mObject.pos.at(0).y };
-	double lowY{ mObject.pos.at(0).y };
-	double highZ{ mObject.pos.at(0).z };
-	double lowZ{ mObject.pos.at(0).z };
-	double furthestPoint{ 0.0f };
+	float highX{ mObject.pos.at(0).x };
+	float lowX{ mObject.pos.at(0).x };
+	float highY{ mObject.pos.at(0).y };
+	float lowY{ mObject.pos.at(0).y };
+	float highZ{ mObject.pos.at(0).z };
+	float lowZ{ mObject.pos.at(0).z };
+	float furthestPoint{ 0.0f };
 	for (int i = 0; i < mObject.pos.size(); i++) {
 		mObjectData.at(i).pos.x = mObject.pos.at(i).x;
 		mObjectData.at(i).pos.y = mObject.pos.at(i).y;
@@ -33,24 +32,22 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 
 	}
 
-	mPos.center = { (highX + lowX) / 2, (highY + lowY) / 2, (highZ + lowZ) / 2 };
+	mPos.center = { AMLoadFloat3({ (highX + lowX) / 2, (highY + lowY) / 2, (highZ + lowZ) / 2 }) };
 
 	for (int i = 0; i < mObject.pos.size(); i++) {
 
-		AMDOUBLE3 vert{ mObject.pos.at(i) };
+		FAMVECTOR vert{ AMLoadFloat3(mObject.pos.at(i)) };
 
-		double dx = vert.x - mPos.center.x;
-		double dy = vert.y - mPos.center.y;
-		double dz = vert.z - mPos.center.z;
-
-		double delta = std::sqrt(dx * dx + dy * dy + dz * dz);
+		FAMVECTOR res{ _mm_sub_ps(AMLoadFloat3(mObject.pos.at(i)), mPos.center) };
+		res = { _mm_mul_ps(res, res) };
+		float delta = std::sqrt(res.m128_f32[0] + res.m128_f32[1] + res.m128_f32[2]);
 		if (delta > furthestPoint) furthestPoint = delta;
 
 	}
 	
 	// Collision
-	mCollision.center = mPos.center;
-	mCollision.radius = furthestPoint + 0.1f;
+	//mCollision.center = mPos.center;
+	//mCollision.radius = furthestPoint + 0.1f;
 
 	// Color
 	{
@@ -94,31 +91,25 @@ Object::Object(GraphicsOutput& gfx, IndexedTriangleList::Object& itl_data) {
 }
 
 void Object::update() noexcept {
-	mPos.x += mSpeed.dx;
-	mPos.y += mSpeed.dy;
-	mPos.z += mSpeed.dz;
-	mPos.pitch += mSpeed.dpitch;
-	mPos.yaw += mSpeed.dyaw;
-	mPos.roll += mSpeed.droll;
-
-	mPos.center.x += mSpeed.dx;
-	mPos.center.y += mSpeed.dy;
-	mPos.center.z += mSpeed.dz;
+	mPos.translation = _mm_add_ps(mPos.translation, mSpeed.deltaTranslation);
+	mPos.rotation = _mm_add_ps(mPos.rotation, mSpeed.deltaRotation);
+	mPos.center = _mm_add_ps(mPos.center, mSpeed.deltaTranslation);
 }
 void Object::draw(GraphicsOutput& gfx) noexcept {
 
-	AMMATRIX transformM{ getTransformMx() };
-	auto det{ AMMatrixDeterminant(transformM) };
-	auto tpose{ AMMatrixTranspose(transformM) };
+	FAMMATRIX transformM{ getTransformMx() };
+	FAMVECTOR det{ FAMMatrixDeterminant(transformM) };
+	FAMMATRIX tpose{ FAMMatrixTranspose(transformM) };
 	DSU::VertexConstantBuffer matrices{
 		transformM,
 		gfx.getCamera().getMatrix(),
 		gfx.getProjection(),
-		AMMatrixInverse(det, tpose) };
+		FAMMatrixInverse(det, tpose) 
+	};
 
 	DSU::PixelConstantBuffer pcbData{};
 	pcbData.mtl = mMaterialData;
-	pcbData.eyePos = { gfx.getCamera().mEye.x, gfx.getCamera().mEye.y, gfx.getCamera().mEye.z, 1.0f };
+	pcbData.eyePos = { gfx.getCamera().mEye.m128_f32[0], gfx.getCamera().mEye.m128_f32[1], gfx.getCamera().mEye.m128_f32[2], 1.0f};
 	pcbData.globalAmbient = { 0.f, 0.f, 0.f, 1.f };
 	Light::LightData light0 = {}; {
 		light0.pos = { 20.0f, -35.0f, 20.0f, 1.0f };
@@ -158,10 +149,9 @@ void Object::draw(GraphicsOutput& gfx) noexcept {
 	mPCB.transitionToWrite(gfx.getCommandList());
 }
 
-AMMATRIX Object::getTransformMx() noexcept {
+FAMMATRIX Object::getTransformMx() noexcept {
 	return {
-		AMMatrixRotationRollPitchYaw(mPos.pitch, mPos.yaw, mPos.roll)
-		* AMMatrixTranslation(mPos.x, mPos.y, mPos.z)
-		* AMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f)
-		* AMMatrixTranslation(0.0f, 0.0f, 0.0f) };
+		FAMMatrixRotationRollPitchYaw(mPos.rotation)
+		* FAMMatrixTranslation(mPos.translation)
+	};
 }

@@ -8,8 +8,8 @@ namespace Scripts {
 	void doMove(Actor& actor, const Keyboard& kb) {
 		for (auto& o : actor.getModel().getObjects()) {
 			if (kb.KeyIsPressed('W'))
-				o.getSpeed().dx += 0.0001f;
-			else o.getSpeed().dx /= 1.01f;
+				o.getSpeed().deltaTranslation.m128_f32[0] += 0.0001f;
+			else o.getSpeed().deltaTranslation.m128_f32[0] /= 1.01f;
 
 			/*if (kb.KeyIsPressed('S'))
 				o.getSpeed().dz -= 0.0001f;

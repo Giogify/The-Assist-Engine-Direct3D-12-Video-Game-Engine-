@@ -95,7 +95,7 @@ private: // Private Fields
 	ComPtr<ID3DBlob>								mpVSBytecode{};
 	ComPtr<ID3DBlob>								mpPSBytecode{};
 	// Projection Matrix
-	AssistMath::AMMATRIX							mProjection{};
+	AssistMath::FAMMATRIX							mProjection{};
 	// Misc
 	RECT											mWindowRc{};
 	HRESULT											mHR{};
@@ -147,8 +147,8 @@ public: // Public Methods
 	int setFullscreen() noexcept;
 	Camera& getCamera() noexcept { return mCamera; }
 
-	void setProjection(const AssistMath::AMMATRIX& projection) noexcept { mProjection = projection; }
-	AssistMath::AMMATRIX& getProjection() noexcept { return mProjection; }
+	void setProjection(const AssistMath::FAMMATRIX& projection) noexcept { mProjection = projection; }
+	AssistMath::FAMMATRIX& getProjection() noexcept { return mProjection; }
 	ComPtr<ID3D12GraphicsCommandList6>& getCommandList() noexcept { return mpCommandList; }
 	ComPtr<ID3D12Device9>& getDevice() noexcept { return mpDevice; }
 

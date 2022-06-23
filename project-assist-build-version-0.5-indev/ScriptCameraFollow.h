@@ -8,9 +8,9 @@ namespace Scripts {
 	void doFollow(Camera& camera, Actor& actor) noexcept {
 		using namespace AssistMath;
 		if (camera.mbFollow) {
-			AMDOUBLE3 actorPos{ actor.getModel().getObjects().at(0).getPos().center };
+			FAMVECTOR actorPos{ actor.getModel().getObjects().at(0).getPos().center };
 			camera.mFocus = actorPos;
-			camera.mEye = { actorPos.x, actorPos.y + 5.0f, actorPos.z - 5.0f };
+			camera.mEye = { actorPos.m128_f32[0], actorPos.m128_f32[1] + 5.0f, actorPos.m128_f32[2] - 5.0f};
 		}
 	}
 }
