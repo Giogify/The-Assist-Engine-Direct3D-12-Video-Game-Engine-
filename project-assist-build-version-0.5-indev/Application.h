@@ -40,7 +40,7 @@ public: // Public Methods
 	
 	// Game Loop
 	int doInput() noexcept;
-	int doUpdate(float) noexcept;
+	int doUpdate() noexcept;
 	int doRender() noexcept;
 
 };

@@ -7,14 +7,11 @@
 
 // Top-Level Application Logic
 int Application::applicationUpdate() {
-
-	float dt = mTickTimer.mark();
-	
 	GID::DSU::Timer BMTimer{};
 	//std::cout << "Processing " << ticks << " ticks\n";
 	if (doInput() != 0) return 1;
 	//std::cout << BMTimer.mark() * 1.e6 << " us" << '\n';
-	//if (doUpdate(dt) != 0) return 1;
+	if (doUpdate() != 0) return 1;
 	
 	if (doRender() != 0) return 1;
 	
@@ -102,13 +99,14 @@ Application::Application() {
 	using namespace GID;
 	using namespace GSO;
 	using namespace DSU::AssistMath;
+	
 	GSO::Util::initQuickStart();
+	
 	FAMMATRIX projectionTemp{ 
 		FAMMatrixPerspectiveFovLH(
-			AMConvertToRadians(GID::GSO::General::gCfgGen.gCameraAngle), 16.0f / 9.0f, 0.25f, 5000.0f
+			AMConvertToRadians(General::gCfgGen.gCameraAngle), 16.0f / 9.0f, 0.25f, 5000.0f
 		) 
 	};
-
 	Render::setGFXProjection(GID::DSU::WindowType::MAINWINDOW, projectionTemp);
 
 	GID::DSU::LightData light0 = {}; {
@@ -132,10 +130,11 @@ Application::Application() {
 	}
 	GID::GSO::Scene::addLight(light1);
 
-	for (int i = 0; i < 1; i++)
-		Scene::addActor({ "testCube" });
+	Scene::addActor({ "testCube" });
+	Scene::addActor({ "plane2" });
 
-	int bk = 0;
+	General::gGlobalTimer.mark();
+	Update::gTickTimer.mark();
 
 	//GID::Render::gfx.mProjection = { FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f) };
 	//GID::Scene::gActors.push_back(Actor(GID::Render::gfx, *std::make_unique<std::string>("testCube")));
@@ -151,7 +150,7 @@ int Application::applicationStart() {
 	while (true) {
 		int hr{};
 		for (auto& w : GID::GSO::WindowNS::gWnd)
-			if (const auto msgCode = w.get()->handleMessages()) {
+			if (const auto msgCode = w->handleMessages()) {
 				for (auto& gfx : GID::GSO::Render::gGFX) {
 					gfx.gfx.flushGPU();
 					CloseHandle(gfx.gfx.mhFenceEvent);
@@ -199,7 +198,7 @@ int Application::applicationStart() {
 int Application::doInput() noexcept {
 	bool inputDebug{ false };
 
-	GID::GSO::Input::processInput();
+	if (GID::GSO::Input::processInput() != 0) return 1;
 
 	//while (!gWnd.at(GID::Window::WindowType::MAINWINDOW).kb.KeyIsEmpty()) {
 	//	keys.push_back(gWnd.at(GID::Window::WindowType::MAINWINDOW).kb.ReadKey());
@@ -265,7 +264,9 @@ int Application::doInput() noexcept {
 
 	return 0;
 }
-int Application::doUpdate(float dt) noexcept {
+int Application::doUpdate() noexcept {
+	GID::GSO::Update::initUpdateCycle();
+	GID::GSO::Update::doUpdate();
 	//GID::Render::gfx.getCamera().update(dt);
 	//mScene.update();
 	//Scripts::processUpdateScripts(mScene);
@@ -277,17 +278,14 @@ int Application::doUpdate(float dt) noexcept {
 	return 0;
 }
 int Application::doRender() noexcept {
+	using namespace GID;
+	using namespace DSU;
+	using namespace GSO;
+	using namespace Input;
 	GID::GSO::Render::mainGFX().startFrame();
-	uint16_t drawCt{};
-	double total{};
-	GID::DSU::Timer testTimer{};
-	for (auto& a : GID::GSO::Scene::gActors) {
-		testTimer.mark();
-		a.draw();
-		total += testTimer.mark() * 1000.f;
-		drawCt++;
-	}
-	std::cout << total / drawCt << '\n';
+	for (auto& a : GID::GSO::Scene::gActors) a.draw();
+	for (auto& e : gInput[0].mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress)
+		std::cout << "LMB Pressed!\n";
 	//mScene.draw(mWnd.getGraphicsOutput());
 	//mWnd.getGraphicsOutput().doFrame();
 	GID::GSO::Render::mainGFX().endFrame();

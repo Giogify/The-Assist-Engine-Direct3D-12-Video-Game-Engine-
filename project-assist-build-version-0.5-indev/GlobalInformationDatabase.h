@@ -73,10 +73,10 @@ namespace GID {
 			//constexpr uint32_t XM_CRMASK_CR6BOUNDS = XM_CRMASK_CR6FALSE;
 
 			// Unit conversion
-			double AMConvertToRadians(double deg) noexcept { return deg * (AM_PI / 180.0); }
-			float AMConvertToRadians(float deg) noexcept { return deg * ((float)AM_PI / 180.0f); }
-			double AMConvertToDegrees(double rad) noexcept { return rad * (180.0 / AM_PI); }
-			float AMConvertToDegrees(float rad) noexcept { return rad * (180.0f / (float)AM_PI); }
+			inline double AMConvertToRadians(double deg) noexcept { return deg * (AM_PI / 180.0); }
+			inline float AMConvertToRadians(float deg) noexcept { return deg * ((float)AM_PI / 180.0f); }
+			inline double AMConvertToDegrees(double rad) noexcept { return rad * (180.0 / AM_PI); }
+			inline float AMConvertToDegrees(float rad) noexcept { return rad * (180.0f / (float)AM_PI); }
 
 			// Types
 			using AMVECTOR = __m256d;
@@ -591,16 +591,16 @@ namespace GID {
 			};
 
 			// Load
-			AMVECTOR AMLoadDouble2(const AMDOUBLE2& src) noexcept {
+			inline AMVECTOR AMLoadDouble2(const AMDOUBLE2& src) noexcept {
 				return { _mm256_set_pd(src.x, src.y, 0.0, 0.0) };
 			}
-			AMVECTOR AMLoadDouble3(const AMDOUBLE3& src) noexcept {
+			inline AMVECTOR AMLoadDouble3(const AMDOUBLE3& src) noexcept {
 				return { _mm256_set_pd(0.0, src.z, src.y, src.x) };
 			}
-			AMVECTOR AMLoadDouble4(const AMDOUBLE4& src) noexcept {
+			inline AMVECTOR AMLoadDouble4(const AMDOUBLE4& src) noexcept {
 				return { _mm256_set_pd(src.x, src.y, src.z, src.w) };
 			}
-			AMMATRIX AMLoadDouble3x3(const AMDOUBLE3X3& src) noexcept {
+			inline AMMATRIX AMLoadDouble3x3(const AMDOUBLE3X3& src) noexcept {
 				return {
 					_mm256_set_pd(src._11, src._12, src._13, 0.0),
 					_mm256_set_pd(src._21, src._22, src._23, 0.0),
@@ -608,7 +608,7 @@ namespace GID {
 					_mm256_set_pd(0.0,     0.0,     0.0,     0.0)
 				};
 			}
-			AMMATRIX AMLoadDouble4x3(const AMDOUBLE4X3& src) noexcept {
+			inline AMMATRIX AMLoadDouble4x3(const AMDOUBLE4X3& src) noexcept {
 				return {
 					_mm256_set_pd(src._11, src._12, src._13, 0.0),
 					_mm256_set_pd(src._21, src._22, src._23, 0.0),
@@ -616,7 +616,7 @@ namespace GID {
 					_mm256_set_pd(src._41, src._41, src._41, 0.0)
 				};
 			}
-			AMMATRIX AMLoadDouble3x4(const AMDOUBLE3X4& src) noexcept {
+			inline AMMATRIX AMLoadDouble3x4(const AMDOUBLE3X4& src) noexcept {
 				return {
 					_mm256_set_pd(src._11, src._12, src._13, src._14),
 					_mm256_set_pd(src._21, src._22, src._23, src._24),
@@ -624,7 +624,7 @@ namespace GID {
 					_mm256_set_pd(0.0,     0.0,     0.0,     0.0)
 				};
 			}
-			AMMATRIX AMLoadDouble4x4(const AMDOUBLE4X4& src) noexcept {
+			inline AMMATRIX AMLoadDouble4x4(const AMDOUBLE4X4& src) noexcept {
 				return {
 					_mm256_set_pd(src._14, src._13, src._12, src._11),
 					_mm256_set_pd(src._24, src._23, src._22, src._21),
@@ -633,16 +633,16 @@ namespace GID {
 				};
 			}
 
-			FAMVECTOR AMLoadFloat2(const AMFLOAT2& src) noexcept {
+			inline FAMVECTOR AMLoadFloat2(const AMFLOAT2& src) noexcept {
 				return { _mm_set_ps(0.0f, 0.0f, src.y, src.x) };
 			}
-			FAMVECTOR AMLoadFloat3(const AMFLOAT3& src) noexcept {
+			inline FAMVECTOR AMLoadFloat3(const AMFLOAT3& src) noexcept {
 				return { _mm_set_ps(0.0f, src.z, src.y, src.x) };
 			}
-			FAMVECTOR AMLoadFloat4(const AMFLOAT4& src) noexcept {
+			inline FAMVECTOR AMLoadFloat4(const AMFLOAT4& src) noexcept {
 				return { _mm_set_ps(src.w, src.z, src.y, src.x) };
 			}
-			FAMMATRIX AMLoadFloat3x3(const AMFLOAT3X3& src) noexcept {
+			inline FAMMATRIX AMLoadFloat3x3(const AMFLOAT3X3& src) noexcept {
 				return {
 					_mm_set_ps(src._13,	src._12,	src._11,	0.0f),
 					_mm_set_ps(src._23,	src._22,	src._21,	0.0f),
@@ -650,7 +650,7 @@ namespace GID {
 					_mm_set_ps(0.0f,	0.0f,     0.0f,			0.0f)
 				};
 			}
-			FAMMATRIX AMLoadFloat4x3(const AMFLOAT4X3& src) noexcept {
+			inline FAMMATRIX AMLoadFloat4x3(const AMFLOAT4X3& src) noexcept {
 				return {
 					_mm_set_ps(src._13,	src._12,	src._11,	0.0f),
 					_mm_set_ps(src._23,	src._22,	src._21,	0.0f),
@@ -658,7 +658,7 @@ namespace GID {
 					_mm_set_ps(src._43,	src._42,	src._41,	0.0f)
 				};
 			}
-			FAMMATRIX AMLoadFloat3x4(const AMFLOAT3X4& src) noexcept {
+			inline FAMMATRIX AMLoadFloat3x4(const AMFLOAT3X4& src) noexcept {
 				return {
 					_mm_set_ps(src._14,	src._13,	src._12,	src._11),
 					_mm_set_ps(src._24,	src._23,	src._22,	src._21),
@@ -666,7 +666,7 @@ namespace GID {
 					_mm_set_ps(0.0f,	0.0f,		0.0f,		0.0f)
 				};
 			}
-			FAMMATRIX AMLoadFloat4x4(const AMFLOAT4X4& src) noexcept {
+			inline FAMMATRIX AMLoadFloat4x4(const AMFLOAT4X4& src) noexcept {
 				return {
 					_mm_set_ps(src._14,	src._13,	src._12,	src._11),
 					_mm_set_ps(src._24,	src._23,	src._22,	src._21),
@@ -676,42 +676,42 @@ namespace GID {
 			}
 
 			// Store (ref)
-			void AMStoreDouble2(AMDOUBLE2& dst, AMVECTOR& V) noexcept {
+			inline void AMStoreDouble2(AMDOUBLE2& dst, AMVECTOR& V) noexcept {
 				dst.x = V.m256d_f64[0];
 				dst.y = V.m256d_f64[1];
 			}
-			void AMStoreDouble3(AMDOUBLE3& dst, AMVECTOR& V) noexcept {
+			inline void AMStoreDouble3(AMDOUBLE3& dst, AMVECTOR& V) noexcept {
 				dst.x = V.m256d_f64[0];
 				dst.y = V.m256d_f64[1];
 				dst.z = V.m256d_f64[2];
 			}
-			void AMStoreDouble4(AMDOUBLE4& dst, AMVECTOR& V) noexcept {
+			inline void AMStoreDouble4(AMDOUBLE4& dst, AMVECTOR& V) noexcept {
 				/*dst.x = V.m256d_f64[0];
 				dst.y = V.m256d_f64[1];
 				dst.z = V.m256d_f64[2];
 				dst.w = V.m256d_f64[3];*/
 				_mm256_store_pd((double*)&dst, V);
 			}
-			void AMStoreDouble3x3(AMDOUBLE3X3& dst, AMMATRIX& M) noexcept {
+			inline void AMStoreDouble3x3(AMDOUBLE3X3& dst, AMMATRIX& M) noexcept {
 				for (uint8_t i = 0; i < 3; i++)
 					for (uint8_t j = 0; j < 3; j++)
 						dst.m[i][j] = M.m[i].m256d_f64[j];
 			}
-			void AMStoreDouble4x3(AMDOUBLE4X3& dst, AMMATRIX& M) noexcept {
+			inline void AMStoreDouble4x3(AMDOUBLE4X3& dst, AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				for (uint8_t i = 0; i < 4; i++)
 					for (uint8_t j = 0; j < 3; j++)
 						dst.m[i][j] = m[i][j];
 			}
-			void AMStoreDouble3x4(AMDOUBLE3X4& dst, AMMATRIX& M) noexcept {
+			inline void AMStoreDouble3x4(AMDOUBLE3X4& dst, AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				for (uint8_t i = 0; i < 3; i++)
 					for (uint8_t j = 0; j < 4; j++)
 						dst.m[i][j] = m[i][j];
 			}
-			void AMStoreDouble4x4(AMDOUBLE4X4& dst, AMMATRIX& M) noexcept {
+			inline void AMStoreDouble4x4(AMDOUBLE4X4& dst, AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				for (uint8_t i = 0; i < 4; i++)
@@ -719,53 +719,53 @@ namespace GID {
 						dst.m[i][j] = m[i][j];
 			}
 
-			void AMStoreFloat2(AMFLOAT2& dst, FAMVECTOR& V) noexcept {
+			inline void AMStoreFloat2(AMFLOAT2& dst, FAMVECTOR& V) noexcept {
 				dst.x = V.m128_f32[0];
 				dst.y = V.m128_f32[1];
 			}
-			void AMStoreFloat3(AMFLOAT3& dst, FAMVECTOR& V) noexcept {
+			inline void AMStoreFloat3(AMFLOAT3& dst, FAMVECTOR& V) noexcept {
 				dst.x = V.m128_f32[0];
 				dst.y = V.m128_f32[1];
 				dst.z = V.m128_f32[2];
 			}
-			void AMStoreFloat4(AMFLOAT4& dst, FAMVECTOR& V) noexcept {
+			inline void AMStoreFloat4(AMFLOAT4& dst, FAMVECTOR& V) noexcept {
 				dst.x = V.m128_f32[0];
 				dst.y = V.m128_f32[1];
 				dst.z = V.m128_f32[2];
 				dst.w = V.m128_f32[3];
 			}
-			void AMStoreFloat3x3(AMFLOAT3X3& dst, FAMMATRIX& M) noexcept {
+			inline void AMStoreFloat3x3(AMFLOAT3X3& dst, FAMMATRIX& M) noexcept {
 				for (uint8_t i = 0; i < 3; i++)
 					for (uint8_t j = 0; j < 3; j++)
 						dst.m[i][j] = M.m[i].m128_f32[j];
 			}
-			void AMStoreFloat4x3(AMFLOAT4X3& dst, FAMMATRIX& M) noexcept {
+			inline void AMStoreFloat4x3(AMFLOAT4X3& dst, FAMMATRIX& M) noexcept {
 				for (uint8_t i = 0; i < 4; i++)
 					for (uint8_t j = 0; j < 3; j++)
 						dst.m[i][j] = M.m[i].m128_f32[j];
 			}
-			void AMStoreFloat3x4(AMFLOAT3X4& dst, FAMMATRIX& M) noexcept {
+			inline void AMStoreFloat3x4(AMFLOAT3X4& dst, FAMMATRIX& M) noexcept {
 				for (uint8_t i = 0; i < 3; i++)
 					for (uint8_t j = 0; j < 4; j++)
 						dst.m[i][j] = M.m[i].m128_f32[j];
 			}
-			void AMStoreFloat4x4(AMFLOAT4X4& dst, FAMMATRIX& M) noexcept {
+			inline void AMStoreFloat4x4(AMFLOAT4X4& dst, FAMMATRIX& M) noexcept {
 				for (uint8_t i = 0; i < 4; i++)
 					for (uint8_t j = 0; j < 4; j++)
 						dst.m[i][j] = M.m[i].m128_f32[j];
 			}
 
 			// Store (new)
-			AMDOUBLE2 AMStoreDouble2(AMVECTOR& V) noexcept {
+			inline AMDOUBLE2 AMStoreDouble2(AMVECTOR& V) noexcept {
 				return { V.m256d_f64[0], V.m256d_f64[1] };
 			}
-			AMDOUBLE3 AMStoreDouble3(AMVECTOR& V) noexcept {
+			inline AMDOUBLE3 AMStoreDouble3(AMVECTOR& V) noexcept {
 				return { V.m256d_f64[0], V.m256d_f64[1], V.m256d_f64[2] };
 			}
-			AMDOUBLE4 AMStoreDouble4(AMVECTOR& V) noexcept {
+			inline AMDOUBLE4 AMStoreDouble4(AMVECTOR& V) noexcept {
 				return { V.m256d_f64[0], V.m256d_f64[1], V.m256d_f64[2], V.m256d_f64[3] };
 			}
-			AMDOUBLE3X3 AMStoreDouble3x3(AMMATRIX& M) noexcept {
+			inline AMDOUBLE3X3 AMStoreDouble3x3(AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				return {
@@ -774,7 +774,7 @@ namespace GID {
 					m[2][0], m[2][1], m[2][2]
 				};
 			}
-			AMDOUBLE4X3 AMStoreDouble4x3(AMMATRIX& M) noexcept {
+			inline AMDOUBLE4X3 AMStoreDouble4x3(AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				return {
@@ -784,7 +784,7 @@ namespace GID {
 					m[3][0], m[3][1], m[3][2]
 				};
 			}
-			AMDOUBLE3X4 AMStoreDouble3x4(AMMATRIX& M) noexcept {
+			inline AMDOUBLE3X4 AMStoreDouble3x4(AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				return {
@@ -793,7 +793,7 @@ namespace GID {
 					m[2][0], m[2][1], m[2][2], m[2][3]
 				};
 			}
-			AMDOUBLE4X4 AMStoreDouble4x4(AMMATRIX& M) noexcept {
+			inline AMDOUBLE4X4 AMStoreDouble4x4(AMMATRIX& M) noexcept {
 				double m[4][4]{};
 				_mm256_store_pd(m[0], M.m[0]);
 				return {
@@ -805,14 +805,14 @@ namespace GID {
 			}
 
 			// Forward decs
-			FAMVECTOR FAMVector4Normalize(const FAMVECTOR& vec);
-			FAMVECTOR FAMVector4DotProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1);
-			FAMVECTOR FAMVector4CrossProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1);
-			float FAMVector4SumVector(const FAMVECTOR& vec);
-			float FAMVector4Magnitude(const FAMVECTOR& vec);
-			FAMVECTOR FAMVector4Negate(const FAMVECTOR& vec);
+			inline FAMVECTOR FAMVector4Normalize(const FAMVECTOR& vec);
+			inline FAMVECTOR FAMVector4DotProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1);
+			inline FAMVECTOR FAMVector4CrossProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1);
+			inline float FAMVector4SumVector(const FAMVECTOR& vec);
+			inline float FAMVector4Magnitude(const FAMVECTOR& vec);
+			inline FAMVECTOR FAMVector4Negate(const FAMVECTOR& vec);
 
-			FAMMATRIX FAMMatrixIdentity() {
+			inline FAMMATRIX FAMMatrixIdentity() {
 				return {
 					1.0f, 0.0f, 0.0f, 0.0f,
 					0.0f, 1.0f, 0.0f, 0.0f,
@@ -820,7 +820,7 @@ namespace GID {
 					0.0f, 0.0f, 0.0f, 1.0f
 				};
 			}
-			FAMMATRIX FAMMatrixRotationRollPitchYaw(FAMVECTOR& vec) {
+			inline FAMMATRIX FAMMatrixRotationRollPitchYaw(FAMVECTOR& vec) {
 				FAMVECTOR cosvec{};
 				FAMVECTOR sinvec{ _mm_sincos_ps(&cosvec, vec) };
 
@@ -845,7 +845,7 @@ namespace GID {
 
 				return { yRot * xRot * zRot };
 			}
-			FAMMATRIX FAMMatrixTranslation(FAMVECTOR& vec) {
+			inline FAMMATRIX FAMMatrixTranslation(FAMVECTOR& vec) {
 				return {
 					1.0, 0.0, 0.0, 0.0,
 					0.0, 1.0, 0.0, 0.0,
@@ -853,7 +853,7 @@ namespace GID {
 					vec.m128_f32[0], vec.m128_f32[1], vec.m128_f32[2], 1.0
 				};
 			}
-			FAMVECTOR FAMMatrixDeterminant(FAMMATRIX& mx) {
+			inline FAMVECTOR FAMMatrixDeterminant(FAMMATRIX& mx) {
 				/*double a{ mx.m[0].m256d_f64[0] }; double b{ mx.m[0].m256d_f64[1] }; double c{ mx.m[0].m256d_f64[2] }; double d{ mx.m[0].m256d_f64[3] };
 				double e{ mx.m[1].m256d_f64[0] }; double f{ mx.m[1].m256d_f64[1] }; double g{ mx.m[1].m256d_f64[2] }; double h{ mx.m[1].m256d_f64[3] };
 				double i{ mx.m[2].m256d_f64[0] }; double j{ mx.m[2].m256d_f64[1] }; double k{ mx.m[2].m256d_f64[2] }; double l{ mx.m[2].m256d_f64[3] };
@@ -1013,7 +1013,7 @@ namespace GID {
 								_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[2], mx.m[2].m256d_f64[2], mx.m[2].m256d_f64[1], mx.m[2].m256d_f64[1] }),
 									AMLoadDouble4({ mx.m[3].m256d_f64[1], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0] }))))));*/
 			}
-			FAMMATRIX FAMMatrixPerspectiveFovLH(float fov, float ar, float n, float f) {
+			inline FAMMATRIX FAMMatrixPerspectiveFovLH(float fov, float ar, float n, float f) {
 				float ySc = 1.0 / std::tan(fov / 2.0);
 				float dz = f - n;
 				return {
@@ -1023,10 +1023,10 @@ namespace GID {
 					0.0,		0.0,		-n * (f / dz),	0.0
 				};
 			}
-			FAMMATRIX FAMMatrixLookAtLH(FAMVECTOR& eye, FAMVECTOR& focus, FAMVECTOR upDirection) {
+			inline FAMMATRIX FAMMatrixLookAtLH(FAMVECTOR& eye, FAMVECTOR& focus, FAMVECTOR upDirection) {
 				return { FAMMatrixIdentity() }; // implement this later
 			}
-			FAMMATRIX FAMMatrixLookToLH(FAMVECTOR& eye, FAMVECTOR& direction, FAMVECTOR upDirection) {
+			inline FAMMATRIX FAMMatrixLookToLH(FAMVECTOR& eye, FAMVECTOR& direction, FAMVECTOR upDirection) {
 				FAMVECTOR F = direction;
 				FAMVECTOR R = FAMVector4Normalize(FAMVector4CrossProduct(upDirection, F));
 				FAMVECTOR U = FAMVector4CrossProduct(F, R);
@@ -1046,7 +1046,7 @@ namespace GID {
 					x,				y,				z,				1.0f,
 				};
 			}
-			FAMVECTOR FAMVector4Transform(FAMVECTOR& vec, FAMMATRIX& mx) {
+			inline FAMVECTOR FAMVector4Transform(FAMVECTOR& vec, FAMMATRIX& mx) {
 				FAMVECTOR res{};
 
 				FAMMATRIX m2rot{
@@ -1068,7 +1068,7 @@ namespace GID {
 				}
 				return res;
 			}
-			FAMMATRIX FAMMatrixTranspose(FAMMATRIX& mx) {
+			inline FAMMATRIX FAMMatrixTranspose(FAMMATRIX& mx) {
 				return {
 					mx.m[0].m128_f32[0], mx.m[1].m128_f32[0], mx.m[2].m128_f32[0], mx.m[3].m128_f32[0],
 					mx.m[0].m128_f32[1], mx.m[1].m128_f32[1], mx.m[2].m128_f32[1], mx.m[3].m128_f32[1],
@@ -1076,7 +1076,7 @@ namespace GID {
 					mx.m[0].m128_f32[3], mx.m[1].m128_f32[3], mx.m[2].m128_f32[3], mx.m[3].m128_f32[3]
 				};
 			}
-			FAMMATRIX FAMMatrixInverse(FAMVECTOR& det, FAMMATRIX& mx) {
+			inline FAMMATRIX FAMMatrixInverse(FAMVECTOR& det, FAMMATRIX& mx) {
 				FAMMATRIX mxI{ FAMMatrixIdentity() };
 				if (det.m128_f32[0] * det.m128_f32[1] * det.m128_f32[2] * det.m128_f32[3] == 0.0f)
 					return mxI;
@@ -1430,15 +1430,15 @@ namespace GID {
 					_172, _173, _174, _175
 				};*/
 			}
-			FAMVECTOR FAMVector4Normalize(const FAMVECTOR& vec) {
+			inline FAMVECTOR FAMVector4Normalize(const FAMVECTOR& vec) {
 				FAMVECTOR vecsqrd{ _mm_mul_ps(vec, vec) };
 				float vecsqrt{ std::sqrtf(vecsqrd.m128_f32[0] + vecsqrd.m128_f32[1] + vecsqrd.m128_f32[2]) };
 				return { _mm_div_ps(vec, _mm_set_ps1(vecsqrt)) };
 			}
-			FAMVECTOR FAMVector4DotProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1) {
+			inline FAMVECTOR FAMVector4DotProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1) {
 				return { _mm_mul_ps(vec0, vec1) };
 			}
-			FAMVECTOR FAMVector4CrossProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1) {
+			inline FAMVECTOR FAMVector4CrossProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1) {
 				return { 
 					_mm_sub_ps(
 						_mm_mul_ps(AMLoadFloat3({ vec0.m128_f32[1], vec0.m128_f32[2], vec0.m128_f32[0] }),
@@ -1448,13 +1448,13 @@ namespace GID {
 					)
 				};
 			}
-			float FAMVector4SumVector(const FAMVECTOR& vec) {
+			inline float FAMVector4SumVector(const FAMVECTOR& vec) {
 				return { vec.m128_f32[0] + vec.m128_f32[1] + vec.m128_f32[2] + vec.m128_f32[3] };
 			}
-			float FAMVector4Magnitude(const FAMVECTOR& vec) {
+			inline float FAMVector4Magnitude(const FAMVECTOR& vec) {
 				return { std::sqrtf(FAMVector4SumVector(_mm_mul_ps(vec, vec))) };
 			}
-			FAMVECTOR FAMVector4Negate(const FAMVECTOR& vec) {
+			inline FAMVECTOR FAMVector4Negate(const FAMVECTOR& vec) {
 				return { AMLoadFloat4({ -vec.m128_f32[0], -vec.m128_f32[1], -vec.m128_f32[2], -vec.m128_f32[3] }) };
 			}
 
@@ -1961,11 +1961,11 @@ namespace GID {
 namespace GID {
 	namespace DSU {
 		struct PackedInput {
-			DSU::Keyboard kb{};
-			std::vector<DSU::Keyboard::Event> keys{};
+			Keyboard kb{};
+			std::vector<Keyboard::Event> keys{};
 			std::vector<uint8_t> keysChar{};
-			DSU::Mouse mouse{};
-			std::vector<DSU::Mouse::Event> mouseEvents{};
+			Mouse mouse{};
+			std::vector<Mouse::Event> mouseEvents{};
 		};
 	}
 }
@@ -1991,7 +1991,7 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Input {
-			std::vector<GID::DSU::PackedInput> gInput{};
+			inline std::vector<GID::DSU::PackedInput> gInput{};
 		}
 	}
 }
@@ -2000,7 +2000,7 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace WindowNS {
-			uint8_t windowCt{};
+			inline uint8_t windowCt{};
 		}
 	}
 }
@@ -2047,7 +2047,6 @@ namespace GID {
 				case WM_KEYDOWN:
 					if (!(lParam & 0x40000000) || gInput[WindowID].kb.isAutoRepeatEnabled()) {
 						gInput[WindowID].kb.onKeyPressed((uint8_t)wParam);
-						std::cout << "Key Down!\n";
 					}
 					break;
 
@@ -2258,25 +2257,11 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace WindowNS {
-			std::vector<std::shared_ptr<GID::DSU::Window>> gWnd{};
-			void addWindow(UINT w, UINT h, const TCHAR* name) {
+			inline std::vector<std::shared_ptr<GID::DSU::Window>> gWnd{};
+			inline void addWindow(UINT w, UINT h, const TCHAR* name) {
 				gWnd.push_back(std::make_shared<GID::DSU::Window>(w, h, name));
 				GID::GSO::Input::gInput.push_back({ });
 				windowCt++;
-			}
-		}
-	}
-}
-
-// Per-frame Process Input Function
-namespace GID {
-	namespace GSO {
-		namespace Input {
-			void processInput() {
-				if (gInput.size() != WindowNS::gWnd.size()) gInput.resize(WindowNS::gWnd.size());
-				for (auto& wnd : WindowNS::gWnd) {
-
-				}
 			}
 		}
 	}
@@ -2309,8 +2294,8 @@ namespace GID {
 	namespace GSO {
 		namespace Render {
 			namespace Viewport {
-				std::array<GID::DSU::VIEWPORT_DESC, 4u> ViewportPresets;
-				void initViewportPresets() {
+				inline std::array<GID::DSU::VIEWPORT_DESC, 4u> ViewportPresets;
+				inline void initViewportPresets() {
 					RECT wnd{ WindowNS::gWnd.at((uint8_t)GID::DSU::WindowType::MAINWINDOW).get()->getWindowInfo().rcClient };
 					// VP1_DEFAULT
 					ViewportPresets[0] = {
@@ -2419,10 +2404,59 @@ namespace GID {
 	}
 }
 
+// Global Timer
+namespace GID {
+	namespace GSO {
+		namespace General {
+			inline DSU::Timer gGlobalTimer{};
+		}
+	}
+}
+
+// Global Tick Timer
+namespace GID {
+	namespace GSO {
+		namespace Update {
+			inline DSU::Timer gTickTimer{};
+		}
+	}
+}
+
+// Global Tick
+namespace GID {
+	namespace GSO {
+		namespace Update {
+			inline uint16_t gTicks{};
+		}
+	}
+}
+
+// Tick Leftover Time
+namespace GID {
+	namespace GSO {
+		namespace Update {
+			inline float gTLT{};
+		}
+	}
+}
+
+// Initialize the update cycle (record ticks passed)
+namespace GID {
+	namespace GSO {
+		namespace Update {
+			inline void initUpdateCycle() {
+				float dt = gTickTimer.mark() * 1000.f + gTLT;
+				gTicks = std::truncf(dt);
+				gTLT = dt - (float)gTicks;
+			}
+		}
+	}
+}
+
 // Camera Container
 namespace GID {
 	namespace DSU {
-		struct Camera : GID::DSU::Scriptable {
+		struct Camera : Scriptable, Inputtable {
 
 			enum Rotation { Pitch, Yaw, Roll };
 			enum Translation { X, Y, Z };
@@ -2475,50 +2509,54 @@ namespace GID {
 				mEye = _mm_add_ps(mEye, translation);
 				mFocus = _mm_add_ps(mFocus, translation);
 			}
-			/*void input(const Keyboard& kb, const std::vector<Keyboard::Event>& keys, const std::vector<unsigned char>& keysChar,
-				const Mouse& mouse, const std::vector<Mouse::Event>& mouseEvents, const RECT& rc) noexcept {
+			void input() noexcept override {
+
+				using namespace GSO::Input; using namespace AssistMath;
+				auto ind = (uint8_t)WindowType::MAINWINDOW;
 
 				if (!mbFollow) {
-					using namespace AssistMath;
-					BOOL shift = kb.KeyIsPressed(VK_SHIFT);
+					
+					BOOL shift = gInput[ind].kb.isKeyPressed(VK_SHIFT);
 					shift++;
 
-					if (kb.KeyIsPressed('W')) {
+					if (gInput[ind].kb.isKeyPressed('W')) {
 						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 						mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
 						mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
 					}
-					if (kb.KeyIsPressed('S')) {
+					if (gInput[ind].kb.isKeyPressed('S')) {
 						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 						mDTranslation.m128_f32[Translation::X] += 0.00025f * -xcom * shift;
 						mDTranslation.m128_f32[Translation::Z] += 0.00025f * -zcom * shift;
 					}
-					if (kb.KeyIsPressed('A')) {
-						double xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
-						double zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
+					if (gInput[ind].kb.isKeyPressed('A')) {
+						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
+						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 						mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
 						mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
 					}
-					if (kb.KeyIsPressed('D')) {
-						double xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
-						double zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
+					if (gInput[ind].kb.isKeyPressed('D')) {
+						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
+						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 						mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
 						mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
 					}
-					if (kb.KeyIsPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 0.00025f * shift;
-					if (kb.KeyIsPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 0.00025f * shift;
+					if (gInput[ind].kb.isKeyPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 0.00025f * shift;
+					if (gInput[ind].kb.isKeyPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 0.00025f * shift;
 
-					if (kb.KeyIsPressed(VK_LEFT)) addYaw(0.25f);
-					if (kb.KeyIsPressed(VK_RIGHT)) addYaw(-0.25f);
-					if (kb.KeyIsPressed(VK_UP)) addPitch(0.25f);
-					if (kb.KeyIsPressed(VK_DOWN)) addPitch(-0.25f);
+					if (gInput[ind].kb.isKeyPressed(VK_LEFT)) addYaw(0.25f);
+					if (gInput[ind].kb.isKeyPressed(VK_RIGHT)) addYaw(-0.25f);
+					if (gInput[ind].kb.isKeyPressed(VK_UP)) addPitch(0.25f);
+					if (gInput[ind].kb.isKeyPressed(VK_DOWN)) addPitch(-0.25f);
+
+					RECT rc{ GSO::WindowNS::gWnd[ind]->getWindowInfo().rcClient };
 
 					if (mbMouseControl) {
-						BOOL control = kb.KeyIsPressed(VK_CONTROL);
+						BOOL control = gInput[ind].kb.isKeyPressed(VK_CONTROL);
 						control++;
-						for (auto& e : mouseEvents) {
+						for (auto& e : gInput[ind].mouseEvents) {
 							if (e.getType() == Mouse::Event::Type::Move) {
 								auto centerX = (rc.right - rc.left) / 2;
 								auto centerY = (rc.bottom - rc.top) / 2;
@@ -2531,7 +2569,7 @@ namespace GID {
 						}
 					}
 
-					for (auto& e : mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress) {
+					for (auto& e : gInput[ind].mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress) {
 						mbMouseControl = !mbMouseControl;
 						ShowCursor(!mbMouseControl);
 						if (mbMouseControl) ClipCursor(&rc);
@@ -2542,12 +2580,12 @@ namespace GID {
 					}
 				}
 			}
-			*/
-			int update(float dt) noexcept {
+			
+			void update() noexcept {
 				if (!mbFollow) {
-					AssistMath::FAMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(dt));
+					AssistMath::FAMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(GSO::Update::gTicks));
 					translate(vel);
-					//std::cout << "[X] " << mdx << " " << " [Y] " << mdy << " " << " [Z] " << mdz << '\n';
+					//std::cout << "[X] " << mDTranslation.m128_f32[X] << " " << " [Y] " << mDTranslation.m128_f32[Y] << " " << " [Z] " << mDTranslation.m128_f32[Z] << '\n';
 					if (mDTranslation.m128_f32[Translation::X] < 0.0001f
 						&& mDTranslation.m128_f32[Translation::X] > -0.0001f)
 						mDTranslation.m128_f32[Translation::X] = 0.0f;
@@ -2566,9 +2604,7 @@ namespace GID {
 
 					else mDTranslation.m128_f32[Translation::Z] /= 1.02f;
 				}
-				return 0;
 			}
-
 		};
 	}
 }
@@ -3218,22 +3254,22 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Render {
-			std::vector<GID::DSU::GFXPipelineContainer> gGFX;
+			inline std::vector<GID::DSU::GFXPipelineContainer> gGFX;
 			
-			void addGFX(GID::DSU::WindowType type, GID::DSU::GFX_DESC desc) {
+			inline void addGFX(GID::DSU::WindowType type, GID::DSU::GFX_DESC desc) {
 				bool found = false;
 				for (auto& w : gGFX) if (w.wndtype == type) found = true;
 				if (!found) gGFX.push_back({ type, {} });
 				for (auto& w : gGFX) if (w.wndtype == type) w.gfx = { WindowNS::gWnd.at((uint8_t)type)->getHandle(), desc };
 			}
 			
-			GID::DSU::GraphicsOutput& findGFX(GID::DSU::WindowType type) {
+			inline GID::DSU::GraphicsOutput& findGFX(GID::DSU::WindowType type) {
 				for (auto& w : gGFX) if (w.wndtype == type) return w.gfx;
 			}
 			
-			GID::DSU::GraphicsOutput& mainGFX() { return findGFX(GID::DSU::WindowType::MAINWINDOW); }
+			inline GID::DSU::GraphicsOutput& mainGFX() { return findGFX(GID::DSU::WindowType::MAINWINDOW); }
 			
-			void setGFXProjection(GID::DSU::WindowType wndType, GID::DSU::AssistMath::FAMMATRIX& projection) {
+			inline void setGFXProjection(GID::DSU::WindowType wndType, GID::DSU::AssistMath::FAMMATRIX& projection) {
 				for (auto& g : gGFX) if (g.wndtype == wndType) g.gfx.setProjection(projection);
 			}
 		}
@@ -3537,7 +3573,7 @@ namespace GID {
 				}
 				return ind;
 			}
-			std::vector<GID::DSU::ObjectFileData> parseObjFile(std::string& path, std::vector<GID::DSU::MaterialFileData> mtls) {
+			inline std::vector<GID::DSU::ObjectFileData> parseObjFile(std::string& path, std::vector<GID::DSU::MaterialFileData> mtls) {
 				using GID::DSU::ObjectFileDataType; using GID::DSU::ObjectFileData;
 				std::vector<ObjectFileData> ofd{}; std::string strLine{}; std::ifstream file{}; unsigned int lineCt{};
 				file.open(path + ".obj");
@@ -3591,7 +3627,7 @@ namespace GID {
 				file.close();
 				return ofd;
 			}
-			std::vector<GID::DSU::MaterialFileData> parseMtlFile(std::string& path) {
+			inline std::vector<GID::DSU::MaterialFileData> parseMtlFile(std::string& path) {
 				using GID::DSU::MaterialFileDataType; using GID::DSU::MaterialFileData;
 				std::vector<MaterialFileData> mfd{}; std::string strLine{}; std::ifstream file{}; unsigned int lineCt{};
 				file.open(path + ".mtl");
@@ -3737,7 +3773,7 @@ namespace GID {
 				file.close();
 				return mfd;
 			}
-			std::vector<GID::DSU::IndexedObjectFileData> indexObjectFileData(std::vector<GID::DSU::ObjectFileData> ofd) {
+			inline std::vector<GID::DSU::IndexedObjectFileData> indexObjectFileData(std::vector<GID::DSU::ObjectFileData> ofd) {
 				std::vector<GID::DSU::IndexedObjectFileData> iofd;
 				for (auto& o : ofd) {
 					iofd.push_back({ });
@@ -3757,7 +3793,7 @@ namespace GID {
 				}
 				return iofd;
 			}
-			GID::DSU::ModelFileData parseModelFiles(std::string& path) {
+			inline GID::DSU::ModelFileData parseModelFiles(std::string& path) {
 				return { indexObjectFileData(parseObjFile(path, parseMtlFile(path))) };
 			}
 		}
@@ -3768,8 +3804,8 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Scene {
-			std::vector<GID::DSU::LightData> gLights{};
-			void addLight(GID::DSU::LightData& light) {
+			inline std::vector<GID::DSU::LightData> gLights{};
+			inline void addLight(GID::DSU::LightData& light) {
 				gLights.push_back(light);
 			}
 		}
@@ -3952,8 +3988,8 @@ namespace GID {
 	namespace GSO {
 		namespace Collections {
 			namespace ModelData {
-				std::map<std::string, GID::DSU::ModelFileData> mCollection{};
-				auto& get() noexcept { return mCollection; }
+				inline std::unordered_map<std::string, GID::DSU::ModelFileData> mCollection{};
+				inline auto& get() noexcept { return mCollection; }
 				inline void cAdd(std::string& name, GID::DSU::ModelFileData mfd) {
 					mCollection.insert(std::pair<std::string, GID::DSU::ModelFileData>(name, mfd));
 				}
@@ -3975,7 +4011,7 @@ namespace GID {
 						}
 					}
 				}
-				GID::DSU::ModelFileData& quickSearchAndAdd(std::string& name) {
+				inline GID::DSU::ModelFileData& quickSearchAndAdd(std::string& name) {
 					if (bSearch(name)) return rSearch(name);
 					else cAdd(name, GID::Util::FileParsing::parseModelFiles(name));
 					return rSearch(name);
@@ -4016,9 +4052,9 @@ namespace GID {
 	namespace GSO {
 		namespace Collections {
 			namespace ActorID {
-				std::vector<std::pair<std::string, UINT>> mCollection{};
-				auto& get() noexcept { return mCollection; }
-				UINT add(std::string& actorID) {
+				inline std::vector<std::pair<std::string, UINT>> mCollection{};
+				inline auto& get() noexcept { return mCollection; }
+				inline UINT add(std::string& actorID) {
 					for (auto& str : mCollection) {
 						if (actorID == str.first) {
 							str.second++;
@@ -4079,8 +4115,8 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Scene {
-			std::vector<GID::DSU::Actor> gActors{};
-			void addActor(std::string actorName) {
+			inline std::vector<GID::DSU::Actor> gActors{};
+			inline void addActor(std::string actorName) {
 				gActors.push_back({ Render::mainGFX(), actorName });
 			}
 		}
@@ -4091,7 +4127,7 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Util {
-			void initGSO() { 
+			inline void initGSO() {
 				GSO::Render::Viewport::initViewportPresets();
 			}
 		}
@@ -4102,7 +4138,7 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Util {
-			void initQuickStart() {
+			inline void initQuickStart() {
 				using namespace GSO; using namespace GSO::Render::Viewport;
 				WindowNS::addWindow(1280, 720, L"Main Window");
 				Util::initGSO();
@@ -4111,3 +4147,112 @@ namespace GID {
 		}
 	}
 }
+
+// Debug Input Processing
+#if defined(_DEBUG)
+namespace GID {
+	namespace GSO {
+		namespace Input {
+			inline int doDebugInput() {
+				uint8_t iter{};
+				for (auto& wnd : WindowNS::gWnd) {
+					if (IsWindowEnabled(wnd->getHandle())) {
+						if (gInput[iter].kb.isKeyPressed(VK_ESCAPE)) return 1;
+					}
+					iter++;
+				}
+				return 0;
+			}
+		}
+	}
+}
+#endif
+
+// Per-frame Process Input Function
+namespace GID {
+	namespace GSO {
+		namespace Input {
+			inline int processInput() {
+				using namespace DSU;
+				auto ind = (uint8_t)DSU::WindowType::MAINWINDOW;
+				#if defined(_DEBUG)
+				bool inputDebug{ true };
+				#endif
+				if (gInput.size() != WindowNS::gWnd.size()) gInput.resize(WindowNS::gWnd.size());
+
+				while (!gInput[ind].kb.isKeyQueueEmpty()) {
+					gInput[ind].keys.push_back(gInput.at(ind).kb.readKey());
+					if (inputDebug) std::cout << "[Key Pressed (Code)] (" << gInput[ind].keys.back().getCode() << ")" << '\n';
+				}
+
+				while (!gInput[ind].kb.isCharQueueEmpty()) {
+					gInput[ind].keysChar.push_back(gInput[ind].kb.readChar());
+					if (inputDebug) std::cout << "[Character Inputted] (" << gInput[ind].keysChar.back() << ")" << '\n';
+				}
+
+				while (!gInput[ind].mouse.isEmpty()) {
+					gInput[ind].mouseEvents.push_back(gInput[ind].mouse.readEvent());
+					if (inputDebug) {
+						std::cout << "[";
+						switch (gInput[ind].mouseEvents.back().getType()) {
+						case Mouse::Event::Type::Enter:
+							std::cout << "Enter]";
+							break;
+						case Mouse::Event::Type::Exit:
+							std::cout << "Exit]";
+							break;
+						case Mouse::Event::Type::LMBPress:
+							std::cout << "LMBPress]";
+							break;
+						case Mouse::Event::Type::LMBRelease:
+							std::cout << "LMBRelease]";
+							break;
+						case Mouse::Event::Type::Move:
+							std::cout << "Move] (" << gInput[ind].mouseEvents.back().getX() << ", " << gInput[ind].mouseEvents.back().getY() << ")";
+							break;
+						case Mouse::Event::Type::RMBPress:
+							std::cout << "RMBPress]";
+							break;
+						case Mouse::Event::Type::RMBRelease:
+							std::cout << "RMBRelease]";
+							break;
+						case Mouse::Event::Type::WheelDown:
+							std::cout << "WheelDown]";
+							break;
+						case Mouse::Event::Type::WheelUp:
+							std::cout << "WheelUp]";
+							break;
+						}
+						std::cout << '\n';
+					}
+				}
+
+				#if defined(_DEBUG)
+				if (doDebugInput() != 0) return 1;
+				#endif
+				Render::mainGFX().mCamera.input();
+
+				for (auto& input : gInput) {
+					input.keys.clear();
+					input.keysChar.clear();
+					input.mouseEvents.clear();
+				}
+
+				return 0;
+			}
+		}
+	}
+}
+
+// Do update stuff
+namespace GID {
+	namespace GSO {
+		namespace Update {
+			inline void doUpdate() {
+				Render::mainGFX().mCamera.update();
+			}
+		}
+	}
+}
+
+// ---

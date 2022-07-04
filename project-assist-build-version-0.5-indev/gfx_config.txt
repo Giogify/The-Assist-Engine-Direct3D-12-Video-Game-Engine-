@@ -2,4 +2,4 @@ UIBackBufferCount: 3
 BUseWARPAdapter: FALSE
 BVSync: TRUE
 BFullScreenOnStartup: FALSE
-BEnableWireframe: FALSE
+BEnableWireframe: TRUE
