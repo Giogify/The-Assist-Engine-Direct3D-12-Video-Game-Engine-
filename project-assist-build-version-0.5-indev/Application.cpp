@@ -7,27 +7,11 @@
 
 // Top-Level Application Logic
 int Application::applicationUpdate() {
-	GID::DSU::Timer BMTimer{};
-	//std::cout << "Processing " << ticks << " ticks\n";
+
 	if (doInput() != 0) return 1;
-	//std::cout << BMTimer.mark() * 1.e6 << " us" << '\n';
 	if (doUpdate() != 0) return 1;
-	
 	if (doRender() != 0) return 1;
-	
-	// For benchmarking the render function
-	/*{
-		timerBenchmark.mark();
-		if (doRender() != 0) return 1;
-		sum += timerBenchmark.mark() * 1000.f;
-		runInstances++;
-		if (mTimerStart.peek() >= 30.f) {
-			std::ofstream file("benchmark.txt", std::ios::out | std::ios::app);
-			file << "[Render Time] " << sum / runInstances << " ms\n";
-			file.close();
-			return 1;
-		}
-	}*/
+
 	bool wndTitleDebug{ true };
 	#if defined(_DEBUG)
 	wndTitleDebug = true;
@@ -63,30 +47,6 @@ int Application::applicationUpdate() {
 			<< " [Pitch: " << camera.mPitch << "]"
 			<< " [Yaw: " << camera.mYaw << "]"
 			<< " [Roll: " << camera.mRoll << "]";*/
-
-		/*for (auto& key : keys) if (key == '1') {
-			mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
-			mActors.shrink_to_fit();
-		}
-		for (auto& key : keys) if (key == '!') {
-			for (int i = 0; i < 100; i++) mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
-			mActors.shrink_to_fit();
-		}
-		for (auto& key : keys) if (key == '2') {
-			mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
-			mActors.shrink_to_fit();
-		}
-		for (auto& key : keys) if (key == '@') {
-			for (int i = 0; i < 10; i++) mActors.push_back(std::make_unique<Actor>(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("nanosuit")));
-			mActors.shrink_to_fit();
-		}
-		for (auto& key : keys) if (key == '`') {
-			auto iter = mActors.size();
-			for (int i = 0; i < iter; i++) {
-				mActors.pop_back();
-			}
-			mActors.shrink_to_fit();
-		}*/
 
 		// Print Debug Information to Window Title
 		GID::GSO::WindowNS::gWnd.at((uint8_t)GID::DSU::WindowType::MAINWINDOW).get()->setTitle(oss.str());
@@ -130,8 +90,10 @@ Application::Application() {
 	}
 	GID::GSO::Scene::addLight(light1);
 
-	Scene::addActor({ "testCube" });
-	Scene::addActor({ "plane2" });
+	for (int i = 0; i < 0; i++)
+		Scene::addActor({ "testCube" });
+	
+	//Scene::addActor({ "plane2" });
 
 	General::gGlobalTimer.mark();
 	Update::gTickTimer.mark();
@@ -196,100 +158,21 @@ int Application::applicationStart() {
 //}
 
 int Application::doInput() noexcept {
-	bool inputDebug{ false };
-
-	if (GID::GSO::Input::processInput() != 0) return 1;
-
-	//while (!gWnd.at(GID::Window::WindowType::MAINWINDOW).kb.KeyIsEmpty()) {
-	//	keys.push_back(gWnd.at(GID::Window::WindowType::MAINWINDOW).kb.ReadKey());
-	//	if (inputDebug) std::cout << "[Key Pressed (Code)] (" << keys.back().getCode() << ")" << '\n';
-	//}
-	//while (!gWnd.at(GID::Window::WindowType::MAINWINDOW).kb.CharIsEmpty()) {
-	//	keysChar.push_back(gWnd.at(GID::Window::WindowType::MAINWINDOW).kb.ReadChar());
-	//	if (inputDebug) std::cout << "[Character Inputted] (" << keysChar.back() << ")" << '\n';
-	//}
-	//while (!gWnd.at(GID::Window::WindowType::MAINWINDOW).mouse.isEmpty()) {
-	//	mouse.push_back(gWnd.at(GID::Window::WindowType::MAINWINDOW).mouse.readEvent());
-	//	if (inputDebug) {
-	//		std::cout << "[";
-	//		switch (mouse.back().getType()) {
-	//		case Mouse::Event::Type::Enter:
-	//			std::cout << "Enter]";
-	//			break;
-	//		case Mouse::Event::Type::Exit:
-	//			std::cout << "Exit]";
-	//			break;
-	//		case Mouse::Event::Type::LMBPress:
-	//			std::cout << "LMBPress]";
-	//			break;
-	//		case Mouse::Event::Type::LMBRelease:
-	//			std::cout << "LMBRelease]";
-	//			break;
-	//		case Mouse::Event::Type::Move:
-	//			std::cout << "Move] (" << mouse.back().getX() << ", " << mouse.back().getY() << ")";
-	//			break;
-	//		case Mouse::Event::Type::RMBPress:
-	//			std::cout << "RMBPress]";
-	//			break;
-	//		case Mouse::Event::Type::RMBRelease:
-	//			std::cout << "RMBRelease]";
-	//			break;
-	//		case Mouse::Event::Type::WheelDown:
-	//			std::cout << "WheelDown]";
-	//			break;
-	//		case Mouse::Event::Type::WheelUp:
-	//			std::cout << "WheelUp]";
-	//			break;
-	//		}
-	//		std::cout << '\n';
-	//	}
-	//}
-
-	////gInput.gKB = gWnd.at(GID::Window::WindowType::MAINWINDOW).kb;
-	//Input::gInput.gKeys = keys;
-	//Input::gInput.gKeysChar = keysChar;
-	////gInput.gMouse = gWnd.at(GID::Window::WindowType::MAINWINDOW).mouse;
-	//Input::gInput.gMouseEvents = mouse;
-
-	/*for (auto& c : keysChar) if (c == '1') {
-		mScene.getActors().push_back(Actor(mWnd.getGraphicsOutput(), *std::make_unique<std::string>("testCube")));
-		mScene.getActors().back().addScript(Scripts::ScriptName::BasicGravity);
-		mScene.getActors().back().addScript(Scripts::ScriptName::BasicCollision);
-	}*/
-
-	//gfx.getCamera().input(gInput.gKB, gInput.gKeys, gInput.gKeysChar, gInput.gMouse, gInput.gMouseEvents, gWnd.at(GID::Window::WindowType::MAINWINDOW).getWindowInfo().rcClient);
-	//Scripts::processInputScripts(mScene, mWnd.kb, keys, keysChar, mWnd.mouse, mouse);
-	//mScene.input(mWnd.kb, keys, keysChar, mWnd.mouse, mouse);
-	//Scripts::doMove(mVecActors.at(0), mWnd.kb);
-
+	if (GID::GSO::Input::doInput() != 0) return 1;
 	return 0;
 }
 int Application::doUpdate() noexcept {
 	GID::GSO::Update::initUpdateCycle();
 	GID::GSO::Update::doUpdate();
-	//GID::Render::gfx.getCamera().update(dt);
-	//mScene.update();
-	//Scripts::processUpdateScripts(mScene);
-	//hr = mScene->update();
-	//if (hr == 2) // load new scene
-	//Scripts::doFollow(mWnd.getGraphicsOutput().getCamera(), mScene.getActors().at(0));
-	//Scripts::doBasicGravity(mVecActors);
-	//Scripts::doBasicCollision(mVecActors);
 	return 0;
 }
 int Application::doRender() noexcept {
 	using namespace GID;
-	using namespace DSU;
 	using namespace GSO;
-	using namespace Input;
-	GID::GSO::Render::mainGFX().startFrame();
-	for (auto& a : GID::GSO::Scene::gActors) a.draw();
-	for (auto& e : gInput[0].mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress)
-		std::cout << "LMB Pressed!\n";
-	//mScene.draw(mWnd.getGraphicsOutput());
-	//mWnd.getGraphicsOutput().doFrame();
-	GID::GSO::Render::mainGFX().endFrame();
-	//while ((mTimerRender.peek() * 1000.f) < (1000.f / mFPSCap));
+	using namespace Render;
+	mainGFX().startFrame();
+	for (auto& a : Scene::gActors) a.draw();
+	mainGFX().endFrame();
 
 	return 0;
 }

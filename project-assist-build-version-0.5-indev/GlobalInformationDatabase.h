@@ -1613,6 +1613,35 @@ namespace GID {
 	}
 }
 
+// Benchmark Function (only one per run)
+namespace GID {
+	namespace Util {
+		namespace Benchmark {
+			struct {
+				DSU::Timer elapsedTime{};
+				double total{};
+				uint16_t runs{};
+				bool init{ false };
+			} gBenchmarkData;
+			inline void doBenchmark(double dt, std::string type, double lengthInSec) {
+				if (!gBenchmarkData.init) {
+					gBenchmarkData.elapsedTime.mark();
+					gBenchmarkData.init = true;
+					return;
+				}
+				gBenchmarkData.total += dt * 1000.f;
+				gBenchmarkData.runs++;
+				if (gBenchmarkData.elapsedTime.peek() >= lengthInSec) {
+					gBenchmarkData.elapsedTime.mark();
+					std::ofstream file("benchmark.txt", std::ios::out | std::ios::app);
+					file << type << " " << gBenchmarkData.total / gBenchmarkData.runs << " ms\n";
+					file.close();
+				}
+			}
+		}
+	}
+}
+
 // Script IDs
 namespace GID {
 	namespace DSU {
@@ -3344,6 +3373,7 @@ namespace GID {
 			ComPtr<ID3D12Resource2>			mpIntermedRes{};
 			ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
 			UINT							mpCBVHeapSize{};
+			D3D12_SUBRESOURCE_DATA			mSRD{};
 
 			VertexConstantBuffer() = default;
 			VertexConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VertexConstantBufferData& data) {
@@ -3402,6 +3432,15 @@ namespace GID {
 					D3D12_RESOURCE_STATE_COPY_DEST);
 				pCommandList->ResourceBarrier(1u, &barrier);
 			}
+			void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VertexConstantBufferData& data) {
+				mSRD.pData = &data;
+				UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
+				D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{}; {
+					cbvd.BufferLocation = mpDestRes->GetGPUVirtualAddress();
+					cbvd.SizeInBytes = alignBytes();
+				}
+				pDevice->CreateConstantBufferView(&cbvd, mpCBVHeap->GetCPUDescriptorHandleForHeapStart());
+			}
 		};
 	}
 }
@@ -3415,6 +3454,7 @@ namespace GID {
 			ComPtr<ID3D12Resource2>			mpIntermedRes{};
 			ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
 			UINT							mpCBVHeapSize{};
+			D3D12_SUBRESOURCE_DATA			mSRD{};
 
 			PixelConstantBuffer() = default;
 			PixelConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const PixelConstantBufferData& data) {
@@ -3442,21 +3482,19 @@ namespace GID {
 				mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 			}
 			void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const PixelConstantBufferData& data) noexcept {
-				D3D12_SUBRESOURCE_DATA srd{}; {
-					srd.pData = &data;
-					srd.RowPitch = alignBytes();
-					srd.SlicePitch = srd.RowPitch;
-				}
-				UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
+				mSRD.pData = &data;
+				mSRD.RowPitch = alignBytes();
+				mSRD.SlicePitch = mSRD.RowPitch;
+				UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 				D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{}; {
 					cbvd.BufferLocation = mpDestRes->GetGPUVirtualAddress();
 					cbvd.SizeInBytes = alignBytes();
 				}
 				pDevice->CreateConstantBufferView(&cbvd, mpCBVHeap->GetCPUDescriptorHandleForHeapStart());
 			}
-			ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
-			ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
-			UINT alignBytes() const noexcept {
+			inline ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
+			inline ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
+			inline UINT alignBytes() const noexcept {
 				return (UINT)(sizeof(PixelConstantBufferData) % 256 == 0
 					? sizeof(PixelConstantBufferData)
 					: 256 - sizeof(PixelConstantBufferData) % 256 + sizeof(PixelConstantBufferData));
@@ -3470,6 +3508,15 @@ namespace GID {
 				auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
 					D3D12_RESOURCE_STATE_COPY_DEST);
 				pCommandList->ResourceBarrier(1u, &barrier);
+			}
+			void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const PixelConstantBufferData& data) {
+				mSRD.pData = &data;
+				UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
+				D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{}; {
+					cbvd.BufferLocation = mpDestRes->GetGPUVirtualAddress();
+					cbvd.SizeInBytes = alignBytes();
+				}
+				pDevice->CreateConstantBufferView(&cbvd, mpCBVHeap->GetCPUDescriptorHandleForHeapStart());
 			}
 		};
 	}
@@ -3817,8 +3864,6 @@ namespace GID {
 	namespace DSU {
 		struct Object {
 
-			//friend class Model;
-
 			Position mPos{};
 			Speed mSpeed{};
 			SphereCollisionCheckData mCollision{};
@@ -3947,7 +3992,6 @@ namespace GID {
 					mainGFX().getProjection(),
 					FAMMatrixInverse(det, tpose)
 				};
-
 				PixelConstantBufferData pcbData{};
 				pcbData.mtl = mMaterialData;
 				pcbData.eyePos = { mainGFX().getCamera().mEye.m128_f32[0], mainGFX().getCamera().mEye.m128_f32[1], mainGFX().getCamera().mEye.m128_f32[2], 1.0f };
@@ -3955,10 +3999,11 @@ namespace GID {
 				for (int i = 0; i < GSO::Scene::gLights.size(); i++)
 					pcbData.lights[i] = GSO::Scene::gLights[i];
 				
+				if (mVCB.getDestRes().Get() != nullptr) mVCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices);
+				else mVCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices };
 
-				mVCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices };
-				mPCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData };
-
+				if (mPCB.getDestRes().Get() != nullptr) mPCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData);
+				else mPCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData };
 				mVertexBuffer.transitionToRead(mainGFX().getCommandList());
 				mVCB.transitionToRead(mainGFX().getCommandList());
 				mPCB.transitionToRead(mainGFX().getCommandList());
@@ -3967,7 +4012,6 @@ namespace GID {
 				mainGFX().getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				mainGFX().getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
 				mainGFX().getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
-
 				mVertexBuffer.transitionToWrite(mainGFX().getCommandList());
 				mVCB.transitionToWrite(mainGFX().getCommandList());
 				mPCB.transitionToWrite(mainGFX().getCommandList());
@@ -4140,7 +4184,7 @@ namespace GID {
 		namespace Util {
 			inline void initQuickStart() {
 				using namespace GSO; using namespace GSO::Render::Viewport;
-				WindowNS::addWindow(1280, 720, L"Main Window");
+				WindowNS::addWindow(640, 360, L"Main Window");
 				Util::initGSO();
 				Render::addGFX(GID::DSU::WindowType::MAINWINDOW, { ViewportPresets[(uint32_t)GID::DSU::ViewportPreset::VP1_DEFAULT] });
 			}
@@ -4149,7 +4193,6 @@ namespace GID {
 }
 
 // Debug Input Processing
-#if defined(_DEBUG)
 namespace GID {
 	namespace GSO {
 		namespace Input {
@@ -4166,30 +4209,24 @@ namespace GID {
 		}
 	}
 }
-#endif
 
 // Per-frame Process Input Function
 namespace GID {
 	namespace GSO {
 		namespace Input {
-			inline int processInput() {
+			inline int doInput() {
 				using namespace DSU;
-				auto ind = (uint8_t)DSU::WindowType::MAINWINDOW;
-				#if defined(_DEBUG)
-				bool inputDebug{ true };
-				#endif
-				if (gInput.size() != WindowNS::gWnd.size()) gInput.resize(WindowNS::gWnd.size());
+				auto ind = (uint8_t)WindowType::MAINWINDOW;
+				bool inputDebug{ false };
 
 				while (!gInput[ind].kb.isKeyQueueEmpty()) {
 					gInput[ind].keys.push_back(gInput.at(ind).kb.readKey());
 					if (inputDebug) std::cout << "[Key Pressed (Code)] (" << gInput[ind].keys.back().getCode() << ")" << '\n';
 				}
-
 				while (!gInput[ind].kb.isCharQueueEmpty()) {
 					gInput[ind].keysChar.push_back(gInput[ind].kb.readChar());
 					if (inputDebug) std::cout << "[Character Inputted] (" << gInput[ind].keysChar.back() << ")" << '\n';
 				}
-
 				while (!gInput[ind].mouse.isEmpty()) {
 					gInput[ind].mouseEvents.push_back(gInput[ind].mouse.readEvent());
 					if (inputDebug) {
@@ -4227,9 +4264,7 @@ namespace GID {
 					}
 				}
 
-				#if defined(_DEBUG)
 				if (doDebugInput() != 0) return 1;
-				#endif
 				Render::mainGFX().mCamera.input();
 
 				for (auto& input : gInput) {
