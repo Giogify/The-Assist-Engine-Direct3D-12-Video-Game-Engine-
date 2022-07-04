@@ -19,7 +19,7 @@ private:
 public:
 
 	VertexConstantBuffer() = default;
-	VertexConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DSU::VertexConstantBuffer& data) {
+	VertexConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const GID::DSU::VertexConstantBufferData& data) {
 		createDestinationResource(pDevice);
 		createIntermediateResource(pDevice);
 		createDescriptorHeap(pDevice);
@@ -44,7 +44,7 @@ public:
 		pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
 		mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 	}
-	void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DSU::VertexConstantBuffer& data) noexcept {
+	void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const GID::DSU::VertexConstantBufferData& data) noexcept {
 		D3D12_SUBRESOURCE_DATA srd{}; {
 			srd.pData = &data;
 			srd.RowPitch = alignBytes();
@@ -61,9 +61,9 @@ public:
 	ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
 	ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
 	UINT alignBytes() const noexcept {
-		return (UINT)(sizeof(DSU::VertexConstantBuffer) % 256 == 0 
-			? sizeof(DSU::VertexConstantBuffer) 
-			: 256 - sizeof(DSU::VertexConstantBuffer) % 256 + sizeof(DSU::VertexConstantBuffer));
+		return (UINT)(sizeof(GID::DSU::VertexConstantBufferData) % 256 == 0
+			? sizeof(GID::DSU::VertexConstantBufferData)
+			: 256 - sizeof(GID::DSU::VertexConstantBufferData) % 256 + sizeof(GID::DSU::VertexConstantBufferData));
 	}
 	void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
@@ -88,7 +88,7 @@ private:
 public:
 
 	PixelConstantBuffer() = default;
-	PixelConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DSU::PixelConstantBuffer& data) {
+	PixelConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const GID::DSU::PixelConstantBufferData& data) {
 		createDestinationResource(pDevice);
 		createIntermediateResource(pDevice);
 		createDescriptorHeap(pDevice);
@@ -113,7 +113,7 @@ public:
 		pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
 		mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 	}
-	void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const DSU::PixelConstantBuffer& data) noexcept {
+	void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const GID::DSU::PixelConstantBufferData& data) noexcept {
 		D3D12_SUBRESOURCE_DATA srd{}; {
 			srd.pData = &data;
 			srd.RowPitch = alignBytes();
@@ -130,9 +130,9 @@ public:
 	ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
 	ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
 	UINT alignBytes() const noexcept {
-		return (UINT)(sizeof(DSU::PixelConstantBuffer) % 256 == 0
-			? sizeof(DSU::PixelConstantBuffer)
-			: 256 - sizeof(DSU::PixelConstantBuffer) % 256 + sizeof(DSU::PixelConstantBuffer));
+		return (UINT)(sizeof(GID::DSU::PixelConstantBufferData) % 256 == 0
+			? sizeof(GID::DSU::PixelConstantBufferData)
+			: 256 - sizeof(GID::DSU::PixelConstantBufferData) % 256 + sizeof(GID::DSU::PixelConstantBufferData));
 	}
 	void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,

@@ -22,9 +22,11 @@ public:
 	Scene(GraphicsOutput& gfx) {
 		
 		mActors.push_back(Actor(gfx, *std::make_unique<std::string>("testCube")));
-		mActors.push_back(Actor(gfx, *std::make_unique<std::string>("plane")));
+		mActors.push_back(Actor(gfx, *std::make_unique<std::string>("plane2")));
 
-		mActors.at(0).addScript(Scripts::ScriptName::BasicActorMove);
+		mActors.at(0).getModel().getObjects().at(0).getSpeed().deltaTranslation.m128_f32[0] += 0.1f;
+
+		//mActors.at(0).addScript(Scripts::ScriptName::BasicActorMove);
 		mActors.at(0).addScript(Scripts::ScriptName::BasicGravity);
 		mActors.at(0).addScript(Scripts::ScriptName::BasicCollision);
 

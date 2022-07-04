@@ -1,27 +1,12 @@
 #pragma once
 #include "Object.h"
-#include "Material.h"
 #include "IndexedTriangleList.h"
-#include <random>
+#include "GlobalStateObject.h"
+#include "Collections.h"
+#include "ModelFileParsing.h"
 
-class Model {
-
-private:
-
-	std::vector<Material> mMTLData{};
-	IndexedTriangleList mITLData{};
-
-	// Model Data
-	std::vector<Object> mObjects{};
-
-public:
-
-	Model() = default;
-	Model(GraphicsOutput& gfx, std::string& objPath);
-
-	void update() noexcept;
-	void draw(GraphicsOutput& gfx) noexcept;
-
-	IndexedTriangleList& getITLData() noexcept { return mITLData; }
-	std::vector<Object>& getObjects() noexcept { return mObjects; }
-};
+namespace GID {
+	namespace DSU {
+		
+	}
+}

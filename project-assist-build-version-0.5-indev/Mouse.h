@@ -13,119 +13,162 @@
 /  ----------------------------------------------
 */
 #pragma once
+#include "PCWindows.h"
 #include <queue>
+namespace GID {
+	namespace DSU {
+		struct Mouse {
 
-class Mouse {
+			// Event Class
+			struct Event {
 
-	friend class Window;
+				enum class Type {
 
-public: // Public Data Structures
+					LMBPress,
+					LMBRelease,
+					RMBPress,
+					RMBRelease,
+					WheelUp,
+					WheelDown,
+					Move,
+					Enter,
+					Exit,
+					Invalid
 
-	// Event Class
-	class Event {
+				};
 
-	public: //Enum for Type of Mouse Event
+				Type	mType{};
+				int16_t	mXPos{};
+				int16_t	mYPos{};
+				bool	mIsLMBPressed{};
+				bool	mIsRMBPressed{};
 
-		enum class Type {
-			
-			LMBPress,
-			LMBRelease,
-			RMBPress,
-			RMBRelease,
-			WheelUp,
-			WheelDown,
-			Move,
-			Enter,
-			Exit,
-			Invalid
+				// Empty Constructor
+				Event() noexcept :
+					mType(Type::Invalid),
+					mXPos(0),
+					mYPos(0),
+					mIsLMBPressed(false),
+					mIsRMBPressed(false) {}
+
+				// Expected Constructor
+				Event(Type type, const Mouse& mouse) noexcept :
+					mType(type),
+					mXPos(mouse.mXPos),
+					mYPos(mouse.mYPos),
+					mIsLMBPressed(mouse.mIsLMBPressed),
+					mIsRMBPressed(mouse.mIsRMBPressed) {}
+
+				// Getters/Setters/Is
+				Type getType() const noexcept { return mType; }
+				bool isLMBPressed() const noexcept { return mIsLMBPressed; }
+				bool isRMBPressed() const noexcept { return mIsRMBPressed; }
+				int16_t getX() const noexcept { return mXPos; }
+				int16_t getY() const noexcept { return mYPos; }
+				bool isValid() const noexcept { return mType != Type::Invalid; }
+				std::pair<int16_t, int16_t> getPos() const noexcept { return { mXPos, mYPos }; }
+
+			};
+
+			static constexpr uint16_t		MBUFFERSIZE{ USHRT_MAX };
+			int16_t							mXPos{};
+			int16_t							mYPos{};
+			int16_t							mWheelDelta{ 0 };
+			bool							mIsLMBPressed{ false };
+			bool							mIsRMBPressed{ false };
+			bool							mIsInsideWindow{ false };
+			std::queue<Event>				mBuffer{};
+
+			void onMouseMove(int16_t x, int16_t y) noexcept {
+				mXPos = x;
+				mYPos = y;
+
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::Move, *this));
+				trimBuffer();
+			}
+			void onMouseEnter() noexcept {
+				mIsInsideWindow = true;
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::Enter, *this));
+				trimBuffer();
+			}
+			void onMouseExit() noexcept {
+				mIsInsideWindow = false;
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::Exit, *this));
+				trimBuffer();
+			}
+			void onLMBPressed(int16_t x, int16_t y) noexcept {
+				mIsLMBPressed = true;
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::LMBPress, *this));
+				trimBuffer();
+			}
+			void onLMBReleased(int16_t x, int16_t y) noexcept {
+				mIsLMBPressed = false;
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::LMBRelease, *this));
+				trimBuffer();
+			}
+			void onRMBPressed(int16_t x, int16_t y) noexcept {
+				mIsRMBPressed = true;
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::RMBPress, *this));
+				trimBuffer();
+			}
+			void onRMBReleased(int16_t x, int16_t y) noexcept {
+				mIsRMBPressed = false;
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::RMBRelease, *this));
+				trimBuffer();
+			}
+			void onWheelUp(int16_t x, int16_t y) noexcept {
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::WheelUp, *this));
+				trimBuffer();
+			}
+			void onWheelDown(int16_t x, int16_t y) noexcept {
+				mBuffer.push(Mouse::Event(Mouse::Event::Type::WheelDown, *this));
+				trimBuffer();
+			}
+			void onWheelDelta(int16_t x, int16_t y, int16_t delta) noexcept {
+				mWheelDelta += delta;
+				while (mWheelDelta >= WHEEL_DELTA) {
+					mWheelDelta -= WHEEL_DELTA;
+					onWheelUp(x, y);
+				}
+				while (mWheelDelta <= -(WHEEL_DELTA)) {
+					mWheelDelta += WHEEL_DELTA;
+					onWheelDown(x, y);
+				}
+			}
+			void trimBuffer() noexcept {
+				while (mBuffer.size() > MBUFFERSIZE) {
+					mBuffer.pop();
+				}
+			}
+
+			// Default Constructor
+			Mouse() = default;
+
+			// Getters/Setters/Is
+			int16_t getX() const noexcept { return mXPos; }
+			int16_t getY() const noexcept { return mYPos; }
+			int16_t getWheelDelta() const noexcept { return mWheelDelta; }
+			bool isLMBPressed() const noexcept { return mIsLMBPressed; }
+			bool isRMBPressed() const noexcept { return mIsRMBPressed; }
+			std::pair<int16_t, int16_t> getPos() const noexcept { return { mXPos,mYPos }; }
+			bool isEmpty() const noexcept { return mBuffer.empty(); }
+
+			// Read the Event
+			Mouse::Event readEvent() noexcept {
+				if (mBuffer.size() > 0u) {
+					Mouse::Event e = mBuffer.front();
+					mBuffer.pop();
+					return e;
+				}
+				else { return Mouse::Event(); }
+			}
+
+			// Empty the Buffer
+			void clear() noexcept { mBuffer = std::queue<Event>(); }
+
+			// Is the Mouse in the Window
+			bool isInsideWindow() const noexcept { return mIsInsideWindow; }
 
 		};
-
-	private: // Private Fields
-
-		Type	m_type			= {};
-		int		m_xPos			= {};
-		int		m_yPos			= {};
-		bool	m_isLMBPressed	= {};
-		bool	m_isRMBPressed	= {};
-
-	public: // Public Methods
-
-		// Empty Constructor
-		Event() noexcept :
-			m_type(Type::Invalid),
-			m_xPos(0),
-			m_yPos(0),
-			m_isLMBPressed(false),
-			m_isRMBPressed(false) {}
-
-		// Expected Constructor
-		Event(Type type, const Mouse& mouse) noexcept :
-			m_type			(type),
-			m_xPos			(mouse.m_xPos),
-			m_yPos			(mouse.m_yPos),
-			m_isLMBPressed	(mouse.m_isLMBPressed),
-			m_isRMBPressed	(mouse.m_isRMBPressed) {}
-
-		// Getters/Setters/Is
-		Type getType() const noexcept				{ return m_type; }
-		bool isLMBPressed() const noexcept			{ return m_isLMBPressed; }
-		bool isRMBPressed() const noexcept			{ return m_isRMBPressed; }
-		int getX() const noexcept					{ return m_xPos; }
-		int getY() const noexcept					{ return m_yPos; }
-		bool isValid() const noexcept				{ return m_type != Type::Invalid; }
-		std::pair<int, int> getPos() const noexcept	{ return { m_xPos, m_yPos }; }
-
-	};
-
-private: // Private Fields
-
-	static constexpr unsigned short	M_BUFFERSIZE		= USHRT_MAX;
-	int								m_xPos				= {};
-	int								m_yPos				= {};
-	int								m_wheelDelta		= { 0 };
-	bool							m_isLMBPressed		= false;
-	bool							m_isRMBPressed		= false;
-	bool							m_isInsideWindow	= false;
-	std::queue<Event>				m_buffer			= {};
-
-private: // Private Methods
-
-	void OnMouseMove(int x, int y) noexcept;
-	void OnMouseEnter() noexcept;
-	void OnMouseExit() noexcept;
-	void OnLMBPressed(int x, int y) noexcept;
-	void OnLMBReleased(int x, int y) noexcept;
-	void OnRMBPressed(int x, int y) noexcept;
-	void OnRMBReleased(int x, int y) noexcept;
-	void OnWheelUp(int x, int y) noexcept;
-	void OnWheelDown(int x, int y) noexcept;
-	void OnWheelDelta(int x, int y, int delta) noexcept;
-	void TrimBuffer() noexcept;
-
-public: // Public Methods
-
-	// Default Constructor
-	Mouse() = default;
-
-	// Getters/Setters/Is
-	int					getX()			const noexcept;
-	int					getY()			const noexcept;
-	int					getWheelDelta() const noexcept;
-	bool				isLMBPressed()	const noexcept;
-	bool				isRMBPressed()	const noexcept;
-	std::pair<int, int>	getPos()		const noexcept;
-	bool				isEmpty()		const noexcept { return m_buffer.empty(); }
-
-	// Read the Event
-	Mouse::Event readEvent() noexcept;
-
-	// Empty the Buffer
-	void Clear() noexcept;
-
-	// Is the Mouse in the Window
-	bool isInsideWindow() const noexcept;
-
-	// Operator Overloads
-
-};
+	}
+}

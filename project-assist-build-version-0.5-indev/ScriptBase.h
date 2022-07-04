@@ -1,19 +1,21 @@
 #pragma once
 
-namespace Scripts {
+namespace GID {
+	namespace Scripts {
 
-	enum ScriptName {
-		// Input Scripts
-		BasicActorMove,
-		
-		// Update Scripts
-		BasicCameraFollow,
+		enum ScriptName {
+			// Input Scripts
+			BasicActorMove,
 
-		// Physics Scripts
-		BasicGravity,
-		BasicCollision,
-		
-		INVALID,
-	};
+			// Update Scripts
+			BasicCameraFollow,
 
+			// Physics Scripts
+			BasicGravity,
+			BasicCollision,
+
+			INVALID,
+		};
+
+	}
 }

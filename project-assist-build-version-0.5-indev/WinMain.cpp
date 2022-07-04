@@ -1,8 +1,6 @@
 #include "Application.h"
+#include "PCWindows.h"
 #include <iostream>
-
-#include <filesystem>
-#include <shlobj.h>
 
 int WINAPI wWinMain(
      HINSTANCE hInstance,

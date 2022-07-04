@@ -13,35 +13,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\input">
-      <UniqueIdentifier>{d5187658-4a18-49f3-a2bf-125dd7df5754}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\util">
-      <UniqueIdentifier>{6eab97cd-89a9-4b8d-a85c-45a9162b160a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\gfx">
-      <UniqueIdentifier>{fbee6646-f037-412a-a3d6-b3408a3d5f42}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\gfx\pipeline">
-      <UniqueIdentifier>{9b8b9503-8bbb-4506-aad6-8a982ab34ed7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\scripts">
       <UniqueIdentifier>{98449b99-c48b-4de2-8315-0d4d0f41c6a3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\gfx\util">
-      <UniqueIdentifier>{1b32fa15-cb6a-4cda-b068-445f2e6da87d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\window">
-      <UniqueIdentifier>{7a21b07b-fce3-46e6-9bf4-550d3a4caff4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\gfx">
       <UniqueIdentifier>{c59d49cc-8eec-458d-884b-62020442437c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\input">
       <UniqueIdentifier>{6cb59691-57f8-4fd1-bd7f-d3881839292c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\obj">
-      <UniqueIdentifier>{4f410522-a0e6-439c-8f38-aac9940b7c8a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\obj">
       <UniqueIdentifier>{d7bf3dfa-0fa3-4b2e-b4fa-5aee736d22e3}</UniqueIdentifier>
@@ -61,12 +40,6 @@
     <Filter Include="Source Files\util">
       <UniqueIdentifier>{e7284896-0ce7-497d-b918-c6a408d96dcb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\physics">
-      <UniqueIdentifier>{58d54079-2c49-4fe8-8efc-f898240897f5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\math">
-      <UniqueIdentifier>{3a217bfb-66da-4c3b-974c-72c2a2ad5359}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\math">
       <UniqueIdentifier>{568d53e3-7dc3-42b6-b171-6d75642c25b9}</UniqueIdentifier>
     </Filter>
@@ -77,15 +50,6 @@
     </ClCompile>
     <ClCompile Include="Mouse.cpp">
       <Filter>Source Files\input</Filter>
-    </ClCompile>
-    <ClCompile Include="Actor.cpp">
-      <Filter>Source Files\obj</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Source Files\obj</Filter>
-    </ClCompile>
-    <ClCompile Include="Object.cpp">
-      <Filter>Source Files\obj</Filter>
     </ClCompile>
     <ClCompile Include="VertexShader.cpp">
       <Filter>Source Files\gfx\pipeline</Filter>
@@ -108,100 +72,10 @@
     <ClCompile Include="Timer.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="AssistMath.cpp">
-      <Filter>Source Files\math</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Keyboard.h">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
-    <ClInclude Include="Mouse.h">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
-    <ClInclude Include="Inputtable.h">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
-    <ClInclude Include="d3dx12.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="ConstantBuffer.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="VertexShader.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="VertexBuffer.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="TransformCBuffer.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="RootSignature.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="PipelineStateObject.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="IndexBuffer.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
     <ClInclude Include="ScriptActorRandomTransform.h">
       <Filter>Header Files\scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="PixelShader.h">
-      <Filter>Header Files\gfx\pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="GraphicsOutput.h">
-      <Filter>Header Files\gfx</Filter>
-    </ClInclude>
-    <ClInclude Include="DataStructures.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="Collections.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="CustomGeo.h">
-      <Filter>Header Files\gfx\util</Filter>
-    </ClInclude>
-    <ClInclude Include="MaterialParser.h">
-      <Filter>Header Files\gfx\util</Filter>
-    </ClInclude>
-    <ClInclude Include="IndexedTriangleList.h">
-      <Filter>Header Files\gfx\util</Filter>
-    </ClInclude>
-    <ClInclude Include="Window.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="PCWindows.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="Application.h">
-      <Filter>Header Files\window</Filter>
-    </ClInclude>
-    <ClInclude Include="Actor.h">
-      <Filter>Header Files\obj</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Header Files\obj</Filter>
-    </ClInclude>
-    <ClInclude Include="Light.h">
-      <Filter>Header Files\obj</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Header Files\obj</Filter>
-    </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>Header Files\obj</Filter>
-    </ClInclude>
-    <ClInclude Include="Object.h">
-      <Filter>Header Files\obj</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>Header Files\obj</Filter>
     </ClInclude>
     <ClInclude Include="ScriptCameraFollow.h">
       <Filter>Header Files\scripts</Filter>
@@ -221,11 +95,20 @@
     <ClInclude Include="Scriptable.h">
       <Filter>Header Files\scripts</Filter>
     </ClInclude>
-    <ClInclude Include="ScriptBasicCollision.h">
-      <Filter>Header Files\physics</Filter>
+    <ClInclude Include="GlobalInformationDatabase.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AssistMath.h">
-      <Filter>Header Files\math</Filter>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PCWindows.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptBasicCollision.h">
+      <Filter>Header Files\scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
