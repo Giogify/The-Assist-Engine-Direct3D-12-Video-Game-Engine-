@@ -40,3 +40,5 @@
 [Draw Function] 0.324794 ms
 [Draw Function] 0.11638 ms
 [Draw Function] 0.0206915 ms
+[Render Time] 0.489119 ms
+[Render Time] 0.38518 ms
