@@ -10,9 +10,7 @@ int Application::applicationUpdate() {
 
 	if (doInput() != 0) return 1;
 	if (doUpdate() != 0) return 1;
-	GID::DSU::Timer timer{};
 	if (doRender() != 0) return 1;
-	GID::Util::Benchmark::doBenchmark(timer.mark(), { "[Render Time]" }, 30.0);
 	bool wndTitleDebug{ true };
 	#if defined(_DEBUG)
 	wndTitleDebug = true;
@@ -92,10 +90,16 @@ Application::Application() {
 	GID::GSO::Scene::addLight(light1);
 
 	for (int i = 0; i < 1; i++)
-		Scene::addActor({ "testCube" });
-	
+		Scene::addActor({ "nanosuit" });
+
 	for (int i = 0; i < 1; i++)
-		Scene::addActor({ "plane2" });
+		Scene::addActor({ "plane3" });
+
+	//Scene::gActors.at(0).addScript(DSU::ScriptID::BasicGravity);
+	//Scene::gActors.at(0).addScript(DSU::ScriptID::BasicCollision);
+
+	//Scene::gActors.at(0).mModel.mObjects.at(0).mSpeed.deltaTranslation.m128_f32[0] += 10.0f;
+	//Scene::gActors.at(0).mModel.mObjects.at(0).mSpeed.deltaTranslation.m128_f32[2] += 10.0f;
 
 	General::gGlobalTimer.mark();
 	Update::gTickTimer.mark();
@@ -130,34 +134,6 @@ int Application::applicationStart() {
 		}
 	}
 }
-
-//int Application::doPriorityInput() noexcept {
-//
-//	if (Input::gInput.gKB.KeyIsPressed(VK_ESCAPE)) return 1;
-//	
-//	//for (auto& key : gInput.gKeysChar) if (key == 'v') gfx.mVSync = !gfx.mVSync;
-//	//for (auto& key : keysChar) if (key == '+') Timer::incSpeedMult();
-//	//for (auto& key : keysChar) if (key == '-') Timer::decSpeedMult();
-//	
-//	//if (gInput.gKB.KeyIsPressed(VK_RETURN) && gInput.gKB.KeyIsPressed(VK_MENU)) gfx.setFullscreen();
-//
-//	for (auto& key : Input::gInput.gKeysChar) if (key == '[') mFPSCap -= 1.0f; // VK_OEM_4 is '['
-//	for (auto& key : Input::gInput.gKeysChar) if (key == '{') mFPSCap -= 10.0f; // VK_OEM_4 is '['
-//	for (auto& key : Input::gInput.gKeysChar) if (key == ']') mFPSCap += 1.0f; // VK_OEM_6 is ']'
-//	for (auto& key : Input::gInput.gKeysChar) if (key == '}') mFPSCap += 10.0f; // VK_OEM_6 is ']'
-//	for (auto& e : Input::gInput.gMouseEvents) {
-//		if (e.getType() == Mouse::Event::Type::WheelUp) {
-//			viewingAngle -= 10.0f;
-//			//gfx.setProjection(FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f));
-//		}
-//		if (e.getType() == Mouse::Event::Type::WheelDown) {
-//			viewingAngle += 10.0f;
-//			//gfx.setProjection(FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f));
-//		}
-//	}
-//
-//	return 0;
-//}
 
 int Application::doInput() noexcept {
 	if (GID::GSO::Input::doInput() != 0) return 1;

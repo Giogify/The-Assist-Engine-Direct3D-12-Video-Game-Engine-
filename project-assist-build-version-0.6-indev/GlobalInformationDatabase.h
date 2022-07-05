@@ -27,7 +27,8 @@
 #include <immintrin.h>
 #include <Windows.h>
 
-#pragma comment(lib, "D3DCompiler.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -2455,16 +2456,7 @@ namespace GID {
 namespace GID {
 	namespace GSO {
 		namespace Update {
-			inline uint16_t gTicks{};
-		}
-	}
-}
-
-// Tick Leftover Time
-namespace GID {
-	namespace GSO {
-		namespace Update {
-			inline float gTLT{};
+			inline float gTicks{};
 		}
 	}
 }
@@ -2474,9 +2466,7 @@ namespace GID {
 	namespace GSO {
 		namespace Update {
 			inline void initUpdateCycle() {
-				float dt = gTickTimer.mark() * 1000.f + gTLT;
-				gTicks = std::truncf(dt);
-				gTLT = dt - (float)gTicks;
+				gTicks = gTickTimer.mark() * 1e0f;
 			}
 		}
 	}
@@ -2551,29 +2541,29 @@ namespace GID {
 					if (gInput[ind].kb.isKeyPressed('W')) {
 						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
-						mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
-						mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
+						mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
+						mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 					}
 					if (gInput[ind].kb.isKeyPressed('S')) {
 						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
-						mDTranslation.m128_f32[Translation::X] += 0.00025f * -xcom * shift;
-						mDTranslation.m128_f32[Translation::Z] += 0.00025f * -zcom * shift;
+						mDTranslation.m128_f32[Translation::X] += 25.f * -xcom * shift;
+						mDTranslation.m128_f32[Translation::Z] += 25.f * -zcom * shift;
 					}
 					if (gInput[ind].kb.isKeyPressed('A')) {
 						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
-						mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
-						mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
+						mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
+						mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 					}
 					if (gInput[ind].kb.isKeyPressed('D')) {
 						float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 						float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
-						mDTranslation.m128_f32[Translation::X] += 0.00025f * xcom * shift;
-						mDTranslation.m128_f32[Translation::Z] += 0.00025f * zcom * shift;
+						mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
+						mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 					}
-					if (gInput[ind].kb.isKeyPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 0.00025f * shift;
-					if (gInput[ind].kb.isKeyPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 0.00025f * shift;
+					if (gInput[ind].kb.isKeyPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 25.f * shift;
+					if (gInput[ind].kb.isKeyPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 25.f * shift;
 
 					if (gInput[ind].kb.isKeyPressed(VK_LEFT)) addYaw(0.25f);
 					if (gInput[ind].kb.isKeyPressed(VK_RIGHT)) addYaw(-0.25f);
@@ -2615,7 +2605,7 @@ namespace GID {
 					AssistMath::FAMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(GSO::Update::gTicks));
 					translate(vel);
 					//std::cout << "[X] " << mDTranslation.m128_f32[X] << " " << " [Y] " << mDTranslation.m128_f32[Y] << " " << " [Z] " << mDTranslation.m128_f32[Z] << '\n';
-					if (mDTranslation.m128_f32[Translation::X] < 0.0001f
+					/*if (mDTranslation.m128_f32[Translation::X] < 0.0001f
 						&& mDTranslation.m128_f32[Translation::X] > -0.0001f)
 						mDTranslation.m128_f32[Translation::X] = 0.0f;
 
@@ -2631,7 +2621,13 @@ namespace GID {
 						&& mDTranslation.m128_f32[Translation::Z] > -0.0001f)
 						mDTranslation.m128_f32[Translation::Z] = 0.0f;
 
-					else mDTranslation.m128_f32[Translation::Z] /= 1.02f;
+					else mDTranslation.m128_f32[Translation::Z] /= 1.02f;*/
+
+					mDTranslation.m128_f32[0] = 0.0f;
+					mDTranslation.m128_f32[1] = 0.0f;
+					mDTranslation.m128_f32[2] = 0.0f;
+					mDTranslation.m128_f32[3] = 0.0f;
+
 				}
 			}
 		};
@@ -3536,6 +3532,9 @@ namespace GID {
 			O, V, VT, VN, F,
 			INVALID
 		};
+		struct IndexIndices {
+			std::vector<uint16_t> vec{};
+		};
 		struct MaterialFileData {
 			std::string name{};
 			struct {
@@ -3622,7 +3621,7 @@ namespace GID {
 			}
 			inline std::vector<GID::DSU::ObjectFileData> parseObjFile(std::string& path, std::vector<GID::DSU::MaterialFileData> mtls) {
 				using GID::DSU::ObjectFileDataType; using GID::DSU::ObjectFileData;
-				std::vector<ObjectFileData> ofd{}; std::string strLine{}; std::ifstream file{}; unsigned int lineCt{};
+				std::vector<ObjectFileData> ofd{}; std::string strLine{}; std::ifstream file{}; uint16_t lineCt{};
 				file.open(path + ".obj");
 				if (file.is_open()) {
 					while (file) {
@@ -3822,21 +3821,30 @@ namespace GID {
 			}
 			inline std::vector<GID::DSU::IndexedObjectFileData> indexObjectFileData(std::vector<GID::DSU::ObjectFileData> ofd) {
 				std::vector<GID::DSU::IndexedObjectFileData> iofd;
+				uint32_t iter{}; uint32_t pos_offset{}; uint32_t tex_offset{}; uint32_t norm_offset{};
 				for (auto& o : ofd) {
 					iofd.push_back({ });
+					pos_offset = 0; tex_offset = 0; norm_offset = 0;
+					for (uint8_t i = 0; i < iter; i++) {
+						pos_offset += ofd.at(i).pos.size();
+						tex_offset += ofd.at(i).tex.size();
+						norm_offset += ofd.at(i).norm.size();
+					}
+					std::cout << pos_offset << ' ' << tex_offset << ' ' << norm_offset << '\n';
 					for (auto& it : o.ind) {
 						iofd.back().name = o.name;
 						iofd.back().mtl = o.mtl;
-						iofd.back().pos.push_back(o.pos.at(it.m[0][0]));
-						iofd.back().pos.push_back(o.pos.at(it.m[1][0]));
-						iofd.back().pos.push_back(o.pos.at(it.m[2][0]));
-						iofd.back().tex.push_back(o.tex.at(it.m[0][1]));
-						iofd.back().tex.push_back(o.tex.at(it.m[1][1]));
-						iofd.back().tex.push_back(o.tex.at(it.m[2][1]));
-						iofd.back().norm.push_back(o.norm.at(it.m[0][2]));
-						iofd.back().norm.push_back(o.norm.at(it.m[1][2]));
-						iofd.back().norm.push_back(o.norm.at(it.m[2][2]));
+						iofd.back().pos.push_back(o.pos.at(it.m[0][0] - pos_offset));
+						iofd.back().pos.push_back(o.pos.at(it.m[1][0] - pos_offset));
+						iofd.back().pos.push_back(o.pos.at(it.m[2][0] - pos_offset));
+						iofd.back().tex.push_back(o.tex.at(it.m[0][1] - tex_offset));
+						iofd.back().tex.push_back(o.tex.at(it.m[1][1] - tex_offset));
+						iofd.back().tex.push_back(o.tex.at(it.m[2][1] - tex_offset));
+						iofd.back().norm.push_back(o.norm.at(it.m[0][2] - norm_offset));
+						iofd.back().norm.push_back(o.norm.at(it.m[1][2] - norm_offset));
+						iofd.back().norm.push_back(o.norm.at(it.m[2][2] - norm_offset));
 					}
+					iter++;
 				}
 				return iofd;
 			}
@@ -3871,6 +3879,8 @@ namespace GID {
 			VertexBuffer mVertexBuffer{};
 			VertexConstantBuffer mVCB{};
 			PixelConstantBuffer mPCB{};
+
+			PixelConstantBufferData pcbData{};
 
 			// Object Data
 			IndexedObjectFileData mObjectFileData{};
@@ -3970,6 +3980,21 @@ namespace GID {
 					GSO::Render::mainGFX().getCommandList(),
 					mObjectData.data(), mObjectData.size() };
 
+				using namespace GSO::Render;
+				AssistMath::FAMMATRIX transformM{ getTransformMx() };
+				AssistMath::FAMVECTOR det{ FAMMatrixDeterminant(transformM) };
+				AssistMath::FAMMATRIX tpose{ FAMMatrixTranspose(transformM) };
+				VertexConstantBufferData matrices{
+					transformM,
+					mainGFX().getCamera().getMatrix(),
+					mainGFX().getProjection(),
+					FAMMatrixInverse(det, tpose)
+				};
+
+				mVCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices };
+
+				pcbData.mtl = mMaterialData;
+				mPCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData };
 			}
 
 			Position& getPos() noexcept { return mPos; }
@@ -3977,9 +4002,10 @@ namespace GID {
 			MaterialData& getMaterialData() noexcept { return mMaterialData; }
 
 			void update() noexcept {
-				mPos.translation = _mm_add_ps(mPos.translation, mSpeed.deltaTranslation);
-				mPos.rotation = _mm_add_ps(mPos.rotation, mSpeed.deltaRotation);
-				mPos.center = _mm_add_ps(mPos.center, mSpeed.deltaTranslation);
+				AssistMath::FAMVECTOR dt = _mm_set_ps1(GSO::Update::gTicks);
+				mPos.translation = _mm_add_ps(mPos.translation, _mm_mul_ps(mSpeed.deltaTranslation, dt));
+				mPos.rotation = _mm_add_ps(mPos.rotation, _mm_mul_ps(mSpeed.deltaRotation, dt));
+				mPos.center = _mm_add_ps(mPos.center, _mm_mul_ps(mSpeed.deltaTranslation, dt));
 			}
 			void draw() noexcept {
 				using namespace GSO::Render;
@@ -3992,18 +4018,14 @@ namespace GID {
 					mainGFX().getProjection(),
 					FAMMatrixInverse(det, tpose)
 				};
-				PixelConstantBufferData pcbData{};
-				pcbData.mtl = mMaterialData;
 				pcbData.eyePos = { mainGFX().getCamera().mEye.m128_f32[0], mainGFX().getCamera().mEye.m128_f32[1], mainGFX().getCamera().mEye.m128_f32[2], 1.0f };
 				pcbData.globalAmbient = { 0.f, 0.f, 0.f, 1.f };
 				for (int i = 0; i < GSO::Scene::gLights.size(); i++)
 					pcbData.lights[i] = GSO::Scene::gLights[i];
 				
-				if (mVCB.getDestRes().Get() != nullptr) mVCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices);
-				else mVCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices };
-
-				if (mPCB.getDestRes().Get() != nullptr) mPCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData);
-				else mPCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData };
+				mVCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices);
+				mPCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData);
+				
 				mVertexBuffer.transitionToRead(mainGFX().getCommandList());
 				mVCB.transitionToRead(mainGFX().getCommandList());
 				mPCB.transitionToRead(mainGFX().getCommandList());
@@ -4279,12 +4301,432 @@ namespace GID {
 	}
 }
 
+// Basic Gravity Script for Actors
+namespace GID {
+	namespace GSO {
+		namespace Scripts {
+			namespace Update {
+				inline void doBasicGravity(GID::DSU::Actor& actor) {
+					using namespace GID::GSO::Update;
+					if (actor.mGroundState == DSU::ActorGroundState::AIR) {
+						for (auto& o : actor.getModel().getObjects()) {
+							o.getSpeed().deltaTranslation.m128_f32[1] += -19.6133f * (gTicks);
+						}
+						/*if (actor.getModel().getObjects().at(0).getSpeed().deltaTranslation.m128_f32[0] > -53.6448f / 1000.f) {
+							for (auto& o : actor.getModel().getObjects()) {
+								o.getSpeed().deltaTranslation.m128_f32[0] += -9.81f * 0.001f * 0.001f;
+							}
+						}*/
+					}
+				}
+			}
+		}
+	}
+}
+
+namespace GID {
+	namespace GSO {
+		namespace Scripts {
+			namespace Update {
+				
+				inline void doBasicCollision(GID::DSU::Actor& actor, std::vector<GID::DSU::Actor>& actors) {
+					using namespace DSU::AssistMath;
+					struct Triangle {
+						DSU::AssistMath::FAMVECTOR p1{};
+						DSU::AssistMath::FAMVECTOR p2{};
+						DSU::AssistMath::FAMVECTOR p3{};
+					};
+					struct Line {
+						DSU::AssistMath::FAMVECTOR p1{};
+						DSU::AssistMath::FAMVECTOR p2{};
+					};
+					// Gather all tris from the first actor
+					std::vector<Triangle> actor0Tris{};
+					{
+						std::vector<Triangle> tris{};
+						FAMMATRIX transformMx = actor.getModel().getObjects().at(0).getTransformMx();
+						UINT iter = 0u;
+						FAMVECTOR v0{};
+						FAMVECTOR v1{};
+						FAMVECTOR v2{};
+						for (auto& v : actor.mModel.mModelFileData.iofd.at(0).pos) {
+
+							FAMVECTOR vector{ AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
+							vector = FAMVector4Transform(vector, transformMx);
+
+							if (iter == 0) v0 = { AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
+							if (iter == 1) v1 = { AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
+							if (iter == 2) {
+								v2 = { vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] };
+								iter = 0;
+								actor0Tris.push_back({ v0, v1, v2 });
+								continue;
+							}
+							iter++;
+						}
+					}
+
+					// Cycle through all of the actors to check for collisions
+					for (auto& a : actors) {
+
+						// Don't want to check collisions with the same actor
+						if (a.mActorID != actor.mActorID) {
+
+							// Gather all tris from the second actor
+							std::vector<Triangle> actor1Tris{};
+							{
+								std::vector<Triangle> tris{};
+								FAMMATRIX transformMx = a.mModel.mObjects.at(0).getTransformMx();
+								UINT iter = 0u;
+								FAMVECTOR v0{};
+								FAMVECTOR v1{};
+								FAMVECTOR v2{};
+								for (auto& v : a.mModel.mModelFileData.iofd.at(0).pos) {
+
+									FAMVECTOR vector{ AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
+									vector = FAMVector4Transform(vector, transformMx);
+
+									if (iter == 0) v0 = { AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
+									if (iter == 1) v1 = { AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
+									if (iter == 2) {
+										v2 = { vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] };
+										iter = 0;
+										actor1Tris.push_back({ v0, v1, v2 });
+										continue;
+									}
+									iter++;
+								}
+							}
+
+							// Determine if a triangle from actor 1 collides with a triangle of actor 2 (O(n) = n^2, make faster)
+							float result{};
+							FAMVECTOR triNorm{};
+							Triangle collidedTri{};
+							{
+								float intersectingDist{};
+
+								for (auto& tri0 : actor0Tris) {
+									for (auto& tri1 : actor1Tris) {
+
+										std::array<Line, 3u> lines = {
+											{
+												{ tri0.p1, tri0.p2 },
+												{ tri0.p1, tri0.p3 },
+												{ tri0.p2, tri0.p3 }
+											}
+										};
+
+										for (UINT i = 0; i < lines.size(); i++) {
+
+											enum Point {
+												x,
+												y,
+												z
+											};
+
+											AMFLOAT3 V{
+												tri1.p2.m128_f32[x] - tri1.p1.m128_f32[x],
+												tri1.p2.m128_f32[y] - tri1.p1.m128_f32[y],
+												tri1.p2.m128_f32[z] - tri1.p1.m128_f32[z]
+											};
+
+											AMFLOAT3 W{
+												tri1.p3.m128_f32[x] - tri1.p1.m128_f32[x],
+												tri1.p3.m128_f32[y] - tri1.p1.m128_f32[y],
+												tri1.p3.m128_f32[z] - tri1.p1.m128_f32[z]
+											};
+
+											float normX = (V.y * W.z) - (V.z * W.y);
+											float normY = (V.z * W.x) - (V.x * W.z);
+											float normZ = (V.x * W.y) - (V.y * W.x);
+
+											float normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
+
+											float Ax = normX / normConst;
+											float Ay = normY / normConst;
+											float Az = normZ / normConst;
+
+											float test = std::sqrtf(Ax * Ax + Ay * Ay + Az * Az);
+
+											float A = Ax;
+											float B = Ay;
+											float C = Az;
+											float a = tri1.p1.m128_f32[x];
+											float b = tri1.p1.m128_f32[y];
+											float c = tri1.p1.m128_f32[z];
+											float D = -(A * a + B * b + C * c);
+
+											float triA = A;
+											float triB = B;
+											float triC = C;
+
+											float result0 = (A * lines[i].p1.m128_f32[x] + B * lines[i].p1.m128_f32[y] + C * lines[i].p1.m128_f32[z] + D)
+												/ std::sqrtf(A * A + B * B + C * C);
+
+											float result1 = (A * lines[i].p2.m128_f32[x] + B * lines[i].p2.m128_f32[y] + C * lines[i].p2.m128_f32[z] + D)
+												/ std::sqrtf(A * A + B * B + C * C);
+
+											bool isDifferentSign{ (signbit(result0) == signbit(result1)) ? false : true };
+
+											if (isDifferentSign) {
+
+												FAMVECTOR outsidePoint{ (result1 > 0.0f) ? lines[i].p2 : lines[i].p1 };
+												FAMVECTOR insidePoint{ (result1 > 0.0f) ? lines[i].p1 : lines[i].p2 };
+
+												Triangle plane0tri{};
+												plane0tri.p1 = outsidePoint;
+												plane0tri.p2 = tri1.p2;
+												plane0tri.p3 = tri1.p1;
+												Triangle plane1tri{};
+												plane1tri.p1 = outsidePoint;
+												plane1tri.p2 = tri1.p3;
+												plane1tri.p3 = tri1.p2;
+												Triangle plane2tri{};
+												plane2tri.p1 = outsidePoint;
+												plane2tri.p2 = tri1.p1;
+												plane2tri.p3 = tri1.p3;
+
+												AMFLOAT3 vector0{
+													plane0tri.p2.m128_f32[x] - plane0tri.p1.m128_f32[x],
+													plane0tri.p2.m128_f32[y] - plane0tri.p1.m128_f32[y],
+													plane0tri.p2.m128_f32[z] - plane0tri.p1.m128_f32[z] };
+												AMFLOAT3 vector1{
+													plane0tri.p3.m128_f32[x] - plane0tri.p1.m128_f32[x],
+													plane0tri.p3.m128_f32[y] - plane0tri.p1.m128_f32[y],
+													plane0tri.p3.m128_f32[z] - plane0tri.p1.m128_f32[z] };
+
+												float normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
+												float normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
+												float normZ = (vector0.x * vector1.y) - (vector0.y * vector1.x);
+
+												float normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
+
+												float Ax = normX / normConst;
+												float Ay = normY / normConst;
+												float Az = normZ / normConst;
+
+												float A = Ax;
+												float B = Ay;
+												float C = Az;
+												float a = outsidePoint.m128_f32[x];
+												float b = outsidePoint.m128_f32[y];
+												float c = outsidePoint.m128_f32[z];
+												float D = -(A * a + B * b + C * c);
+
+												float result = (A * insidePoint.m128_f32[x] + B * insidePoint.m128_f32[y] + C * insidePoint.m128_f32[z] + D)
+													/ std::sqrt(A * A + B * B + C * C);
+
+												if (result < 0.0f) continue;
+
+												vector0 = {
+													plane1tri.p2.m128_f32[x] - plane1tri.p1.m128_f32[x],
+													plane1tri.p2.m128_f32[y] - plane1tri.p1.m128_f32[y],
+													plane1tri.p2.m128_f32[z] - plane1tri.p1.m128_f32[z]
+												};
+
+												vector1 = {
+													plane1tri.p3.m128_f32[x] - plane1tri.p1.m128_f32[x],
+													plane1tri.p3.m128_f32[y] - plane1tri.p1.m128_f32[y],
+													plane1tri.p3.m128_f32[z] - plane1tri.p1.m128_f32[z]
+												};
+
+												normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
+												normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
+												normZ = (vector0.x * vector1.y) - (vector0.y * vector1.x);
+
+												normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
+
+												Ax = normX / normConst;
+												Ay = normY / normConst;
+												Az = normZ / normConst;
+
+												A = Ax;
+												B = Ay;
+												C = Az;
+												a = outsidePoint.m128_f32[x];
+												b = outsidePoint.m128_f32[y];
+												c = outsidePoint.m128_f32[z];
+												D = -(A * a + B * b + C * c);
+
+												result = (A * insidePoint.m128_f32[x] + B * insidePoint.m128_f32[y] + C * insidePoint.m128_f32[z] + D)
+													/ std::sqrtf(A * A + B * B + C * C);
+
+												if (result < 0.0f) continue;
+
+												vector0 = {
+													plane2tri.p2.m128_f32[x] - plane2tri.p1.m128_f32[x],
+													plane2tri.p2.m128_f32[y] - plane2tri.p1.m128_f32[y],
+													plane2tri.p2.m128_f32[z] - plane2tri.p1.m128_f32[z]
+												};
+
+												vector1 = {
+													plane2tri.p3.m128_f32[x] - plane2tri.p1.m128_f32[x],
+													plane2tri.p3.m128_f32[y] - plane2tri.p1.m128_f32[y],
+													plane2tri.p3.m128_f32[z] - plane2tri.p1.m128_f32[z]
+												};
+
+												normX = (vector0.y * vector1.z) - (vector0.z * vector1.y);
+												normY = (vector0.z * vector1.x) - (vector0.x * vector1.z);
+												normZ = (vector0.x * vector1.y) - (vector0.y * vector1.x);
+
+												normConst = std::sqrtf(normX * normX + normY * normY + normZ * normZ);
+
+												Ax = normX / normConst;
+												Ay = normY / normConst;
+												Az = normZ / normConst;
+
+												A = Ax;
+												B = Ay;
+												C = Az;
+												a = outsidePoint.m128_f32[x];
+												b = outsidePoint.m128_f32[y];
+												c = outsidePoint.m128_f32[z];
+												D = -(A * a + B * b + C * c);
+
+												result = (A * insidePoint.m128_f32[x] + B * insidePoint.m128_f32[y] + C * insidePoint.m128_f32[z] + D)
+													/ std::sqrtf(A * A + B * B + C * C);
+
+												if (result >= 0.0f) {
+													if (result0 > 0.0f)
+														if (result0 > intersectingDist)
+															intersectingDist = result1;
+														else intersectingDist = result0;
+													collidedTri = tri1;
+													triNorm = { AMLoadFloat4({ triA, triB, triC, 0.0f }) };
+												}
+											}
+										}
+									}
+								}
+								result = intersectingDist;
+							}
+
+							// If the result is negative, then we know that a collision has taken place
+							// (result is the amount of distance intersected)
+							if (result < 0.0f) {
+
+								FAMVECTOR velocity = actor.getModel().getObjects().at(0).getSpeed().deltaTranslation;
+								FAMVECTOR translation = actor.getModel().getObjects().at(0).getPos().translation;
+
+								enum Point {
+									x,
+									y,
+									z
+								};
+
+								// Find the length intersected along the velocity vector of the object
+								float fVelocity = FAMVector4Magnitude(FAMVector4Negate(velocity));
+
+								float dotVNSum = FAMVector4SumVector(FAMVector4DotProduct(triNorm, FAMVector4Negate(velocity)));
+								float magnitudeProduct = FAMVector4Magnitude(triNorm) * fVelocity;
+								float cosofangle = dotVNSum / magnitudeProduct;
+
+								float angle = std::acosf(cosofangle);
+
+								#if defined(_DEBUG)
+								std::cout << "Collision detected!!! Reactionary movement: " << result / std::cos(angle) << '\n';
+								#endif
+
+								std::cout << AMConvertToDegrees(angle) << '\n';
+
+								// Push the object out 
+								actor.getModel().getObjects().at(0).getPos().translation
+									= _mm_add_ps(
+										translation,
+										_mm_mul_ps(
+											_mm_mul_ps(FAMVector4Negate(velocity),
+												_mm_set_ps1(result / std::cos(angle))), 
+											_mm_set_ps1(GID::GSO::Update::gTicks)));
+								// ---
+
+
+
+								// Determine the reflected momentum vector of the actor
+								FAMVECTOR refl = 
+									_mm_sub_ps(
+										velocity, 
+										_mm_mul_ps(
+											_mm_set_ps1(2.0f * FAMVector4SumVector(FAMVector4DotProduct(velocity, triNorm))), 
+											triNorm));
+								// ---
+
+
+
+								// Set the actor's momentum vector to the reflected momentum vector
+								actor.getModel().getObjects().at(0).getSpeed().deltaTranslation = refl;
+
+								// Multiply the distance the actor was intersected by the new reflected momentum vector to reproduce
+								// the amount moved by the bounce on the triangle.
+								actor.getModel().getObjects().at(0).getPos().translation = 
+									_mm_add_ps(
+										actor.getModel().getObjects().at(0).getPos().translation,
+										_mm_mul_ps(
+											FAMVector4Negate(_mm_mul_ps(
+												actor.getModel().getObjects().at(0).getSpeed().deltaTranslation, 
+												_mm_set_ps1(GID::GSO::Update::gTicks))),
+											_mm_set_ps1(result / std::cos(angle))));
+
+								float bk = 0.0f;
+
+								/*actor0.getModel().getObjects().at(0).getSpeed().deltaTranslation.m128_f32[1]
+									= -actor0.getModel().getObjects().at(0).getSpeed().deltaTranslation.m128_f32[1];*/
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// Script Factory (must go after all scripts)
+namespace GID {
+	namespace GSO {
+		namespace Scripts {
+			namespace Factory {
+
+				/*void processInputScripts() noexcept {
+					for (auto& a : scene.getActors()) {
+						for (auto& s : a.getScripts()) {
+
+						}
+					}
+				}*/
+
+				inline void processUpdateScripts() noexcept {
+					for (auto& a : GID::GSO::Scene::gActors) {
+						for (auto& s : a.mScripts) {
+							switch (s) {
+							case DSU::ScriptID::BasicGravity:
+								Update::doBasicGravity(a);
+								break;
+							case DSU::ScriptID::BasicCollision:
+								Update::doBasicCollision(a, GID::GSO::Scene::gActors);
+								break;
+							}
+						}
+					}
+				}
+
+				/*void processCameraScripts(Camera& camera) noexcept {
+					for (auto& s : camera.getScripts()) {
+					}
+				}*/
+
+			}
+		}
+	}
+}
+
 // Do update stuff
 namespace GID {
 	namespace GSO {
 		namespace Update {
 			inline void doUpdate() {
 				Render::mainGFX().mCamera.update();
+				Scripts::Factory::processUpdateScripts();
+				for (auto& a : Scene::gActors)
+					a.update();
 			}
 		}
 	}

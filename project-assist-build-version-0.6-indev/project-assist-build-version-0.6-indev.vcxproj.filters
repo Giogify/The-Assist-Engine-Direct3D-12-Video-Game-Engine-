@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Resource Files\cfg">
+      <UniqueIdentifier>{476e3cf4-8691-4f0d-892f-e293f778d487}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\res">
+      <UniqueIdentifier>{61fe3384-7cac-4de7-8684-897f5bb62273}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -38,16 +44,27 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">
-      <Filter>Resource Files</Filter>
-    </FxCompile>
-    <FxCompile Include="PixelShaderPassThrough.hlsl">
-      <Filter>Resource Files</Filter>
-    </FxCompile>
-    <FxCompile Include="VertexShader.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\res</Filter>
     </FxCompile>
     <FxCompile Include="VertexShaderPassThrough.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\res</Filter>
     </FxCompile>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Resource Files\res</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShaderPassThrough.hlsl">
+      <Filter>Resource Files\res</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="benchmark.txt">
+      <Filter>Resource Files\cfg</Filter>
+    </Text>
+    <Text Include="gfx_config.txt">
+      <Filter>Resource Files\cfg</Filter>
+    </Text>
+    <Text Include="scene00.txt">
+      <Filter>Resource Files\cfg</Filter>
+    </Text>
   </ItemGroup>
 </Project>
