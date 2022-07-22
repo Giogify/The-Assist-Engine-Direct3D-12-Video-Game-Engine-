@@ -68,7 +68,7 @@ Application::Application() {
 	};
 	Render::setGFXProjection(GID::DSU::WindowType::MAINWINDOW, projectionTemp);
 
-	GID::DSU::LightData light0 = {}; {
+	DSU::LightData light0{}; {
 		light0.pos = { 20.0f, -35.0f, 20.0f, 1.0f };
 		light0.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 		light0.constAtten = 0.0f;
@@ -77,8 +77,8 @@ Application::Application() {
 		light0.isEnabled = true;
 		light0.type = (int32_t)GID::DSU::LightConst::POINT_LIGHT;
 	}
-	GID::GSO::Scene::addLight(light0);
-	GID::DSU::LightData light1 = {}; {
+	Scene::addLight(light0);
+	DSU::LightData light1{}; {
 		light1.pos = { -20.0f, -35.0f, -20.0f, 1.0f };
 		light1.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 		light1.constAtten = 0.0f;
@@ -87,13 +87,14 @@ Application::Application() {
 		light1.isEnabled = true;
 		light1.type = (int32_t)GID::DSU::LightConst::POINT_LIGHT;
 	}
-	GID::GSO::Scene::addLight(light1);
+	Scene::addLight(light1);
 
-	for (int i = 0; i < 1; i++)
-		Scene::addActor({ "nanosuit" });
+	//Scene::addActor({ "res\\actor\\dragon\\dragon_idle\\dragon_000150" });
+	//Scene::addActor({ "testCube" });
+	//Scene::addActor({ "plane3" });
+	//GID::Util::FileParsing::parse({ "dragon" });
 
-	for (int i = 0; i < 1; i++)
-		Scene::addActor({ "plane3" });
+	Scene::addActor({ "dragon" });
 
 	//Scene::gActors.at(0).addScript(DSU::ScriptID::BasicGravity);
 	//Scene::gActors.at(0).addScript(DSU::ScriptID::BasicCollision);

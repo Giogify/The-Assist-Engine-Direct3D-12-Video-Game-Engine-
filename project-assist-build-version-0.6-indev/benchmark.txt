@@ -42,3 +42,10 @@
 [Draw Function] 0.0206915 ms
 [Render Time] 0.489119 ms
 [Render Time] 0.38518 ms
+[Actor Parse and Add Time] 4022.37 ms
+[Actor Parse and Add Time] 3916.82 ms
+[Actor Parse and Add Time] 3912.15 ms
+[Actor Parse and Add Time] 3924.45 ms
+[Actor Parse and Add Time] 3839.85 ms
+[Actor Parse and Add Time] 3920.91 ms
+[Actor Parse Time: 500 Files] 16737.2 ms
