@@ -2778,6 +2778,7 @@ namespace GID::DSU {
 					case BEnableWireframe:
 						strCurrentLine.erase(0u, 18u);
 						if (strCurrentLine == "TRUE") mWireframe = true;
+						break;
 					case Invalid:
 						if (mDebug) std::cout << "[WARNING] Invalid line parsed from \"gfx_config.txt\"\n"
 							<< "[LINE] " << strCurrentLine;
