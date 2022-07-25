@@ -30,12 +30,19 @@
 #include <immintrin.h>
 #include <Windows.h>
 
+//#include <fbxsdk.h>
+
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "DXGI.lib")
 #pragma comment(lib, "dxguid.lib")
-
+//#if defined(_DEBUG)
+//#pragma comment(lib, "C:\\Program Files\\Autodesk\\FBX\\FBX SDK\\2020.2.1\\lib\\vs2019\\x64\\debug\\libfbxsdk.lib")
+//#endif
+//#if defined(NDEBUG)
+//#pragma comment(lib, "C:\\Program Files\\Autodesk\\FBX\\FBX SDK\\2020.2.1\\lib\\vs2019\\x64\\release\\libfbxsdk.lib")
+//#endif
 #define WIN32_LEAN_AND_MEAN
 
 using namespace Microsoft::WRL;
@@ -590,6 +597,22 @@ namespace GID::DSU::AssistMath {
 		uint16_t& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
 		bool operator==(const AMUSHORT3X3&) const = default;
 		auto operator<=>(const AMUSHORT3X3&) const = default;
+	};
+	struct AMUINT3 {
+		uint32_t x{};
+		uint32_t y{};
+		uint32_t z{};
+
+		AMUINT3() = default;
+
+		AMUINT3(const AMUINT3&) = default;
+		AMUINT3& operator=(const AMUINT3&) = default;
+
+		AMUINT3(AMUINT3&&) = default;
+		AMUINT3& operator=(AMUINT3&&) = default;
+
+		constexpr AMUINT3(uint32_t _x, uint32_t _y, uint32_t _z) noexcept : x(_x), y(_y), z(_z) {}
+		explicit AMUINT3(_In_reads_(3) const uint32_t* pArray) noexcept : x(pArray[0]), y(pArray[1]), z(pArray[2]) {}
 	};
 	struct AMUINT3X3 {
 
@@ -1543,33 +1566,19 @@ namespace GID::DSU {
 		} color;
 
 		float spotAngle{ 15.0f };
-		float constAtten{ 1.0f };
+		float constAtten{ 0.4f };
 		float linAtten{ 0.08f };
 		float quadAtten{ 0.0f };
 
-		int32_t type{ (int8_t)LightConst::POINT_LIGHT };
+		int32_t type{ (uint8_t)LightConst::POINT_LIGHT };
 		int32_t isEnabled{ false };
 		int32_t padding0{};
 		int32_t padding1{};
 	};
-	struct VertexData {
-		struct {
-			float x{};
-			float y{};
-			float z{};
-		} pos;
-		struct {
-			float x{};
-			float y{};
-		} texcoord;
-		struct {
-			float x{};
-			float y{};
-			float z{};
-		} norm;
-	};
-	struct PositionData {
-		AssistMath::AMFLOAT3 pos{};
+	struct VSInputData {
+		uint32_t pos{};
+		uint32_t tex{};
+		uint32_t norm{};
 	};
 	struct MaterialData {
 		struct {
@@ -1690,6 +1699,7 @@ namespace GID::DSU {
 
 		// Update Scripts
 		BasicCameraFollow,
+		AdvancedCameraFollow,
 
 		// Physics Scripts
 		BasicGravity,
@@ -2198,6 +2208,7 @@ namespace GID::DSU {
 				const POINTS point = MAKEPOINTS(lParam);
 				const int delta = GET_WHEEL_DELTA_WPARAM(wParam);
 				gInput[WindowID].mouse.onWheelDelta(point.x, point.y, delta);
+				break;
 			}
 
 								// ---- MISCELLANEOUS MESSAGES ---- //
@@ -2477,27 +2488,22 @@ namespace GID::DSU {
 
 		AssistMath::FAMMATRIX getMatrix() noexcept {
 			using namespace AssistMath;
-			if (mbFollow) {
-				return { FAMMatrixLookAtLH(mEye, mFocus, Y_AXIS) };
-			}
-			if (!mbFollow) {
-				//AMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
-				FAMVECTOR rotationRad{ _mm_mul_ps(mRotation, _mm_set_ps1((float)AM_PI / 180.0f)) };
-				FAMVECTOR cosvec{};
-				FAMVECTOR sinvec{ _mm_sincos_ps(&cosvec, rotationRad) };
-				FAMVECTOR look{
-					sinvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
-					sinvec.m128_f32[Rotation::Pitch],
-					cosvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
-					0.0f
-				};
-				return { FAMMatrixLookToLH(mEye, look, Y_AXIS) };
-			}
+			//AMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
+			FAMVECTOR rotationRad{ _mm_mul_ps(mRotation, _mm_set_ps1((float)AM_PI / 180.0f)) };
+			FAMVECTOR cosvec{};
+			FAMVECTOR sinvec{ _mm_sincos_ps(&cosvec, rotationRad) };
+			FAMVECTOR look{
+				sinvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
+				sinvec.m128_f32[Rotation::Pitch],
+				cosvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
+				0.0f
+			};
+			return { FAMMatrixLookToLH(mEye, look, Y_AXIS) };
 		}
 		void addPitch(float delta) noexcept {
 			mRotation.m128_f32[Rotation::Pitch] += delta;
-			if (mRotation.m128_f32[Rotation::Pitch] > 90.0f) mRotation.m128_f32[Rotation::Pitch] = 89.999f;
-			if (mRotation.m128_f32[Rotation::Pitch] < -90.0f) mRotation.m128_f32[Rotation::Pitch] = -89.999f;
+			if (mRotation.m128_f32[Rotation::Pitch] > 90.0f) mRotation.m128_f32[Rotation::Pitch] = 89.99999f;
+			if (mRotation.m128_f32[Rotation::Pitch] < -90.0f) mRotation.m128_f32[Rotation::Pitch] = -89.99999f;
 		}
 		void addYaw(float delta) noexcept {
 			mRotation.m128_f32[Rotation::Yaw] -= delta;
@@ -2610,6 +2616,12 @@ namespace GID::DSU {
 
 			}
 		}
+		void setToFollow() {
+			mbFollow = true;
+		}
+		void setToControl() {
+			mbFollow = false;
+		}
 	};
 }
 
@@ -2626,7 +2638,7 @@ namespace GID::DSU {
 		UINT											mBackBufferCount{ 3u };
 		UINT											mShaderDebugCompileFlags{ D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION };
 		UINT											mShaderReleaseCompileFlags{ 0u };
-		D3D_FEATURE_LEVEL								mFeatureLevel{ D3D_FEATURE_LEVEL_11_0 };
+		D3D_FEATURE_LEVEL								mFeatureLevel{ D3D_FEATURE_LEVEL_12_1 };
 		bool											mWireframe{ false };
 		// Debug
 		#if defined(_DEBUG)
@@ -2700,7 +2712,7 @@ namespace GID::DSU {
 				std::cout << "[Init Info] Back Buffer Count: #" << mBackBufferCount << '\n';
 				if (!mUseWARPAdapter) std::cout << "[Init Info] Expected Adapter Type: Hardware\n";
 				if (mUseWARPAdapter) std::cout << "[Init Info] Expected Adapter Type: WARP\n";
-				std::cout << "[Init Info] Minimum Feature Level: 11_0\n";
+				std::cout << "[Init Info] Minimum Feature Level: 12_1\n";
 			}
 
 			// Create the viewport
@@ -2943,12 +2955,12 @@ namespace GID::DSU {
 			mhFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		}
 		void initializePipeline() noexcept {
-			D3DReadFileToBlob(L"VertexShader.cso", &mpVSBytecode);
+			D3DReadFileToBlob(L"VS_IndexedWithStructuredBuffers.cso", &mpVSBytecode);
 			D3DReadFileToBlob(L"PixelShader.cso", &mpPSBytecode);
 			std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
-				ied[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-				ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-				ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+				ied[0] = { "POSITION", 0, DXGI_FORMAT_R32_UINT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+				ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32_UINT, 0, 4, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+				ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32_UINT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 			}
 			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{}; {
 				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
@@ -2956,9 +2968,13 @@ namespace GID::DSU {
 			D3D12_ROOT_SIGNATURE_FLAGS rsFlags = {
 				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
 				| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS };
-			std::array<CD3DX12_ROOT_PARAMETER1, 2u> rp{}; {
+			std::array<CD3DX12_ROOT_PARAMETER1, 5u> rp{}; {
 				rp[0].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-				rp[1].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+				rp[1].InitAsShaderResourceView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+				rp[2].InitAsShaderResourceView(1u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+				rp[3].InitAsShaderResourceView(2u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+				
+				rp[4].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
 			}
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
 				rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
@@ -2990,8 +3006,8 @@ namespace GID::DSU {
 				}
 				else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 				pssd.pPipelineStateSubobjectStream = &mPSS;
-				pssd.SizeInBytes = sizeof(GID::DSU::PipelineStateStream);
-				mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
+				pssd.SizeInBytes = sizeof GID::DSU::PipelineStateStream;
+				mHR = mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
 				mpPipelineState->SetName(L"[Pipeline State]");
 			}
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
@@ -3112,32 +3128,16 @@ namespace GID::DSU {
 			//endFrame();
 		}
 		void endFrame() noexcept {
-			//DXGI_PRESENT_PARAMETERS pp = {};
-			//pp.DirtyRectsCount = 0u;
-			//pp.pDirtyRects = 0u;
-			//pp.pScrollRect = 0u;
-			//pp.pScrollOffset = 0u;
-			//// Flip the Swap Chain
-			//mpSwapChain->Present1(0u, 0u, &pp);
-			//// Temporarily gain access to the Back Buffer
-			//wrl::ComPtr<ID3D12Resource2> pBackBuffer;
-			//mpSwapChain->GetBuffer(
-			//	0,
-			//	__uuidof(ID3D12Resource2),
-			//	&pBackBuffer
-			//);
-			//// Now create the Render Target View and make it the Back Buffer
-			//mpDevice->CreateRenderTargetView(
-			//	pBackBuffer.Get(),
-			//	&mpRenderTargets[mFrameIndex],
-			//	mFenceEvent
-			//);
-			//mpCommandList->OMSetRenderTargets(1u, reinterpret_cast<ID3D11RenderTargetView* const*>(m_pRenderTargetView.GetAddressOf()), m_pDepthStencilView.Get());
+			DXGI_PRESENT_PARAMETERS pp = {};
+			pp.DirtyRectsCount = 0u;
+			pp.pDirtyRects = 0u;
+			pp.pScrollRect = 0u;
+			pp.pScrollOffset = 0u;
 			transitionRTVToRead();
 			flushGPU();
 			UINT syncInterval = mVSync ? 1u : 0u;
 			UINT presentFlags = mTearingSupport && !mVSync ? DXGI_PRESENT_ALLOW_TEARING : 0u;
-			mpSwapChain->Present(syncInterval, presentFlags);
+			mpSwapChain->Present1(syncInterval, presentFlags, &pp);
 			mFrameIndex = mpSwapChain->GetCurrentBackBufferIndex();
 		}
 
@@ -3278,40 +3278,40 @@ namespace GID::DSU {
 		D3D12_VERTEX_BUFFER_VIEW	mVBView{};
 
 		VertexBuffer() = default;
-		VertexBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VertexData* vertices, const UINT64& size) {
+		VertexBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VSInputData* vertexIndices, const UINT64& size) {
 			createDestinationResource(pDevice, size);
 			createIntermediateResource(pDevice, size);
-			createVertexBufferView(pCommandList, vertices, size);
+			createVertexBufferView(pCommandList, vertexIndices, size);
 		}
 		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const UINT64& size) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
-			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof(VertexData)) };
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof VSInputData) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 			mpDestRes->SetName(L"[ID3D12Resource] [Destination Resource - VertexBuffer]");
 		}
 		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const UINT64& size) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
-			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof(VertexData)) };
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof VSInputData) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 			mpIntermedRes->SetName(L"[ID3D12Resource] [Intermediate Resource - VertexBuffer]");
 		}
-		void createVertexBufferView(ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VertexData* vertices, const UINT64& size) noexcept {
+		void createVertexBufferView(ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VSInputData* vertexIndices, const UINT64& size) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
-				srd.pData = vertices;
-				srd.RowPitch = size * sizeof(VertexData);
+				srd.pData = vertexIndices;
+				srd.RowPitch = size * sizeof VSInputData;
 				srd.SlicePitch = srd.RowPitch;
 			}
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
 			mVBView.BufferLocation = mpDestRes->GetGPUVirtualAddress();
-			mVBView.SizeInBytes = sizeof(VertexData) * size;
-			mVBView.StrideInBytes = sizeof(VertexData);
+			mVBView.SizeInBytes = sizeof VSInputData * size;
+			mVBView.StrideInBytes = sizeof VSInputData;
 		}
 
 		ComPtr<ID3D12Resource2>& getDestinationResource() noexcept { return mpDestRes; }
 		ComPtr<ID3D12Resource2>& getIntermediateResource() noexcept { return mpIntermedRes; }
 		D3D12_VERTEX_BUFFER_VIEW& getView() noexcept { return mVBView; }
 		UINT getCount() const noexcept {
-			return mVBView.SizeInBytes / sizeof(VertexData);
+			return mVBView.SizeInBytes / sizeof VSInputData;
 		}
 		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
@@ -3326,6 +3326,269 @@ namespace GID::DSU {
 	};
 }
 
+// Vertex SRV Structures
+namespace GID::DSU {
+	struct VSSRVPosSBData {
+
+		ComPtr<ID3D12Resource2>			mpDestRes{};
+		ComPtr<ID3D12Resource2>			mpIntermedRes{};
+		ComPtr<ID3D12DescriptorHeap>	mpHeap{};
+		uint32_t						mpHeapSize{};
+		D3D12_SUBRESOURCE_DATA			mSRD{};
+
+		VSSRVPosSBData() = default;
+		VSSRVPosSBData(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
+			createDestinationResource(pDevice, data);
+			createIntermediateResource(pDevice, data);
+			createDescriptorHeap(pDevice);
+			createShaderResourceView(pDevice, pCommandList, data);
+		}
+		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(AssistMath::AMFLOAT3) * data.size()) };
+			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
+		}
+		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(AssistMath::AMFLOAT3) * data.size()) };
+			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
+		}
+		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+			D3D12_DESCRIPTOR_HEAP_DESC srvhd{};
+			srvhd.NumDescriptors = 1u;
+			srvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			srvhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
+			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
+		}
+		void createShaderResourceView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+			D3D12_SUBRESOURCE_DATA srd{}; {
+				srd.pData = data.data();
+				srd.RowPitch = (sizeof(AssistMath::AMFLOAT3) * data.size());
+				srd.SlicePitch = srd.RowPitch;
+			}
+			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
+			D3D12_BUFFER_SRV bsrv{}; {
+				bsrv.FirstElement = 0;
+				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+				bsrv.NumElements = data.size();
+				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+			}
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.Buffer = bsrv;
+				srvd.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			}
+			pDevice->CreateShaderResourceView(mpDestRes.Get(), &srvd, mpHeap->GetCPUDescriptorHandleForHeapStart());
+		}
+		ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
+		ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
+		uint32_t alignBytes(uint32_t _size) noexcept { return _size % 256 == 0 ? _size : 256 - _size % 256 + _size; }
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			pCommandList->ResourceBarrier(1u, &barrier);
+		}
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_COPY_DEST);
+			pCommandList->ResourceBarrier(1u, &barrier);
+		}
+		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
+			mSRD.pData = data.data();
+			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
+			D3D12_BUFFER_SRV bsrv{}; {
+				bsrv.FirstElement = 0;
+				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+				bsrv.NumElements = data.size();
+				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+			}
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.Buffer = bsrv;
+				srvd.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			}
+			pDevice->CreateShaderResourceView(mpDestRes.Get(), &srvd, mpHeap->GetCPUDescriptorHandleForHeapStart());
+		}
+	};
+	struct VSSRVTexSBData {
+
+		using FLOAT2 = AssistMath::AMFLOAT2;
+
+		ComPtr<ID3D12Resource2>			mpDestRes{};
+		ComPtr<ID3D12Resource2>			mpIntermedRes{};
+		ComPtr<ID3D12DescriptorHeap>	mpHeap{};
+		uint32_t						mpHeapSize{};
+		D3D12_SUBRESOURCE_DATA			mSRD{};
+
+		VSSRVTexSBData() = default;
+		VSSRVTexSBData(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT2>& data) {
+			createDestinationResource(pDevice, data);
+			createIntermediateResource(pDevice, data);
+			createDescriptorHeap(pDevice);
+			createShaderResourceView(pDevice, pCommandList, data);
+		}
+		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT2>& data) noexcept {
+			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT2) * data.size()) };
+			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
+		}
+		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT2>& data) noexcept {
+			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT2) * data.size()) };
+			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
+		}
+		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+			D3D12_DESCRIPTOR_HEAP_DESC srvhd{};
+			srvhd.NumDescriptors = 1u;
+			srvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			srvhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
+			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
+		}
+		void createShaderResourceView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT2>& data) noexcept {
+			D3D12_SUBRESOURCE_DATA srd{}; {
+				srd.pData = data.data();
+				srd.RowPitch = (sizeof(FLOAT2) * data.size());
+				srd.SlicePitch = srd.RowPitch;
+			}
+			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
+			D3D12_BUFFER_SRV bsrv{}; {
+				bsrv.FirstElement = 0;
+				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+				bsrv.NumElements = data.size();
+				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT2;
+			}
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.Buffer = bsrv;
+				srvd.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			}
+			pDevice->CreateShaderResourceView(mpDestRes.Get(), &srvd, mpHeap->GetCPUDescriptorHandleForHeapStart());
+		}
+		ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
+		ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
+		uint32_t alignBytes(uint32_t _size) noexcept { return _size % 256 == 0 ? _size : 256 - _size % 256 + _size; }
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			pCommandList->ResourceBarrier(1u, &barrier);
+		}
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_COPY_DEST);
+			pCommandList->ResourceBarrier(1u, &barrier);
+		}
+		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT2>& data) {
+			mSRD.pData = data.data();
+			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
+			D3D12_BUFFER_SRV bsrv{}; {
+				bsrv.FirstElement = 0;
+				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+				bsrv.NumElements = data.size();
+				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT2;
+			}
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.Buffer = bsrv;
+				srvd.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			}
+			pDevice->CreateShaderResourceView(mpDestRes.Get(), &srvd, mpHeap->GetCPUDescriptorHandleForHeapStart());
+		}
+	};
+	struct VSSRVNormSBData {
+
+		using FLOAT3 = AssistMath::AMFLOAT3;
+
+		ComPtr<ID3D12Resource2>			mpDestRes{};
+		ComPtr<ID3D12Resource2>			mpIntermedRes{};
+		ComPtr<ID3D12DescriptorHeap>	mpHeap{};
+		uint32_t						mpHeapSize{};
+		D3D12_SUBRESOURCE_DATA			mSRD{};
+
+		VSSRVNormSBData() = default;
+		VSSRVNormSBData(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT3>& data) {
+			createDestinationResource(pDevice, data);
+			createIntermediateResource(pDevice, data);
+			createDescriptorHeap(pDevice);
+			createShaderResourceView(pDevice, pCommandList, data);
+		}
+		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT3>& data) noexcept {
+			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT3) * data.size()) };
+			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
+		}
+		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT3>& data) noexcept {
+			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT3) * data.size()) };
+			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
+		}
+		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+			D3D12_DESCRIPTOR_HEAP_DESC srvhd{};
+			srvhd.NumDescriptors = 1u;
+			srvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			srvhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
+			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
+		}
+		void createShaderResourceView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT3>& data) noexcept {
+			D3D12_SUBRESOURCE_DATA srd{}; {
+				srd.pData = data.data();
+				srd.RowPitch = (sizeof(FLOAT3) * data.size());
+				srd.SlicePitch = srd.RowPitch;
+			}
+			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
+			D3D12_BUFFER_SRV bsrv{}; {
+				bsrv.FirstElement = 0;
+				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+				bsrv.NumElements = data.size();
+				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+			}
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.Buffer = bsrv;
+				srvd.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			}
+			pDevice->CreateShaderResourceView(mpDestRes.Get(), &srvd, mpHeap->GetCPUDescriptorHandleForHeapStart());
+		}
+		ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
+		ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
+		uint32_t alignBytes(uint32_t _size) noexcept { return _size % 256 == 0 ? _size : 256 - _size % 256 + _size; }
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			pCommandList->ResourceBarrier(1u, &barrier);
+		}
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_COPY_DEST);
+			pCommandList->ResourceBarrier(1u, &barrier);
+		}
+		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT3>& data) {
+			mSRD.pData = data.data();
+			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
+			D3D12_BUFFER_SRV bsrv{}; {
+				bsrv.FirstElement = 0;
+				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+				bsrv.NumElements = data.size();
+				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+			}
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.Format = DXGI_FORMAT_UNKNOWN;
+				srvd.Buffer = bsrv;
+				srvd.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			}
+			pDevice->CreateShaderResourceView(mpDestRes.Get(), &srvd, mpHeap->GetCPUDescriptorHandleForHeapStart());
+		}
+	};
+}
+
 // Vertex Constant Buffer Structure
 namespace GID::DSU {
 	struct VertexConstantBuffer {
@@ -3333,7 +3596,7 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>			mpDestRes{};
 		ComPtr<ID3D12Resource2>			mpIntermedRes{};
 		ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
-		UINT							mpCBVHeapSize{};
+		uint16_t						mpCBVHeapSize{};
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VertexConstantBuffer() = default;
@@ -3412,7 +3675,7 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>			mpDestRes{};
 		ComPtr<ID3D12Resource2>			mpIntermedRes{};
 		ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
-		UINT							mpCBVHeapSize{};
+		uint16_t						mpCBVHeapSize{};
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		PixelConstantBuffer() = default;
@@ -3493,9 +3756,6 @@ namespace GID::DSU {
 		O, V, VT, VN, F,
 		INVALID
 	};
-	struct IndexIndices {
-		std::vector<uint16_t> vec{};
-	};
 	struct MaterialFileData {
 		std::string name{};
 		struct {
@@ -3515,14 +3775,8 @@ namespace GID::DSU {
 		std::vector<AssistMath::AMUINT3X3> ind{};
 		MaterialFileData mtl{};
 	};
-	struct IndexedObjectFileData {
-		std::string name{};
-		std::vector<AssistMath::AMFLOAT2> tex{};
-		std::vector<AssistMath::AMFLOAT3> pos{}, norm{};
-		MaterialFileData mtl{};
-	};
 	struct ModelFileData {
-		std::vector<IndexedObjectFileData> iofd{};
+		std::vector<ObjectFileData> ofd{};
 	};
 	struct AnimationPackageData {
 		std::vector<ModelFileData> apd{};
@@ -3537,466 +3791,130 @@ namespace GID::DSU {
 namespace GID::Util::FileParsing {
 	inline GID::DSU::ActorData parse(std::string dir) {
 
-		GID::DSU::ActorData data{};
+		using FLOAT3 = GID::DSU::AssistMath::AMFLOAT3;
+		using FLOAT2 = GID::DSU::AssistMath::AMFLOAT2;
+		using UINT3X3 = GID::DSU::AssistMath::AMUINT3X3;
+		using namespace GID::DSU;
+
+		ActorData data{};
 		std::ifstream file("res\\actor\\" + dir + ".bin", std::ios::binary); size_t _size{}; std::string _str{};
 
+		// Actor name
 		file.read((char*)&_size, sizeof size_t);
 		_str.resize(_size);
 		file.read(_str.data(), _size);
 		data.name = _str;
+		
+		// Amount of animations
 		file.read((char*)&_size, sizeof size_t);
 		data.ad.resize(_size);
 		for (auto& ad : data.ad) {
+			
+			// Amount of frames (models)
 			file.read((char*)&_size, sizeof size_t);
 			ad.apd.resize(_size);
 			for (auto& apd : ad.apd) {
+				
+				// Amount of objects
 				file.read((char*)&_size, sizeof size_t);
-				apd.iofd.resize(_size);
-				for (auto& iofd : apd.iofd) {
+				apd.ofd.resize(_size);
+				for (auto& ofd : apd.ofd) {
+					
+					// Object name
 					file.read((char*)&_size, sizeof size_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
-					iofd.name = _str;
+					ofd.name = _str;
+					
+					// Position Data
 					file.read((char*)&_size, sizeof size_t);
-					iofd.pos.resize(_size);
-					for (auto& pos : iofd.pos) {
-						file.read((char*)&pos, sizeof GID::DSU::AssistMath::AMFLOAT3);
-					}
+					ofd.pos.resize(_size);
+					for (auto& pos : ofd.pos) file.read((char*)&pos, sizeof FLOAT3);
+					
+					// Texture Data
 					file.read((char*)&_size, sizeof size_t);
-					iofd.tex.resize(_size);
-					for (auto& tex : iofd.tex) {
-						file.read((char*)&tex, sizeof GID::DSU::AssistMath::AMFLOAT2);
-					}
+					ofd.tex.resize(_size);
+					for (auto& tex : ofd.tex) file.read((char*)&tex, sizeof FLOAT2);
+					
+					// Normal Data
 					file.read((char*)&_size, sizeof size_t);
-					iofd.norm.resize(_size);
-					for (auto& norm : iofd.norm) {
-						file.read((char*)&norm, sizeof GID::DSU::AssistMath::AMFLOAT3);
-					}
+					ofd.norm.resize(_size);
+					for (auto& norm : ofd.norm) file.read((char*)&norm, sizeof FLOAT3);
+					
+					// Indices Data
 					file.read((char*)&_size, sizeof size_t);
-					_str.resize(_size);
-					file.read(_str.data(), _size);
-					iofd.mtl.name = _str;
-					file.read((char*)&iofd.mtl.KA.isRGB, sizeof(bool));
-					file.read((char*)&iofd.mtl.KA.isSpectral, sizeof(bool));
-					file.read((char*)&iofd.mtl.KA.isSpectralFactor, sizeof(bool));
-					file.read((char*)&iofd.mtl.KA.isXYZ, sizeof(bool));
-					file.read((char*)&iofd.mtl.KA.RGB, sizeof(float));
-					file.read((char*)&iofd.mtl.KA.XYZ, sizeof(float));
+					ofd.ind.resize(_size);
+					for (auto& ind : ofd.ind) file.read((char*)&ind, sizeof UINT3X3);
+					
+					// Material name
 					file.read((char*)&_size, sizeof size_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
-					iofd.mtl.KA.file = _str;
-					file.read((char*)&iofd.mtl.KA.factor, sizeof(float));
-					file.read((char*)&iofd.mtl.KD.isRGB, sizeof(bool));
-					file.read((char*)&iofd.mtl.KD.isSpectral, sizeof(bool));
-					file.read((char*)&iofd.mtl.KD.isSpectralFactor, sizeof(bool));
-					file.read((char*)&iofd.mtl.KD.isXYZ, sizeof(bool));
-					file.read((char*)&iofd.mtl.KD.RGB, sizeof(float));
-					file.read((char*)&iofd.mtl.KD.XYZ, sizeof(float));
+					ofd.mtl.name = _str;
+					
+					// Material Data
+					file.read((char*)&ofd.mtl.KA.isRGB, sizeof(bool));
+					file.read((char*)&ofd.mtl.KA.isSpectral, sizeof(bool));
+					file.read((char*)&ofd.mtl.KA.isSpectralFactor, sizeof(bool));
+					file.read((char*)&ofd.mtl.KA.isXYZ, sizeof(bool));
+					file.read((char*)&ofd.mtl.KA.RGB, sizeof(FLOAT3));
+					file.read((char*)&ofd.mtl.KA.XYZ, sizeof(FLOAT3));
 					file.read((char*)&_size, sizeof size_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
-					iofd.mtl.KD.file = _str;
-					file.read((char*)&iofd.mtl.KD.factor, sizeof(float));
-					file.read((char*)&iofd.mtl.KS.isRGB, sizeof(bool));
-					file.read((char*)&iofd.mtl.KS.isSpectral, sizeof(bool));
-					file.read((char*)&iofd.mtl.KS.isSpectralFactor, sizeof(bool));
-					file.read((char*)&iofd.mtl.KS.isXYZ, sizeof(bool));
-					file.read((char*)&iofd.mtl.KS.RGB, sizeof(float));
-					file.read((char*)&iofd.mtl.KS.XYZ, sizeof(float));
+					ofd.mtl.KA.file = _str;
+					file.read((char*)&ofd.mtl.KA.factor, sizeof(float));
+					
+					
+					file.read((char*)&ofd.mtl.KD.isRGB, sizeof(bool));
+					file.read((char*)&ofd.mtl.KD.isSpectral, sizeof(bool));
+					file.read((char*)&ofd.mtl.KD.isSpectralFactor, sizeof(bool));
+					file.read((char*)&ofd.mtl.KD.isXYZ, sizeof(bool));
+					file.read((char*)&ofd.mtl.KD.RGB, sizeof(FLOAT3));
+					file.read((char*)&ofd.mtl.KD.XYZ, sizeof(FLOAT3));
 					file.read((char*)&_size, sizeof size_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
-					iofd.mtl.KS.file = _str;
-					file.read((char*)&iofd.mtl.KS.factor, sizeof(float));
-					file.read((char*)&iofd.mtl.TF.isRGB, sizeof(bool));
-					file.read((char*)&iofd.mtl.TF.isSpectral, sizeof(bool));
-					file.read((char*)&iofd.mtl.TF.isSpectralFactor, sizeof(bool));
-					file.read((char*)&iofd.mtl.TF.isXYZ, sizeof(bool));
-					file.read((char*)&iofd.mtl.TF.RGB, sizeof(float));
-					file.read((char*)&iofd.mtl.TF.XYZ, sizeof(float));
+					ofd.mtl.KD.file = _str;
+					file.read((char*)&ofd.mtl.KD.factor, sizeof(float));
+					
+					
+					file.read((char*)&ofd.mtl.KS.isRGB, sizeof(bool));
+					file.read((char*)&ofd.mtl.KS.isSpectral, sizeof(bool));
+					file.read((char*)&ofd.mtl.KS.isSpectralFactor, sizeof(bool));
+					file.read((char*)&ofd.mtl.KS.isXYZ, sizeof(bool));
+					file.read((char*)&ofd.mtl.KS.RGB, sizeof(FLOAT3));
+					file.read((char*)&ofd.mtl.KS.XYZ, sizeof(FLOAT3));
 					file.read((char*)&_size, sizeof size_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
-					iofd.mtl.TF.file = _str;
-					file.read((char*)&iofd.mtl.TF.factor, sizeof(float));
-					for (auto& IF : iofd.mtl.IF) file.read((char*)&IF, sizeof(bool));
-					file.read((char*)&iofd.mtl.D, sizeof(float));
-					file.read((char*)&iofd.mtl.isDHalo, sizeof(bool));
-					file.read((char*)&iofd.mtl.NS, sizeof(float));
-					file.read((char*)&iofd.mtl.sharpness, sizeof(float));
-					file.read((char*)&iofd.mtl.NI, sizeof(float));
+					ofd.mtl.KS.file = _str;
+					file.read((char*)&ofd.mtl.KS.factor, sizeof(float));
+					
+					
+					file.read((char*)&ofd.mtl.TF.isRGB, sizeof(bool));
+					file.read((char*)&ofd.mtl.TF.isSpectral, sizeof(bool));
+					file.read((char*)&ofd.mtl.TF.isSpectralFactor, sizeof(bool));
+					file.read((char*)&ofd.mtl.TF.isXYZ, sizeof(bool));
+					file.read((char*)&ofd.mtl.TF.RGB, sizeof(FLOAT3));
+					file.read((char*)&ofd.mtl.TF.XYZ, sizeof(FLOAT3));
+					file.read((char*)&_size, sizeof size_t);
+					_str.resize(_size);
+					file.read(_str.data(), _size);
+					ofd.mtl.TF.file = _str;
+					file.read((char*)&ofd.mtl.TF.factor, sizeof(float));
+					for (auto& IF : ofd.mtl.IF) file.read((char*)&IF, sizeof(bool));
+					file.read((char*)&ofd.mtl.D, sizeof(float));
+					file.read((char*)&ofd.mtl.isDHalo, sizeof(bool));
+					file.read((char*)&ofd.mtl.NS, sizeof(float));
+					file.read((char*)&ofd.mtl.sharpness, sizeof(float));
+					file.read((char*)&ofd.mtl.NI, sizeof(float));
 				}
 			}
 		}
 		return data;
 	}
 }
-
-// Model File Parsing Functions
-//namespace GID::Util::FileParsing {
-//	inline DSU::AssistMath::AMFLOAT3 parseThreeFloatLine(std::string& line) {
-//		float x{}, y{}, z{}; std::string temp{};
-//		for (uint8_t i = 0; i < 3; i++) {
-//			while (!line.starts_with(" ") && !line.empty()) { temp.append(line.substr(0u, 1u)); line.erase(0u, 1u); }
-//			if (!line.empty()) line.erase(0u, 1u);
-//			switch (i) { case 0: x = std::stof(temp); break; case 1: y = std::stof(temp); break; case 2: z = std::stof(temp); break; } 
-//								temp.clear();
-//		}
-//		return { x, y, z };
-//	}
-//	inline DSU::AssistMath::AMFLOAT2 parseTwoFloatLine(std::string& line) {
-//		float x{}, y{}; std::string temp{};
-//		for (uint8_t i = 0; i < 2; i++) {
-//			while (!line.starts_with(" ") && !line.empty()) { temp.append(line.substr(0u, 1u)); line.erase(0u, 1u); }
-//			if (!line.empty()) line.erase(0u, 1u);
-//			switch (i) { case 0: x = std::stof(temp); break; case 1: y = std::stof(temp); break; }
-//								temp.clear();
-//		}
-//		return { x, y };
-//	}
-//	inline DSU::MaterialFileData& findMaterial(std::string& name, std::vector<DSU::MaterialFileData>& mtls) {
-//		for (auto& mtl : mtls) {
-//			if (name == mtl.name) {
-//				return mtl;
-//			}
-//		}
-//	}
-//	inline std::string parseUntilWS(std::string& line) {
-//		std::string temp{};
-//		while (!line.starts_with(" ") && !line.empty()) { temp.append(line.substr(0u, 1u)); line.erase(0u, 1u); }
-//		return temp;
-//	}
-//	inline std::string parseUntilFS(std::string& line) {
-//		std::string temp{};
-//		while (!line.starts_with("/") && !line.empty()) { temp.append(line.substr(0u, 1u)); line.erase(0u, 1u); }
-//		return temp;
-//	}
-//	inline DSU::AssistMath::AMUINT3X3 parseFaceIndexLine(std::string& line) {
-//		GID::DSU::AssistMath::AMUINT3X3 ind{}; std::string point{}, pointcomp{};
-//		for (int i = 0; i < 3; i++) {
-//			point = parseUntilWS(line);
-//			line.erase(0u, 1u);
-//			for (int j = 0; j < 3; j++) {
-//				std::string indivInd = parseUntilFS(point);
-//				if (indivInd.empty()) ind.m[i][j] = -1;
-//				else ind.m[i][j] = std::stoi(indivInd) - 1;
-//				point.erase(0u, 1u);
-//			}
-//		}
-//		return ind;
-//	}
-//	inline std::vector<DSU::ObjectFileData> parseObjFile(std::string& path, std::vector<DSU::MaterialFileData> mtls) {
-//		using GID::DSU::ObjectFileDataType; using GID::DSU::ObjectFileData;
-//		std::vector<ObjectFileData> ofd{}; std::string strLine{}; std::ifstream file{ path + ".obj" }; uint32_t lineCt{};
-//		std::stringstream buffer{};
-//		buffer << file.rdbuf();
-//		std::string fileStr{ buffer.str() };
-//		std::vector<std::string> lines{};
-//		uint32_t offset{};
-//		while (!fileStr.empty()) {
-//			if (fileStr.starts_with('\n')) fileStr.erase(0u, 1u);
-//			offset = fileStr.find_first_of('\n');
-//			lines.push_back(fileStr.substr(0u, offset));
-//			fileStr.erase(0u, offset);
-//		}
-//				
-//		int bk = 0;
-//
-//		if (file.is_open()) {
-//			while (file.peek() != EOF) {
-//				std::string output{ "[Line] " + std::to_string(lineCt) + '\n' };
-//				std::cout << output;
-//				std::getline(file, strLine); lineCt++;
-//				if (strLine.empty()) continue;
-//				ObjectFileDataType type;
-//				if (strLine.starts_with("o ")) type = ObjectFileDataType::O;
-//				else if (strLine.starts_with("v ")) type = ObjectFileDataType::V;
-//				else if (strLine.starts_with("vt ")) type = ObjectFileDataType::VT;
-//				else if (strLine.starts_with("vn ")) type = ObjectFileDataType::VN;
-//				else if (strLine.starts_with("usemtl ")) type = ObjectFileDataType::USEMTL;
-//				else if (strLine.starts_with("f ")) type = ObjectFileDataType::F;
-//				else type = ObjectFileDataType::INVALID;
-//				switch (type) {
-//				case ObjectFileDataType::O:
-//					strLine.erase(0u, 2u);
-//					ofd.push_back({ });
-//					ofd.back().name = strLine;
-//					break;
-//				case ObjectFileDataType::V:
-//					strLine.erase(0u, 2u);
-//					ofd.back().pos.push_back(parseThreeFloatLine(strLine));
-//					break;
-//				case ObjectFileDataType::VT:
-//					strLine.erase(0u, 3u);
-//					ofd.back().tex.push_back(parseTwoFloatLine(strLine));
-//					break;
-//				case ObjectFileDataType::VN:
-//					strLine.erase(0u, 3u);
-//					ofd.back().norm.push_back(parseThreeFloatLine(strLine));
-//					break;
-//				case ObjectFileDataType::USEMTL:
-//					strLine.erase(0u, 7u);
-//					ofd.back().mtl = findMaterial(strLine, mtls);
-//					break;
-//				case ObjectFileDataType::F:
-//					strLine.erase(0u, 2u);
-//					ofd.back().ind.push_back(parseFaceIndexLine(strLine));
-//					break;
-//				case ObjectFileDataType::INVALID:
-//					#if defined(_DEBUG)
-//					std::string output{ "[WARNING] Invalid line parsed. [FILE: " + path + ".obj] - [LINE: "
-//						+ std::to_string(lineCt) + "]" + '\n' };
-//					//std::cout << output;
-//					#endif
-//					break;
-//				}
-//				strLine.clear();
-//				//std::cout << "In loop.\n";
-//			}
-//		}
-//		//std::cout << "Out of loop.\n";
-//		file.close();
-//		return ofd;
-//	}
-//	inline std::vector<DSU::MaterialFileData> parseMtlFile(std::string& path) {
-//		using GID::DSU::MaterialFileDataType; using GID::DSU::MaterialFileData;
-//		std::vector<MaterialFileData> mfd{}; std::string strLine{}; std::ifstream file{}; uint32_t lineCt{};
-//		file.open(path + ".mtl");
-//		if (file.is_open()) {
-//			while (file) {
-//				std::getline(file, strLine); lineCt++;
-//				if (strLine.empty()) continue;
-//				MaterialFileDataType type;
-//				if (strLine.starts_with("newmtl ")) type = MaterialFileDataType::NEWMTL;
-//				else if (strLine.starts_with("Ka ")) type = MaterialFileDataType::KA;
-//				else if (strLine.starts_with("Kd ")) type = MaterialFileDataType::KD;
-//				else if (strLine.starts_with("Ks ")) type = MaterialFileDataType::KS;
-//				else if (strLine.starts_with("Tf ")) type = MaterialFileDataType::TF;
-//				else if (strLine.starts_with("illum ")) type = MaterialFileDataType::IF;
-//				else if (strLine.starts_with("d ")) type = MaterialFileDataType::D;
-//				else if (strLine.starts_with("Ns ")) type = MaterialFileDataType::NS;
-//				else if (strLine.starts_with("Sharpness ")) type = MaterialFileDataType::SHARP;
-//				else if (strLine.starts_with("Ni ")) type = MaterialFileDataType::NI;
-//				else type = MaterialFileDataType::INVALID;
-//				switch (type) {
-//				case MaterialFileDataType::NEWMTL:
-//					strLine.erase(0u, 7u);
-//					mfd.push_back({ });
-//					mfd.back().name = strLine;
-//					break;
-//				case MaterialFileDataType::KA:
-//					strLine.erase(0u, 3u);
-//					if (strLine.starts_with("spectral ")) {
-//						strLine.erase(0u, 9u);
-//						mfd.back().KA.isSpectral = true;
-//						mfd.back().KA.file = parseUntilWS(strLine);
-//						if (strLine.empty()) break;
-//						strLine.erase(0u, 1u);
-//						mfd.back().KA.isSpectralFactor = true;
-//						mfd.back().KA.factor = std::stof(strLine);
-//					}
-//					else if (strLine.starts_with("xyz ")) {
-//						strLine.erase(0u, 4u);
-//						mfd.back().KA.isXYZ = true;
-//						mfd.back().KA.XYZ = parseThreeFloatLine(strLine);
-//					}
-//					else {
-//						mfd.back().KA.isRGB = true;
-//						mfd.back().KA.RGB = parseThreeFloatLine(strLine);
-//					}
-//					break;
-//				case MaterialFileDataType::KD:
-//					strLine.erase(0u, 3u);
-//					if (strLine.starts_with("spectral ")) {
-//						strLine.erase(0u, 9u);
-//						mfd.back().KD.isSpectral = true;
-//						mfd.back().KD.file = parseUntilWS(strLine);
-//						if (strLine.empty()) break;
-//						strLine.erase(0u, 1u);
-//						mfd.back().KD.isSpectralFactor = true;
-//						mfd.back().KD.factor = std::stof(strLine);
-//					}
-//					else if (strLine.starts_with("xyz ")) {
-//						strLine.erase(0u, 4u);
-//						mfd.back().KD.isXYZ = true;
-//						mfd.back().KD.XYZ = parseThreeFloatLine(strLine);
-//					}
-//					else {
-//						mfd.back().KD.isRGB = true;
-//						mfd.back().KD.RGB = parseThreeFloatLine(strLine);
-//					}
-//					break;
-//				case MaterialFileDataType::KS:
-//					strLine.erase(0u, 3u);
-//					if (strLine.starts_with("spectral ")) {
-//						strLine.erase(0u, 9u);
-//						mfd.back().KS.isSpectral = true;
-//						mfd.back().KS.file = parseUntilWS(strLine);
-//						if (strLine.empty()) break;
-//						strLine.erase(0u, 1u);
-//						mfd.back().KS.isSpectralFactor = true;
-//						mfd.back().KS.factor = std::stof(strLine);
-//					}
-//					else if (strLine.starts_with("xyz ")) {
-//						strLine.erase(0u, 4u);
-//						mfd.back().KS.isXYZ = true;
-//						mfd.back().KS.XYZ = parseThreeFloatLine(strLine);
-//					}
-//					else {
-//						mfd.back().KS.isRGB = true;
-//						mfd.back().KS.RGB = parseThreeFloatLine(strLine);
-//					}
-//					break;
-//				case MaterialFileDataType::TF:
-//					strLine.erase(0u, 3u);
-//					if (strLine.starts_with("spectral ")) {
-//						strLine.erase(0u, 9u);
-//						mfd.back().TF.isSpectral = true;
-//						mfd.back().TF.file = parseUntilWS(strLine);
-//						if (strLine.empty()) break;
-//						strLine.erase(0u, 1u);
-//						mfd.back().TF.isSpectralFactor = true;
-//						mfd.back().TF.factor = std::stof(strLine);
-//					}
-//					else if (strLine.starts_with("xyz ")) {
-//						strLine.erase(0u, 4u);
-//						mfd.back().TF.isXYZ = true;
-//						mfd.back().TF.XYZ = parseThreeFloatLine(strLine);
-//					}
-//					else {
-//						mfd.back().TF.isRGB = true;
-//						mfd.back().TF.RGB = parseThreeFloatLine(strLine);
-//					}
-//					break;
-//				case MaterialFileDataType::IF:
-//					strLine.erase(0u, 6u);
-//					mfd.back().IF.at(std::stoi(strLine)) = true;
-//					break;
-//				case MaterialFileDataType::D:
-//					strLine.erase(0u, 2u);
-//					if (strLine.starts_with('-')) {
-//						strLine.erase(0u, 6u);
-//						mfd.back().isDHalo = true;
-//					}
-//					mfd.back().D = std::stof(strLine);
-//					break;
-//				case MaterialFileDataType::NS:
-//					strLine.erase(0u, 3u);
-//					mfd.back().NS = std::stof(strLine);
-//					break;
-//				case MaterialFileDataType::SHARP:
-//					strLine.erase(0u, 10u);
-//					mfd.back().sharpness = std::stoi(strLine);
-//					break;
-//				case MaterialFileDataType::NI:
-//					strLine.erase(0u, 3u);
-//					mfd.back().NI = std::stof(strLine);
-//					break;
-//				case MaterialFileDataType::INVALID:
-//					#if defined(_DEBUG)
-//					std::string output{ "[WARNING] Invalid line parsed. [FILE: " + path + ".mtl] - [LINE: " 
-//						+ std::to_string(lineCt) + "]" + '\n'};
-//					//std::cout << output;
-//					#endif
-//					break;
-//				}
-//				strLine.clear();
-//			}
-//		}
-//		file.close();
-//		return mfd;
-//	}
-//	inline std::vector<DSU::IndexedObjectFileData> indexObjectFileData(std::vector<DSU::ObjectFileData> ofd) {
-//		std::vector<GID::DSU::IndexedObjectFileData> iofd;
-//		uint32_t iter{}; uint32_t pos_offset{}; uint32_t tex_offset{}; uint32_t norm_offset{};
-//		for (auto& o : ofd) {
-//			iofd.push_back({ });
-//			pos_offset = 0; tex_offset = 0; norm_offset = 0;
-//			for (uint8_t i = 0; i < iter; i++) {
-//				pos_offset += ofd.at(i).pos.size();
-//				tex_offset += ofd.at(i).tex.size();
-//				norm_offset += ofd.at(i).norm.size();
-//			}
-//			std::cout << pos_offset << ' ' << tex_offset << ' ' << norm_offset << '\n';
-//			for (auto& it : o.ind) {
-//				iofd.back().name = o.name;
-//				iofd.back().mtl = o.mtl;
-//						
-//				iofd.back().pos.push_back(o.pos.at(it.m[0][0] - pos_offset));
-//				iofd.back().pos.push_back(o.pos.at(it.m[1][0] - pos_offset));
-//				iofd.back().pos.push_back(o.pos.at(it.m[2][0] - pos_offset));
-//
-//				iofd.back().tex.push_back(o.tex.at(it.m[0][1] - tex_offset));
-//				iofd.back().tex.push_back(o.tex.at(it.m[1][1] - tex_offset));
-//				iofd.back().tex.push_back(o.tex.at(it.m[2][1] - tex_offset));
-//						
-//				iofd.back().norm.push_back(o.norm.at(it.m[0][2] - norm_offset));
-//				iofd.back().norm.push_back(o.norm.at(it.m[1][2] - norm_offset));
-//				iofd.back().norm.push_back(o.norm.at(it.m[2][2] - norm_offset));
-//			}
-//			iter++;
-//		}
-//		return iofd;
-//	}
-//	inline DSU::ModelFileData parseModelFiles(std::string path) {
-//		DSU::ModelFileData data{};
-//		//std::cout << "Model File Data object created.\n";
-//		std::vector<DSU::MaterialFileData> mfd{ parseMtlFile(path) };
-//		//std::cout << "Material File Data parsed.\n";
-//		std::vector<DSU::ObjectFileData> ofd{ parseObjFile(path, mfd) };
-//		//std::cout << "Object File Data parsed.\n";
-//		data.iofd = indexObjectFileData(ofd);
-//		//std::cout << "iofd filled.\n";
-//		return data;
-//	}
-//	inline DSU::AnimationPackageData parseAnimationFiles(const std::filesystem::directory_entry& individualAnimationFolder) {
-//		DSU::AnimationPackageData data{};
-//		uint16_t animationFrameCt{};
-//		for (auto& animationFrame : std::filesystem::directory_iterator(individualAnimationFolder.path())) {
-//			#if defined(_DEBUG)
-//			std::cout << animationFrame.path() << '\n';
-//			#endif
-//			animationFrameCt++;
-//		}
-//		std::vector<std::future<DSU::ModelFileData>> futures(animationFrameCt / 2);
-//		uint16_t iter{};
-//		uint16_t future_iter{};
-//		for (auto& path : std::filesystem::directory_iterator(individualAnimationFolder.path())) {
-//			if (iter % 2 == 1) {
-//				iter++;
-//				continue;
-//			}
-//			std::string temppath{ path.path().generic_string().erase(path.path().generic_string().size() - 4u, path.path().generic_string().size()) };
-//			futures.at(future_iter) = std::async(parseModelFiles, temppath);
-//			iter++;
-//			future_iter++;
-//		}
-//		for (auto& f : futures) f.wait();
-//		for (auto& f : futures) data.apd.push_back(f.get());
-//		while (true) std::cout << "reached the end of data\n";
-//		return data;
-//				
-//	}
-//	inline DSU::ActorData parseActorFiles(std::string name) {
-//		DSU::ActorData data{};
-//		data.name = name;
-//		std::filesystem::path p1{ "res\\actor\\" + name };
-//		uint16_t animationCt{};
-//		for (auto& individualAnimationFolder : std::filesystem::directory_iterator(p1)) {
-//			animationCt++;
-//			std::cout << individualAnimationFolder.path() << '\n';
-//		}
-//		std::vector<std::thread> threads(animationCt);
-//		uint16_t iter{};
-//		for (auto& individualAnimationFolder : std::filesystem::directory_iterator(p1)) {
-//			threads.at(iter) = std::thread(parseAnimationFiles, individualAnimationFolder);
-//			iter++;
-//		}
-//		for (auto& th : threads) th.join();
-//		return data;
-//	}
-//}
 
 // Scene Data - Lights
 namespace GID::GSO::Scene {
@@ -4015,68 +3933,44 @@ namespace GID::DSU {
 		SphereCollisionCheckData mCollision{};
 
 		VertexBuffer mVertexBuffer{};
+		VSSRVPosSBData mVSPosSB{};
+		VSSRVTexSBData mVSTexSB{};
+		VSSRVNormSBData mVSNormSB{};
 		VertexConstantBuffer mVCB{};
 		PixelConstantBuffer mPCB{};
 
 		PixelConstantBufferData pcbData{};
 
 		// Object Data
-		IndexedObjectFileData mObjectFileData{};
+		ObjectFileData mObjectFileData{};
 		MaterialData mMaterialData{};
-		std::vector<VertexData> mObjectData{};
+		std::vector<VSInputData> mObjectData{};
 
-		Timer timer{};
+		std::vector<AssistMath::AMFLOAT3> pos{};
+		std::vector<AssistMath::AMFLOAT2> tex{};
+		std::vector<AssistMath::AMFLOAT3> norm{};
 
 		Object() = default;
-		Object(IndexedObjectFileData& data) {
+		Object(ObjectFileData& data) {
+			
 			using namespace AssistMath;
+
 			// Process data
 			mObjectFileData = data;
-			mObjectData.resize(mObjectFileData.pos.size());
-			float highX{ mObjectFileData.pos.at(0).x };
-			float lowX{ mObjectFileData.pos.at(0).x };
-			float highY{ mObjectFileData.pos.at(0).y };
-			float lowY{ mObjectFileData.pos.at(0).y };
-			float highZ{ mObjectFileData.pos.at(0).z };
-			float lowZ{ mObjectFileData.pos.at(0).z };
-			float furthestPoint{ 0.0f };
-			for (int i = 0; i < mObjectFileData.pos.size(); i++) {
-				mObjectData.at(i).pos.x = mObjectFileData.pos.at(i).x;
-				mObjectData.at(i).pos.y = mObjectFileData.pos.at(i).y;
-				mObjectData.at(i).pos.z = mObjectFileData.pos.at(i).z;
-				mObjectData.at(i).texcoord.x = mObjectFileData.tex.at(i).x;
-				mObjectData.at(i).texcoord.y = mObjectFileData.tex.at(i).y;
-				mObjectData.at(i).norm.x = mObjectFileData.norm.at(i).x;
-				mObjectData.at(i).norm.y = mObjectFileData.norm.at(i).y;
-				mObjectData.at(i).norm.z = mObjectFileData.norm.at(i).z;
-
-				if (mObjectData.at(i).pos.x > highX) highX = mObjectData.at(i).pos.x;
-				if (mObjectData.at(i).pos.x < lowX) lowX = mObjectData.at(i).pos.x;
-				if (mObjectData.at(i).pos.x > highY) highY = mObjectData.at(i).pos.y;
-				if (mObjectData.at(i).pos.x < lowY) lowY = mObjectData.at(i).pos.y;
-				if (mObjectData.at(i).pos.x > highZ) highZ = mObjectData.at(i).pos.z;
-				if (mObjectData.at(i).pos.x < lowZ) lowZ = mObjectData.at(i).pos.z;
-
+			for (auto& p : mObjectFileData.pos) pos.push_back(p);
+			for (auto& t : mObjectFileData.tex) tex.push_back(t);
+			for (auto& n : mObjectFileData.norm) norm.push_back(n);
+			
+			mObjectData.resize(mObjectFileData.ind.size() * 3);
+			uint32_t iter{};
+			for (auto& i : mObjectFileData.ind) {
+				mObjectData.at(iter) = { i.d[0], i.d[1], i.d[2] };
+				mObjectData.at(iter + 1) = { i.d[3], i.d[4], i.d[5] };
+				mObjectData.at(iter + 2) = { i.d[6], i.d[7], i.d[8] };
+				iter += 3;
 			}
 
-			mPos.center = { AMLoadFloat3({ (highX + lowX) / 2, (highY + lowY) / 2, (highZ + lowZ) / 2 }) };
-
-			for (int i = 0; i < mObjectFileData.pos.size(); i++) {
-
-				FAMVECTOR vert{ AMLoadFloat3(mObjectFileData.pos.at(i)) };
-
-				FAMVECTOR res{ _mm_sub_ps(AMLoadFloat3(mObjectFileData.pos.at(i)), mPos.center) };
-				res = { _mm_mul_ps(res, res) };
-				float delta = std::sqrt(res.m128_f32[0] + res.m128_f32[1] + res.m128_f32[2]);
-				if (delta > furthestPoint) furthestPoint = delta;
-
-			}
-
-			// Collision
-			//mCollision.center = mPos.center;
-			//mCollision.radius = furthestPoint + 0.1f;
-
-			// Color
+			// Material Data
 			{
 				// Emissive Color
 				{
@@ -4113,10 +4007,11 @@ namespace GID::DSU {
 				}
 			}
 
-			mVertexBuffer = {
-				GSO::Render::mainGFX().getDevice(),
-				GSO::Render::mainGFX().getCommandList(),
-				mObjectData.data(), mObjectData.size() };
+			mVertexBuffer = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), mObjectData.data(), mObjectData.size() };
+
+			mVSPosSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), pos };
+			mVSTexSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), tex };
+			mVSNormSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), norm };
 
 			using namespace GSO::Render;
 			AssistMath::FAMMATRIX transformM{ getTransformMx() };
@@ -4143,7 +4038,7 @@ namespace GID::DSU {
 			AssistMath::FAMVECTOR dt = _mm_set_ps1(GSO::Update::gTicks);
 			mPos.translation = _mm_add_ps(mPos.translation, _mm_mul_ps(mSpeed.deltaTranslation, dt));
 			mPos.rotation = _mm_add_ps(mPos.rotation, _mm_mul_ps(mSpeed.deltaRotation, dt));
-			mPos.center = _mm_add_ps(mPos.center, _mm_mul_ps(mSpeed.deltaTranslation, dt));
+			//mPos.center = _mm_add_ps(mPos.center, _mm_mul_ps(mSpeed.deltaTranslation, dt));
 		}
 		void draw() noexcept {
 			using namespace GSO::Render;
@@ -4166,14 +4061,23 @@ namespace GID::DSU {
 				
 			mVertexBuffer.transitionToRead(mainGFX().getCommandList());
 			mVCB.transitionToRead(mainGFX().getCommandList());
+			mVSPosSB.transitionToRead(mainGFX().getCommandList());
+			mVSTexSB.transitionToRead(mainGFX().getCommandList());
+			mVSNormSB.transitionToRead(mainGFX().getCommandList());
 			mPCB.transitionToRead(mainGFX().getCommandList());
 			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(0u, mVCB.getDestRes()->GetGPUVirtualAddress());
-			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(1u, mPCB.getDestRes()->GetGPUVirtualAddress());
+			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(1u, mVSPosSB.getDestRes()->GetGPUVirtualAddress());
+			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(2u, mVSTexSB.getDestRes()->GetGPUVirtualAddress());
+			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(3u, mVSNormSB.getDestRes()->GetGPUVirtualAddress());
+			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(4u, mPCB.getDestRes()->GetGPUVirtualAddress());
 			mainGFX().getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			mainGFX().getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
 			mainGFX().getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
 			mVertexBuffer.transitionToWrite(mainGFX().getCommandList());
 			mVCB.transitionToWrite(mainGFX().getCommandList());
+			mVSPosSB.transitionToWrite(mainGFX().getCommandList());
+			mVSTexSB.transitionToWrite(mainGFX().getCommandList());
+			mVSNormSB.transitionToWrite(mainGFX().getCommandList());
 			mPCB.transitionToWrite(mainGFX().getCommandList());
 		}
 
@@ -4228,7 +4132,7 @@ namespace GID::DSU {
 		Model() = default;
 		Model(GID::DSU::ModelFileData& mfd) {
 			mModelFileData = mfd;
-			for (auto& objectdata : mModelFileData.iofd) {
+			for (auto& objectdata : mModelFileData.ofd) {
 				mObjects.push_back({ objectdata });
 			}
 		}
@@ -4312,7 +4216,7 @@ namespace GID::DSU {
 		}
 		void draw() noexcept {
 			uint16_t currFrameIndex{ (uint16_t)std::truncf(mInitTimer.peek() * 30.f) };
-			currFrameIndex %= 250;
+			currFrameIndex %= mAnimationPackage.mAnimations.at(0).mFrames.size();
 			mAnimationPackage.mAnimations.at(0).mFrames.at(currFrameIndex).draw();
 		}
 		auto& getGroundState() noexcept {
@@ -4794,6 +4698,19 @@ namespace GID::GSO::Scripts::Update {
 	//}
 }
 
+namespace GID::GSO::Scripts::GlobalVariables {
+	inline size_t gCameraActorFollowIndex{};
+	inline bool gbCameraFollow{};
+}
+
+namespace GID::GSO::Scripts::Update {
+	inline void doAdvancedCameraFollow() {
+		if (Render::mainGFX().getCamera().mbFollow) {
+
+		}
+	}
+}
+
 // Script Factory (must go after all scripts)
 namespace GID::GSO::Scripts::Factory {
 	/*void processInputScripts() noexcept {
@@ -4817,10 +4734,15 @@ namespace GID::GSO::Scripts::Factory {
 			}
 		}
 	}
-	/*void processCameraScripts(Camera& camera) noexcept {
-		for (auto& s : camera.getScripts()) {
+	inline void processCameraScripts() noexcept {
+		for (auto& script : Render::mainGFX().getCamera().getScripts()) {
+			switch (script) {
+			case DSU::ScriptID::AdvancedCameraFollow:
+				Update::doAdvancedCameraFollow();
+				break;
+			}
 		}
-	}*/
+	}
 }
 
 // Do update stuff
@@ -4830,6 +4752,8 @@ namespace GID::GSO::Update {
 		Scripts::Factory::processUpdateScripts();
 		for (auto& a : Scene::gActors)
 			a.update();
+		Scripts::Factory::processCameraScripts();
+
 	}
 }
 

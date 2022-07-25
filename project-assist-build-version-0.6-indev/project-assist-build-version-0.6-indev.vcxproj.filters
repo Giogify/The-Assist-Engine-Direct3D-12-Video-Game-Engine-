@@ -55,6 +55,12 @@
     <FxCompile Include="PixelShaderPassThrough.hlsl">
       <Filter>Resource Files\res</Filter>
     </FxCompile>
+    <FxCompile Include="ComputeShader.hlsl">
+      <Filter>Resource Files\res</Filter>
+    </FxCompile>
+    <FxCompile Include="VS_IndexedWithStructuredBuffers.hlsl">
+      <Filter>Resource Files\res</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="benchmark.txt">

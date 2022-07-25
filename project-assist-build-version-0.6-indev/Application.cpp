@@ -69,38 +69,15 @@ Application::Application() {
 	Render::setGFXProjection(GID::DSU::WindowType::MAINWINDOW, projectionTemp);
 
 	DSU::LightData light0{}; {
-		light0.pos = { 20.0f, -35.0f, 20.0f, 1.0f };
-		light0.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		light0.constAtten = 0.0f;
-		light0.linAtten = 0.1f;
-		light0.quadAtten = 0.0f;
+		light0.pos = { 0.0f, 50.0f, 0.0f, 1.0f };
 		light0.isEnabled = true;
-		light0.type = (int32_t)GID::DSU::LightConst::POINT_LIGHT;
 	}
 	Scene::addLight(light0);
-	DSU::LightData light1{}; {
-		light1.pos = { -20.0f, -35.0f, -20.0f, 1.0f };
-		light1.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		light1.constAtten = 0.0f;
-		light1.linAtten = 0.1f;
-		light1.quadAtten = 0.0f;
-		light1.isEnabled = true;
-		light1.type = (int32_t)GID::DSU::LightConst::POINT_LIGHT;
-	}
-	Scene::addLight(light1);
 
-	//Scene::addActor({ "res\\actor\\dragon\\dragon_idle\\dragon_000150" });
-	//Scene::addActor({ "testCube" });
-	//Scene::addActor({ "plane3" });
-	//GID::Util::FileParsing::parse({ "dragon" });
+	Render::mainGFX().getCamera().addScript(GID::DSU::ScriptID::AdvancedCameraFollow);
 
 	Scene::addActor({ "dragon" });
-
-	//Scene::gActors.at(0).addScript(DSU::ScriptID::BasicGravity);
-	//Scene::gActors.at(0).addScript(DSU::ScriptID::BasicCollision);
-
-	//Scene::gActors.at(0).mModel.mObjects.at(0).mSpeed.deltaTranslation.m128_f32[0] += 10.0f;
-	//Scene::gActors.at(0).mModel.mObjects.at(0).mSpeed.deltaTranslation.m128_f32[2] += 10.0f;
+	//Scene::addActor({ "testCube" });
 
 	General::gGlobalTimer.mark();
 	Update::gTickTimer.mark();
@@ -146,8 +123,7 @@ int Application::doUpdate() noexcept {
 	return 0;
 }
 int Application::doRender() noexcept {
-	using namespace GID;
-	using namespace GSO;
+	using namespace GID::GSO;
 	using namespace Render;
 	mainGFX().startFrame();
 	for (auto& a : Scene::gActors) a.draw();
