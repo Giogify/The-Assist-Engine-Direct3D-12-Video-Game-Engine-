@@ -8,48 +8,73 @@
 // Top-Level Application Logic
 int Application::applicationUpdate() {
 
+	using namespace GID::GSO::Render;
+	using namespace GID::GSO::Input;
+
+	GID::DSU::Timer avgfpstimer{};
+	std::wstring output{};
+
+	output.clear(); {
+		output.append(L"Elapsed Time: ");
+		output.append(std::to_wstring((int32_t)mTimerStart.peek()));
+		output.append(L"s");
+		mainGFX().m2D.addDebugQueue(output);
+	}
+	output.clear(); {
+		output.append(L"FPS: ");
+		output.append(std::to_wstring((int32_t)(1 / mTimerRender.mark())));
+		mainGFX().m2D.addDebugQueue(output);
+	}
+
+	[[likely]]
+	if (FPScount != 0) {
+		output.clear(); {
+			output.append(L"Avg. FPS: ");
+			output.append(std::to_wstring((int32_t)(FPSsum / FPScount)));
+			mainGFX().m2D.addDebugQueue(output);
+		}
+	}
+	output.clear(); {
+		output.append(L"Actor Count: ");
+		output.append(std::to_wstring(GID::GSO::Scene::gActors.size()));
+		mainGFX().m2D.addDebugQueue(output);
+	}
+	output.clear(); {
+		output.append(L"Mouse Position: (");
+		output.append(std::to_wstring(gInput.at(0).mouse.getX()));
+		output.append(L", ");
+		output.append(std::to_wstring(gInput.at(0).mouse.getY()));
+		output.append(L")");
+		mainGFX().m2D.addDebugQueue(output);
+	}
+
 	if (doInput() != 0) return 1;
 	if (doUpdate() != 0) return 1;
 	if (doRender() != 0) return 1;
-	bool wndTitleDebug{ true };
-	#if defined(_DEBUG)
-	wndTitleDebug = true;
-	#endif
-	// Create Debug Information
-	if (wndTitleDebug) {
-		if (mMaxFPS < 1000.0f / (mTimerRender.peek() * 1000.0000000f)) mMaxFPS = 1000.0f / (mTimerRender.peek() * 1000.0000000f);
-		std::wostringstream oss = {};
-		oss.setf(std::ios::fixed);
-		oss << std::setprecision(2);
 
-		//Camera camera = GID::Render::gfx.getCamera();
+	FPSsum += 1 / avgfpstimer.mark();
+	FPScount++;
 
-		const auto t = mTimerStart.peek();
-		oss << "[Elasped Time] " << std::fixed << t;
-		//oss << " [Mouse Position] (" << mWnd.mouse.getX() << "," << mWnd.mouse.getY() << ")";
-		oss << " Highest FPS: " << mMaxFPS;
-		//oss << " [Frames: " << this->mFPSCap << "] " << 1000 / (mTimerRender.mark() * 1000) << '\n';
-		oss << " [FPS: " << 1000 / (mTimerRender.mark() * 1000) << "] " <<  '\n';
-		//DSU::Position temppos = mScene.getActors().at(0).getModel().getObjects().at(0).getPos();
-		//DSU::Speed temp = mScene.getActors().at(0).getModel().getObjects().at(0).getSpeed();
-		/*oss << " [x] " << temppos.translation.m128_f32[0] << " [y] " << temppos.translation.m128_f32[1] << " [z] " << temppos.translation.m128_f32[2];
-		oss << " [dX] " << temp.deltaTranslation.m128_f32[0] << " [dY] " << temp.deltaTranslation.m128_f32[1] << " [dZ] " << temp.deltaTranslation.m128_f32[2];
-		oss << ' '
-			<< camera.mRotation.m128_f32[Camera::Rotation::Pitch] << ' '
-			<< camera.mRotation.m128_f32[Camera::Rotation::Yaw] << ' '
-			<< camera.mRotation.m128_f32[Camera::Rotation::Roll] << '\n';*/
 
-		/*oss << " [Actors] " << mScene.getActors().size();
-		oss << " [X: " << camera.mEye.x << "]"
-			<< " [Y: " << camera.mEye.y << "]"
-			<< " [Z: " << camera.mEye.z << "]"
-			<< " [Pitch: " << camera.mPitch << "]"
-			<< " [Yaw: " << camera.mYaw << "]"
-			<< " [Roll: " << camera.mRoll << "]";*/
+	/*oss << " [Actors] " << mScene.getActors().size();
 
-		// Print Debug Information to Window Title
-		GID::GSO::WindowNS::gWnd.at((uint8_t)GID::DSU::WindowType::MAINWINDOW).get()->setTitle(oss.str());
-	}
+
+	//DSU::Position temppos = mScene.getActors().at(0).getModel().getObjects().at(0).getPos();
+	//DSU::Speed temp = mScene.getActors().at(0).getModel().getObjects().at(0).getSpeed();
+	/*oss << " [x] " << temppos.translation.m128_f32[0] << " [y] " << temppos.translation.m128_f32[1] << " [z] " << temppos.translation.m128_f32[2];
+	oss << " [dX] " << temp.deltaTranslation.m128_f32[0] << " [dY] " << temp.deltaTranslation.m128_f32[1] << " [dZ] " << temp.deltaTranslation.m128_f32[2];
+	oss << ' '
+		<< camera.mRotation.m128_f32[Camera::Rotation::Pitch] << ' '
+		<< camera.mRotation.m128_f32[Camera::Rotation::Yaw] << ' '
+		<< camera.mRotation.m128_f32[Camera::Rotation::Roll] << '\n';*/
+	
+	/*oss << " [X: " << camera.mEye.x << "]"
+		<< " [Y: " << camera.mEye.y << "]"
+		<< " [Z: " << camera.mEye.z << "]"
+		<< " [Pitch: " << camera.mPitch << "]"
+		<< " [Yaw: " << camera.mYaw << "]"
+		<< " [Roll: " << camera.mRoll << "]";*/
+
 	return 0;
 }
 
@@ -69,7 +94,9 @@ Application::Application() {
 	Render::setGFXProjection(GID::DSU::WindowType::MAINWINDOW, projectionTemp);
 
 	DSU::LightData light0{}; {
-		light0.pos = { 0.0f, 50.0f, 0.0f, 1.0f };
+		light0.type = (int32_t)DSU::LightConst::POINT_LIGHT;
+		//light0.direction = { 1.0f, -1.0f, -1.0f, 0.0f };
+		light0.pos = { 0.0f, 20.0f, 60.0f, 1.0f };
 		light0.isEnabled = true;
 	}
 	Scene::addLight(light0);
@@ -93,6 +120,7 @@ Application::Application() {
 	//mScene->getCamera().translate(0.0f, 0.0f, 30.0f);
 }
 int Application::applicationStart() {
+	mTimerRender.mark();
 	while (true) {
 		int hr{};
 		for (auto& w : GID::GSO::WindowNS::gWnd)
@@ -114,20 +142,75 @@ int Application::applicationStart() {
 }
 
 int Application::doInput() noexcept {
-	if (GID::GSO::Input::doInput() != 0) return 1;
+	using namespace GID;
+	using namespace GSO;
+	using namespace Input;
+	using namespace Render;
+	DSU::Timer timer{};
+	std::wstring output{};
+	timer.mark();
+	
+	
+	if (Input::doInput() != 0) return 1;
+	
+
+	auto time = timer.mark();
+	output.clear(); {
+		output.append(L"Input Time:\t");
+		output.append(std::to_wstring((int32_t)(time * 1e6f)));
+		output.append(L"\tus");
+		mainGFX().m2D.addDebugQueue(output);
+	}
 	return 0;
 }
 int Application::doUpdate() noexcept {
-	GID::GSO::Update::initUpdateCycle();
-	GID::GSO::Update::doUpdate();
+	using namespace GID;
+	using namespace GSO;
+	using namespace Update;
+	using namespace Render;
+	DSU::Timer timer{};
+	std::wstring output{};
+	timer.mark();
+
+	
+	initUpdateCycle();
+	Update::doUpdate();
+
+
+	auto time = timer.mark();
+	output.clear(); {
+		output.append(L"Update Time:\t");
+		output.append(std::to_wstring((int32_t)(time * 1e6f)));
+		output.append(L"\tus");
+		mainGFX().m2D.addDebugQueue(output);
+	}
 	return 0;
 }
 int Application::doRender() noexcept {
-	using namespace GID::GSO;
+	using namespace GID;
+	using namespace GSO;
 	using namespace Render;
-	mainGFX().startFrame();
-	for (auto& a : Scene::gActors) a.draw();
-	mainGFX().endFrame();
+	using namespace Scene;
+	DSU::Timer timer{};
+	std::wstring output{};
+	timer.mark();
 
+	
+	mainGFX().startFrame();
+	for (auto& a : gActors) a.draw();
+	
+	
+	auto time = timer.mark();
+	output.clear(); {
+		output.append(L"Render Time:\t");
+		output.append(std::to_wstring((int32_t)(time * 1e6f)));
+		output.append(L"\tus");
+		mainGFX().m2D.addDebugQueue(output);
+	}
+	
+	
+	mainGFX().endFrame();
+	
+	
 	return 0;
 }

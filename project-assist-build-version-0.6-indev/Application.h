@@ -19,6 +19,9 @@ private: // Private Fields
 
 	double rem{};
 
+	float FPSsum{};
+	uint64_t FPScount{};
+
 	// Benchmarking
 	double sum{};
 	uint16_t runInstances{ 0u };

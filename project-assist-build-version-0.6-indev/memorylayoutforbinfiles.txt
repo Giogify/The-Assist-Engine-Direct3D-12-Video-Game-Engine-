@@ -1,0 +1,42 @@
+Memory Layout for .bin files for models.
+Notes:
+Even though .size() returns a size_t (8 or 16 bytes long) it will be truncated a smaller unit (b/c an unsigned long long will never be filled by these sizes).
+
+---------
+
+1. A 1-byte unsigned integer denoting the size of the string that follows.
+
+Ex.
+00001000 -> Raw: 8. There will be 8 characters in the actor's name string.
+
+Note: Any more than 255 characters will not be stored correctly.
+
+---------
+
+2. The name of the actor is written, with a byte denoting an individual character in the name string.
+
+Ex.
+01100001 01100011 01110100 01101111 01110010 -> "actor"
+01100100 01110010 01100001 01100111 01101111 01101110 -> "dragon"
+
+---------
+
+3. A 1-byte unsigned integer denoting the amount of animations for the actor.
+
+Ex.
+00000011 -> Raw: 3. There will be 3 animations for this actor.
+
+Note: Any more than 255 animations will not be stored correctly.
+
+---------
+
+4. A 1-byte unsigned integer denoting the length of the animation's name string.
+
+Ex.
+01000001 -> Raw: 65. There will be 65 characters in the animation's name string.
+
+---------
+
+5. A 2-byte unsigned integer denoting the amount of frames in the nth animation.
+
+00000001 11110100 -> Raw: 500. There are 500 frames in this animation.

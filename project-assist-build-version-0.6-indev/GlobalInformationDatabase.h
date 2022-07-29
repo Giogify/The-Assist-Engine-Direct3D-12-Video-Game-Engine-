@@ -30,13 +30,24 @@
 #include <immintrin.h>
 #include <Windows.h>
 
+#include <d3d11_4.h>
+#include <d3d11on12.h>
+
+#include <d2d1_3.h>
+#include <d2d1_3helper.h>
+#include <d2dbasetypes.h>
+#include <dwrite_3.h>
+
 //#include <fbxsdk.h>
 
-#pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "dxcompiler.lib")
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "DXGI.lib")
-#pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "d3dcompiler")
+#pragma comment(lib, "dxcompiler")
+#pragma comment(lib, "d3d12")
+#pragma comment(lib, "DXGI")
+#pragma comment(lib, "dxguid")
+#pragma comment(lib, "d2d1")
+#pragma comment(lib, "d3d11")
+#pragma comment(lib, "dwrite")
 //#if defined(_DEBUG)
 //#pragma comment(lib, "C:\\Program Files\\Autodesk\\FBX\\FBX SDK\\2020.2.1\\lib\\vs2019\\x64\\debug\\libfbxsdk.lib")
 //#endif
@@ -2037,7 +2048,7 @@ namespace GID::DSU {
 	};
 }
 
-// General Global State
+// General Global State (parsed from general cfg file)
 namespace GID::GSO::General {
 	struct {
 		float gCurrentFrameDeltaTime{};
@@ -2064,7 +2075,7 @@ namespace GID::GSO::WindowNS {
 namespace GID::DSU {
 	struct Window {
 
-		const std::wstring	wndClassName{ L"AssistEngine_ver0.5_indev" };
+		const std::wstring	wndClassName{ L"AssistEngine_ver0.6_indev" };
 		HINSTANCE			hInst{};
 		uint8_t				WindowID{};
 		unsigned int		mWidth{};
@@ -2222,7 +2233,7 @@ namespace GID::DSU {
 					GetClientRect(hWnd, &clientRc);
 					UINT width = clientRc.right - clientRc.left;
 					UINT height = clientRc.bottom = clientRc.top;
-					pGraphicsOutput->resizeWindow(width, height);
+					pGFX3D->resizeWindow(width, height);
 					break;
 				}*/
 			}
@@ -2230,7 +2241,7 @@ namespace GID::DSU {
 		}
 
 		Window() = default;
-		Window(unsigned int width, unsigned int height, const TCHAR* name) :
+		Window(uint16_t width, uint16_t height, const TCHAR* name) :
 			mWidth(width),
 			mHeight(height) {
 
@@ -2625,9 +2636,147 @@ namespace GID::DSU {
 	};
 }
 
-// Graphics Pipeline Object (GFX)
+// Graphics Pipeline Object (2D)
 namespace GID::DSU {
-	struct GraphicsOutput {
+	struct GFX2D {
+
+		HRESULT hr{};
+
+		ComPtr<ID3D11On12Device2> mpD11on12Device{};
+		ComPtr<ID3D11DeviceContext4> mp3DDeviceContext{};
+
+		ComPtr<ID2D1Factory7> mpFactory{};
+		ComPtr<ID2D1Device6> mpDevice{};
+		ComPtr<ID2D1DeviceContext6> mp2DDeviceContext{};
+		
+		std::vector<ComPtr<ID3D11Resource>> mpWrappedRenderTargets{};
+		std::vector<ComPtr<ID2D1Bitmap1>> mpBitmaps{};
+
+		ComPtr<IDWriteFactory7> mpWriteFactory{};
+		std::vector<ComPtr<ID2D1SolidColorBrush>> mpBrushes{};
+		std::vector<ComPtr<IDWriteTextFormat3>> mpFormats{};
+
+		std::queue<std::wstring> mDebugQueue{};
+
+		uint8_t mFrameIndex{};
+
+		GFX2D() = default;
+		GFX2D(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12CommandQueue>& pCommandQueue, std::vector<ComPtr<ID3D12Resource2>>& pRenderTargets) {
+			createDeviceAndContext(pDevice, pCommandQueue);
+			createWriteFactory();
+			wrapRenderTargets(pRenderTargets, getDPI());
+		}
+		inline void createDeviceAndContext(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12CommandQueue>& pCommandQueue) {
+			ComPtr<ID3D11Device5> pD11Device{};
+			std::array<D3D_FEATURE_LEVEL, 1u> fl{};
+			fl.at(0) = D3D_FEATURE_LEVEL_12_1;
+			hr = D3D11On12CreateDevice(pDevice.Get(), D3D11_CREATE_DEVICE_BGRA_SUPPORT, fl.data(), fl.size(), (IUnknown**)pCommandQueue.GetAddressOf(),
+				1u, 0u, (ID3D11Device**)pD11Device.GetAddressOf(), (ID3D11DeviceContext**)mp3DDeviceContext.GetAddressOf(), nullptr);
+			hr = pD11Device.As(&mpD11on12Device);
+		}
+		inline void createWriteFactory() {
+			D2D1_FACTORY_OPTIONS d2dfo{};
+			d2dfo.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
+			hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, __uuidof(ID2D1Factory7), &d2dfo, &mpFactory);
+			ComPtr<IDXGIDevice4> pDXGIDevice{};
+			hr = mpD11on12Device.As(&pDXGIDevice);
+			hr = mpFactory->CreateDevice(pDXGIDevice.Get(), &mpDevice);
+			D2D1_DEVICE_CONTEXT_OPTIONS dco{ D2D1_DEVICE_CONTEXT_OPTIONS_ENABLE_MULTITHREADED_OPTIMIZATIONS };
+			hr = mpDevice->CreateDeviceContext(dco, &mp2DDeviceContext);
+			DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory7), &mpWriteFactory);
+		}
+		inline float getDPI() {
+			return GetDpiForWindow(GID::GSO::WindowNS::gWnd.front().get()->mhWnd);
+		}
+		inline void wrapRenderTargets(std::vector<ComPtr<ID3D12Resource2>>& pRenderTargets, float dpi) {
+			D2D1_BITMAP_PROPERTIES1 bmprop{ D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+			D2D1::PixelFormat(DXGI_FORMAT_R16G16B16A16_FLOAT, D2D1_ALPHA_MODE_IGNORE), dpi, dpi) };
+			D3D11_RESOURCE_FLAGS resFlags{ D3D11_BIND_RENDER_TARGET };
+
+			mpWrappedRenderTargets.resize(pRenderTargets.size());
+			mpBitmaps.resize(pRenderTargets.size());
+
+			ComPtr<IDXGISurface> pSurface{};
+
+			for (uint8_t iter = 0; iter < pRenderTargets.size(); iter++) {
+				hr = mpD11on12Device->CreateWrappedResource(pRenderTargets.at(iter).Get(), &resFlags, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT,
+					IID_PPV_ARGS(&mpWrappedRenderTargets.at(iter)));
+				hr = mpWrappedRenderTargets.at(iter).As(&pSurface);
+				hr = mp2DDeviceContext->CreateBitmapFromDxgiSurface(pSurface.Get(), &bmprop, &mpBitmaps.at(iter));
+			}
+		}
+		void initDebugText() {
+			ComPtr<ID2D1SolidColorBrush> pBrush1{};
+			ComPtr<ID2D1SolidColorBrush> pBrush2{};
+			ComPtr<IDWriteTextFormat3> pFormat{};
+			
+			hr = mp2DDeviceContext->CreateSolidColorBrush(
+				D2D1::ColorF(D2D1::ColorF::Green), 
+				&pBrush1
+			);
+			hr = mp2DDeviceContext->CreateSolidColorBrush(
+				D2D1::ColorF(D2D1::ColorF::Black), 
+				&pBrush2
+			);
+			ComPtr<IDWriteFontCollection3> pFontCollection{}; {
+				hr = mpWriteFactory->GetSystemFontCollection((IDWriteFontCollection**)pFontCollection.GetAddressOf());
+			}			
+			hr = mpWriteFactory->CreateTextFormat(
+				L"Cascadia Mono",
+				pFontCollection.Get(),
+				DWRITE_FONT_WEIGHT_BOLD,
+				DWRITE_FONT_STYLE_NORMAL,
+				DWRITE_FONT_STRETCH_NORMAL,
+				16,
+				L"en-us",
+				(IDWriteTextFormat**)pFormat.GetAddressOf()
+			);
+			mpBrushes.push_back(pBrush1);
+			mpBrushes.push_back(pBrush2);
+			mpFormats.push_back(pFormat);
+		}
+		void draw() noexcept {
+			
+			D2D1_SIZE_F rcSize = mpBitmaps.at(mFrameIndex)->GetSize();
+
+			mpD11on12Device->AcquireWrappedResources(mpWrappedRenderTargets.at(mFrameIndex).GetAddressOf(), 1);
+			mp2DDeviceContext->SetTarget(mpBitmaps.at(mFrameIndex).Get());
+			mp2DDeviceContext->BeginDraw();
+			mp2DDeviceContext->SetTransform(D2D1::Matrix3x2F::Identity());
+
+			[[likely]]
+			if (!mDebugQueue.empty()) drawDebug(rcSize);
+
+			hr = mp2DDeviceContext->EndDraw();
+			mpD11on12Device->ReleaseWrappedResources(mpWrappedRenderTargets.at(mFrameIndex).GetAddressOf(), 1);
+			mp3DDeviceContext->Flush();
+		}
+		void drawDebug(D2D1_SIZE_F& rcSize) noexcept {
+			float indent{ 10.0f };
+			float offset{ 3.0f };
+			float spacing{ mpFormats.at(0).Get()->GetFontSize() };
+			float additiveSpacing{ 5.0f };
+			D2D1_RECT_F textRect1{};
+			D2D1_RECT_F textRect2{};
+			std::wstring line{};
+
+			while (!mDebugQueue.empty()) {
+				line = mDebugQueue.front();
+				mDebugQueue.pop();
+				textRect1 = D2D1::RectF(indent, additiveSpacing, rcSize.width, rcSize.height);
+				textRect2 = D2D1::RectF(indent + offset, additiveSpacing + offset, rcSize.width, rcSize.height);
+				mp2DDeviceContext->DrawText(line.c_str(), line.size(), mpFormats.at(0).Get(), &textRect2, mpBrushes.at(1).Get());
+				mp2DDeviceContext->DrawText(line.c_str(), line.size(), mpFormats.at(0).Get(), &textRect1, mpBrushes.at(0).Get());
+				additiveSpacing += spacing;
+			}
+		}
+		void addDebugQueue(std::wstring line) { mDebugQueue.push(line); }
+	};
+}
+
+// Graphics Pipeline Object (3D)
+namespace GID::DSU {
+	struct GFX3D {
 		// Graphics Configuration
 		bool											mError{ false };
 		bool											mDebug{ false };
@@ -2635,29 +2784,29 @@ namespace GID::DSU {
 		bool											mVSync{ false };
 		BOOL											mTearingSupport{ false };
 		bool											mFullscreen{ false };
-		UINT											mBackBufferCount{ 3u };
-		UINT											mShaderDebugCompileFlags{ D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION };
-		UINT											mShaderReleaseCompileFlags{ 0u };
+		uint32_t										mBackBufferCount{ 3u };
+		uint32_t										mShaderDebugCompileFlags{ D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION };
+		uint32_t										mShaderReleaseCompileFlags{ 0u };
 		D3D_FEATURE_LEVEL								mFeatureLevel{ D3D_FEATURE_LEVEL_12_1 };
 		bool											mWireframe{ false };
 		// Debug
 		#if defined(_DEBUG)
-		ComPtr<ID3D12Debug5>							mpDebugController{};
+		ComPtr<ID3D12Debug6>							mpDebugController{};
 		ComPtr<ID3D12InfoQueue1>						mpInfoQueue{};
 		#endif
 		// Core
 		ComPtr<IDXGIFactory7>							mpFactory{};
-		ComPtr<ID3D12Device9>							mpDevice{};
+		ComPtr<ID3D12Device10>							mpDevice{};
 		ComPtr<IDXGISwapChain4>							mpSwapChain{};
 		// Adapters
 		ComPtr<IDXGIAdapter4>							mpHardwareAdapter{};
 		ComPtr<IDXGIAdapter4>							mpWARPAdapter{};
 		// Commands
 		std::vector<ComPtr<ID3D12CommandAllocator>>		mpCommandAllocator{};
-		ComPtr<ID3D12GraphicsCommandList6>				mpCommandList{};
+		ComPtr<ID3D12GraphicsCommandList7>				mpCommandList{};
 		ComPtr<ID3D12CommandQueue>						mpCommandQueue{};
 		// Pipeline state
-		GID::DSU::PipelineStateStream					mPSS{};
+		PipelineStateStream								mPSS{};
 		ComPtr<ID3D12PipelineState>						mpPipelineState{};
 		// Root Signature
 		ComPtr<ID3D12RootSignature>						mpRootSignature{};
@@ -2666,19 +2815,19 @@ namespace GID::DSU {
 		// Render Target View(s)
 		std::vector<ComPtr<ID3D12Resource2>>			mpRenderTargets{};
 		ComPtr<ID3D12DescriptorHeap>					mpRTVHeap{};
-		UINT											mRTVHeapSize{};
+		uint32_t										mRTVHeapSize{};
 		std::vector<D3D12_VIEWPORT>						mViewport{};
 		D3D12_RECT										mScissorRc{};
 		// Depth Stencil
 		ComPtr<ID3D12Resource2>							mpDepthStencilTexture{};
 		ComPtr<ID3D12DescriptorHeap>					mpDSVHeap{};
-		UINT											mDSVHeapSize{};
+		uint32_t										mDSVHeapSize{};
 		// Fence
 		ComPtr<ID3D12Fence1>							mpFence{};
 		HANDLE											mhFenceEvent{};
-		UINT8											mFrameIndex{};
-		UINT64											mFenceValue{};
-		UINT64											mCurrentFenceValue{};
+		uint8_t											mFrameIndex{};
+		uint64_t										mFenceValue{};
+		uint64_t										mCurrentFenceValue{};
 		// Shaders
 		ComPtr<ID3DBlob>								mpVSBytecode{};
 		ComPtr<ID3DBlob>								mpPSBytecode{};
@@ -2689,16 +2838,18 @@ namespace GID::DSU {
 		HRESULT											mHR{};
 		std::string										mLastType{};
 		Camera											mCamera{};
+		// 2D GFX Pipeline
+		GFX2D											m2D{};
 
 		// Constructor
-		GraphicsOutput(HWND& hWnd, GFX_DESC& desc) {
+		GFX3D(HWND& hWnd, GFX_DESC& desc) {
 
 			WINDOWINFO wndInfo{};
-			wndInfo.cbSize = sizeof(WINDOWINFO);
+			wndInfo.cbSize = sizeof WINDOWINFO;
 			GetWindowInfo(hWnd, &wndInfo);
 
-			UINT16 width = wndInfo.rcClient.right - wndInfo.rcClient.left;
-			UINT16 height = wndInfo.rcClient.bottom - wndInfo.rcClient.top;
+			uint16_t width = wndInfo.rcClient.right - wndInfo.rcClient.left;
+			uint16_t height = wndInfo.rcClient.bottom - wndInfo.rcClient.top;
 
 			#if defined(_DEBUG)
 			mDebug = true;
@@ -2739,13 +2890,14 @@ namespace GID::DSU {
 			std::thread thread11([this] { createRTV(); });
 			thread1.join(); thread5.join(); thread6.join(); thread7.join(); thread8.join(); thread10.join(); thread11.join();
 
+			m2D = { mpDevice, mpCommandQueue, mpRenderTargets };
 			initializePipeline();
 			flushGPU();
 		}
-		GraphicsOutput() = default;
+		GFX3D() = default;
 
 		// Destructor
-		//~GraphicsOutput() = default;
+		//~GFX3D() = default;
 
 		void parseGraphicsConfig() noexcept {
 			enum GFXConfigDataType {
@@ -2803,7 +2955,7 @@ namespace GID::DSU {
 		void createDebugLayer() noexcept {
 			// Create the Debug Interface
 			#if defined(_DEBUG)
-			D3D12GetDebugInterface(IID_PPV_ARGS(&mpDebugController));
+			mHR = D3D12GetDebugInterface(__uuidof(ID3D12Debug5), (void**)&mpDebugController);
 			mpDebugController->EnableDebugLayer();
 			mpDebugController->SetEnableAutoName(TRUE);
 			#endif
@@ -2824,12 +2976,13 @@ namespace GID::DSU {
 			// Obtain adapter
 			if (mUseWARPAdapter) mpFactory->EnumWarpAdapter(IID_PPV_ARGS(&mpWARPAdapter)); // WARP
 			else {
-				UINT64 maxVideoMem = 0;
+				uint64_t maxVideoMem = 0;
 				ComPtr<IDXGIAdapter1> refAdapter{};
 				for (UINT i = 0; mpFactory->EnumAdapters1(i, refAdapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; i++) {
 					DXGI_ADAPTER_DESC1 ad{};
 					refAdapter->GetDesc1(&ad);
-					if ((ad.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 && D3D12CreateDevice(refAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device9), nullptr)
+					if ((ad.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 
+						&& D3D12CreateDevice(refAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device10), nullptr)
 						&& ad.DedicatedVideoMemory > maxVideoMem) {
 						maxVideoMem = ad.DedicatedVideoMemory; refAdapter.As(&mpHardwareAdapter);
 					}
@@ -2838,23 +2991,24 @@ namespace GID::DSU {
 		}
 		void createDevice() noexcept {
 			// Create the Device
-			if (mUseWARPAdapter) D3D12CreateDevice(mpWARPAdapter.Get(), mFeatureLevel, IID_PPV_ARGS(&mpDevice)); // WARP
-			else D3D12CreateDevice(mpHardwareAdapter.Get(), mFeatureLevel, IID_PPV_ARGS(&mpDevice)); // Hardware
-			mpDevice->SetName(L"[Core] [ID3D12Device9] Member of GraphicsOutput");
+			if (mUseWARPAdapter) D3D12CreateDevice(mpWARPAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device9), (void**)&mpDevice); // WARP
+			else D3D12CreateDevice(mpHardwareAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device9), (void**)&mpDevice); // Hardware
+			mpDevice->SetName(L"[Core] [ID3D12Device10] Member of GFX3D");
 		}
 		void createCommandQueue() noexcept {
 			// Create the command queue
-			D3D12_COMMAND_QUEUE_DESC cqd = {};
-			cqd.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-			cqd.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-			cqd.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-			mpDevice->CreateCommandQueue1(&cqd, __uuidof(ID3D12Device9), IID_PPV_ARGS(&mpCommandQueue));
-			mpCommandQueue->SetName(L"[Command] [ID3D12CommandQueue] Member of GraphicsOutput");
+			D3D12_COMMAND_QUEUE_DESC cqd = {}; {
+				cqd.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+				cqd.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+				cqd.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+				mpDevice->CreateCommandQueue1(&cqd, __uuidof(ID3D12Device10), IID_PPV_ARGS(&mpCommandQueue));
+			}
+			mpCommandQueue->SetName(L"[Command] [ID3D12CommandQueue] Member of GFX3D");
 		}
 		void checkTearingSupport() noexcept {
 			mpFactory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &mTearingSupport, sizeof(mTearingSupport));
 		}
-		void createSwapChain(const HWND& hWnd, const UINT16& width, const UINT16& height) noexcept {
+		void createSwapChain(const HWND& hWnd, const uint16_t& width, const uint16_t& height) noexcept {
 			// Get window and monitor info
 			HMONITOR hMonitor{ MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST) };
 			MONITORINFOEX monitorInfo{};
@@ -2898,7 +3052,7 @@ namespace GID::DSU {
 			}
 			mpDevice->CreateDescriptorHeap(&RTVHeapDesc, IID_PPV_ARGS(&mpRTVHeap));
 			mRTVHeapSize = mpDevice->GetDescriptorHandleIncrementSize(RTVHeapDesc.Type);
-			mpRTVHeap->SetName(L"[RTV] [ID3D12DescriptorHeap] Member of GraphicsOutput");
+			mpRTVHeap->SetName(L"[RTV] [ID3D12DescriptorHeap] Member of GFX3D");
 			// Create frame resources
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart());
 			for (UINT i = 0u; i < mBackBufferCount; i++) {
@@ -2910,9 +3064,8 @@ namespace GID::DSU {
 				mpRenderTargets[i]->SetName(woss.str().c_str());
 				hRTV.Offset(1u, mRTVHeapSize);
 			}
-
 		}
-		void createDSV(const UINT16& width, const UINT16& height) noexcept {
+		void createDSV(const uint16_t& width, const uint16_t& height) noexcept {
 			// Create Render Target View (RTV) heap
 			D3D12_DESCRIPTOR_HEAP_DESC dsvhd{}; {
 				dsvhd.NumDescriptors = 1u;
@@ -2942,8 +3095,8 @@ namespace GID::DSU {
 				woss << "[Command] [ID3D12CommandAllocator] [Command Allocator #" << i + 1 << "]";
 				mpCommandAllocator[i]->SetName(woss.str().c_str());
 			}
-			mpDevice->CreateCommandList1(0u, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&mpCommandList));
-			mpCommandList->SetName(L"[Command] [ID3D12GraphicsCommandList6] [Command List]");
+			mpDevice->CreateCommandList1(0u, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, __uuidof(ID3D12GraphicsCommandList6), (void**)&mpCommandList);
+			mpCommandList->SetName(L"[Command] [ID3D12GraphicsCommandList7] [Command List]");
 
 			mpCommandAllocator[0]->Reset();
 			mpCommandList->Reset(mpCommandAllocator[0].Get(), nullptr);
@@ -3004,6 +3157,10 @@ namespace GID::DSU {
 							D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 					}
 				}
+				else if (mWireframe) {
+					mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+						D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+				}
 				else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 				pssd.pPipelineStateSubobjectStream = &mPSS;
 				pssd.SizeInBytes = sizeof GID::DSU::PipelineStateStream;
@@ -3039,8 +3196,8 @@ namespace GID::DSU {
 			mpCommandQueue->ExecuteCommandLists(1u, ppCommandLists);
 			signalFence();
 			waitFence();
-			mpCommandAllocator[mFrameIndex]->Reset();
-			mpCommandList->Reset(mpCommandAllocator[mFrameIndex].Get(), nullptr);
+			mpCommandAllocator.at(mFrameIndex)->Reset();
+			mpCommandList->Reset(mpCommandAllocator.at(mFrameIndex).Get(), nullptr);
 			return 0;
 		}
 
@@ -3055,8 +3212,9 @@ namespace GID::DSU {
 		}
 		void clearRTV() noexcept {
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
-			auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
+			//auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
 			//auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
+			auto color = std::make_unique<float[]>(4); color[0] = 0.1f; color[1] = 0.1f; color[2] = 0.1f; color[3] = 1.f;
 			mpCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
 		}
 		void clearDSV() noexcept {
@@ -3100,7 +3258,6 @@ namespace GID::DSU {
 			//	1, 5, 6, 1, 6, 2,
 			//	4, 0, 3, 4, 3, 7
 			//};
-
 			//DX::XMMATRIX transformM{
 			//	DirectX::XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f)
 			//	* DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f)
@@ -3111,7 +3268,6 @@ namespace GID::DSU {
 			//auto InvM = DirectX::XMMatrixTranspose(transformM);
 			//DSU::VertexConstantBuffer mx{ transformM, mCamera.getMatrix(), DX::XMMatrixPerspectiveLH(1.f, 9.0f / 16.0f, 0.25f, 5000.f), 
 			//	DirectX::XMMatrixInverse(&InvDeterminant, InvM) };
-
 			//// Add resources
 			//VertexBuffer vb(mpDevice, mpCommandList, vertices.data(), vertices.size());
 			//IndexBuffer ib(mpDevice, mpCommandList, indices.data(), indices.size());
@@ -3120,12 +3276,10 @@ namespace GID::DSU {
 			//ib.transitionToRead(mpCommandList);
 			//vcb.transitionToRead(mpCommandList);
 			//mpCommandList->SetGraphicsRootConstantBufferView(0u, vcb.getDestRes()->GetGPUVirtualAddress());
-
 			//mpCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			//mpCommandList->IASetVertexBuffers(0u, 1u, &vb.getView());
 			//mpCommandList->IASetIndexBuffer(&ib.getView());
 			//mpCommandList->DrawIndexedInstanced(ib.getCount(), 1u, 0u, 0u, 0u);
-			//endFrame();
 		}
 		void endFrame() noexcept {
 			DXGI_PRESENT_PARAMETERS pp = {};
@@ -3133,12 +3287,16 @@ namespace GID::DSU {
 			pp.pDirtyRects = 0u;
 			pp.pScrollRect = 0u;
 			pp.pScrollOffset = 0u;
-			transitionRTVToRead();
+			
 			flushGPU();
-			UINT syncInterval = mVSync ? 1u : 0u;
-			UINT presentFlags = mTearingSupport && !mVSync ? DXGI_PRESENT_ALLOW_TEARING : 0u;
-			mpSwapChain->Present1(syncInterval, presentFlags, &pp);
+			m2D.draw();
+			//transitionRTVToRead();
+			flushGPU();
+			//UINT syncInterval = mVSync ? 1u : 0u;
+			//UINT presentFlags = mTearingSupport && !mVSync ? DXGI_PRESENT_ALLOW_TEARING : 0u;
+			mpSwapChain->Present1((mVSync) ? 1u : 0u, (mTearingSupport && !mVSync) ? DXGI_PRESENT_ALLOW_TEARING : 0u, &pp);
 			mFrameIndex = mpSwapChain->GetCurrentBackBufferIndex();
+			m2D.mFrameIndex = mFrameIndex;
 		}
 
 		// Util
@@ -3203,8 +3361,8 @@ namespace GID::DSU {
 
 		void setProjection(const AssistMath::FAMMATRIX& projection) noexcept { mProjection = projection; }
 		AssistMath::FAMMATRIX& getProjection() noexcept { return mProjection; }
-		ComPtr<ID3D12GraphicsCommandList6>& getCommandList() noexcept { return mpCommandList; }
-		ComPtr<ID3D12Device9>& getDevice() noexcept { return mpDevice; }
+		ComPtr<ID3D12GraphicsCommandList7>& getCommandList() noexcept { return mpCommandList; }
+		ComPtr<ID3D12Device10>& getDevice() noexcept { return mpDevice; }
 
 		void doDebug(HRESULT& hr, const char* type, const char* element, const char* verb) {
 			if (hr == S_OK) {
@@ -3247,7 +3405,7 @@ namespace GID::DSU {
 namespace GID::DSU {
 	struct GFXPipelineContainer {
 		GID::DSU::WindowType wndtype{};
-		GID::DSU::GraphicsOutput gfx{};
+		GID::DSU::GFX3D gfx{};
 	};
 }
 
@@ -3260,10 +3418,10 @@ namespace GID::GSO::Render {
 		if (!found) gGFX.push_back({ type, {} });
 		for (auto& w : gGFX) if (w.wndtype == type) w.gfx = { WindowNS::gWnd.at((uint8_t)type)->getHandle(), desc };
 	}
-	inline GID::DSU::GraphicsOutput& findGFX(GID::DSU::WindowType type) {
+	inline GID::DSU::GFX3D& findGFX(GID::DSU::WindowType type) {
 		for (auto& w : gGFX) if (w.wndtype == type) return w.gfx;
 	}
-	inline GID::DSU::GraphicsOutput& mainGFX() { return findGFX(GID::DSU::WindowType::MAINWINDOW); }
+	inline GID::DSU::GFX3D& mainGFX() { return findGFX(GID::DSU::WindowType::MAINWINDOW); }
 	inline void setGFXProjection(GID::DSU::WindowType wndType, GID::DSU::AssistMath::FAMMATRIX& projection) {
 		for (auto& g : gGFX) if (g.wndtype == wndType) g.gfx.setProjection(projection);
 	}
@@ -3278,24 +3436,24 @@ namespace GID::DSU {
 		D3D12_VERTEX_BUFFER_VIEW	mVBView{};
 
 		VertexBuffer() = default;
-		VertexBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VSInputData* vertexIndices, const UINT64& size) {
+		VertexBuffer(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const VSInputData* vertexIndices, const UINT64& size) {
 			createDestinationResource(pDevice, size);
 			createIntermediateResource(pDevice, size);
 			createVertexBufferView(pCommandList, vertexIndices, size);
 		}
-		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const UINT64& size) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice, const UINT64& size) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof VSInputData) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 			mpDestRes->SetName(L"[ID3D12Resource] [Destination Resource - VertexBuffer]");
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const UINT64& size) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice, const UINT64& size) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(size * sizeof VSInputData) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 			mpIntermedRes->SetName(L"[ID3D12Resource] [Intermediate Resource - VertexBuffer]");
 		}
-		void createVertexBufferView(ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VSInputData* vertexIndices, const UINT64& size) noexcept {
+		void createVertexBufferView(ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const VSInputData* vertexIndices, const UINT64& size) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
 				srd.pData = vertexIndices;
 				srd.RowPitch = size * sizeof VSInputData;
@@ -3313,12 +3471,12 @@ namespace GID::DSU {
 		UINT getCount() const noexcept {
 			return mVBView.SizeInBytes / sizeof VSInputData;
 		}
-		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
@@ -3337,23 +3495,23 @@ namespace GID::DSU {
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VSSRVPosSBData() = default;
-		VSSRVPosSBData(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
+		VSSRVPosSBData(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
 			createDestinationResource(pDevice, data);
 			createIntermediateResource(pDevice, data);
 			createDescriptorHeap(pDevice);
 			createShaderResourceView(pDevice, pCommandList, data);
 		}
-		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(AssistMath::AMFLOAT3) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(AssistMath::AMFLOAT3) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 		}
-		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDescriptorHeap(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			D3D12_DESCRIPTOR_HEAP_DESC srvhd{};
 			srvhd.NumDescriptors = 1u;
 			srvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -3361,7 +3519,7 @@ namespace GID::DSU {
 			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
 			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
 		}
-		void createShaderResourceView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+		void createShaderResourceView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
 				srd.pData = data.data();
 				srd.RowPitch = (sizeof(AssistMath::AMFLOAT3) * data.size());
@@ -3385,17 +3543,17 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
 		ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
 		uint32_t alignBytes(uint32_t _size) noexcept { return _size % 256 == 0 ? _size : 256 - _size % 256 + _size; }
-		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
+		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
 			mSRD.pData = data.data();
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 			D3D12_BUFFER_SRV bsrv{}; {
@@ -3424,23 +3582,23 @@ namespace GID::DSU {
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VSSRVTexSBData() = default;
-		VSSRVTexSBData(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT2>& data) {
+		VSSRVTexSBData(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<FLOAT2>& data) {
 			createDestinationResource(pDevice, data);
 			createIntermediateResource(pDevice, data);
 			createDescriptorHeap(pDevice);
 			createShaderResourceView(pDevice, pCommandList, data);
 		}
-		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT2>& data) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<FLOAT2>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT2) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT2>& data) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<FLOAT2>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT2) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 		}
-		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDescriptorHeap(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			D3D12_DESCRIPTOR_HEAP_DESC srvhd{};
 			srvhd.NumDescriptors = 1u;
 			srvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -3448,7 +3606,7 @@ namespace GID::DSU {
 			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
 			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
 		}
-		void createShaderResourceView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT2>& data) noexcept {
+		void createShaderResourceView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<FLOAT2>& data) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
 				srd.pData = data.data();
 				srd.RowPitch = (sizeof(FLOAT2) * data.size());
@@ -3472,17 +3630,17 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
 		ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
 		uint32_t alignBytes(uint32_t _size) noexcept { return _size % 256 == 0 ? _size : 256 - _size % 256 + _size; }
-		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT2>& data) {
+		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<FLOAT2>& data) {
 			mSRD.pData = data.data();
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 			D3D12_BUFFER_SRV bsrv{}; {
@@ -3511,23 +3669,23 @@ namespace GID::DSU {
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VSSRVNormSBData() = default;
-		VSSRVNormSBData(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT3>& data) {
+		VSSRVNormSBData(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<FLOAT3>& data) {
 			createDestinationResource(pDevice, data);
 			createIntermediateResource(pDevice, data);
 			createDescriptorHeap(pDevice);
 			createShaderResourceView(pDevice, pCommandList, data);
 		}
-		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT3>& data) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<FLOAT3>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT3) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice, const std::vector<FLOAT3>& data) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<FLOAT3>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(FLOAT3) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 		}
-		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDescriptorHeap(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			D3D12_DESCRIPTOR_HEAP_DESC srvhd{};
 			srvhd.NumDescriptors = 1u;
 			srvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -3535,7 +3693,7 @@ namespace GID::DSU {
 			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
 			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
 		}
-		void createShaderResourceView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT3>& data) noexcept {
+		void createShaderResourceView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<FLOAT3>& data) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
 				srd.pData = data.data();
 				srd.RowPitch = (sizeof(FLOAT3) * data.size());
@@ -3559,17 +3717,17 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>& getDestRes() noexcept { return mpDestRes; }
 		ComPtr<ID3D12Resource2>& getIntermedRes() noexcept { return mpIntermedRes; }
 		uint32_t alignBytes(uint32_t _size) noexcept { return _size % 256 == 0 ? _size : 256 - _size % 256 + _size; }
-		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const std::vector<FLOAT3>& data) {
+		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<FLOAT3>& data) {
 			mSRD.pData = data.data();
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 			D3D12_BUFFER_SRV bsrv{}; {
@@ -3600,24 +3758,24 @@ namespace GID::DSU {
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VertexConstantBuffer() = default;
-		VertexConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VertexConstantBufferData& data) {
+		VertexConstantBuffer(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const VertexConstantBufferData& data) {
 			createDestinationResource(pDevice);
 			createIntermediateResource(pDevice);
 			createDescriptorHeap(pDevice);
 			createConstantBufferView(pDevice, pCommandList, data);
 		}
 
-		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(alignBytes()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(alignBytes()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 		}
-		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDescriptorHeap(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			D3D12_DESCRIPTOR_HEAP_DESC cbvhd{};
 			cbvhd.NumDescriptors = 1u;
 			cbvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -3625,7 +3783,7 @@ namespace GID::DSU {
 			pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
 			mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 		}
-		void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const GID::DSU::VertexConstantBufferData& data) noexcept {
+		void createConstantBufferView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const GID::DSU::VertexConstantBufferData& data) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
 				srd.pData = &data;
 				srd.RowPitch = alignBytes();
@@ -3646,17 +3804,17 @@ namespace GID::DSU {
 				? sizeof(VertexConstantBufferData)
 				: 256 - sizeof(VertexConstantBufferData) % 256 + sizeof(VertexConstantBufferData));
 		}
-		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const VertexConstantBufferData& data) {
+		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const VertexConstantBufferData& data) {
 			mSRD.pData = &data;
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{}; {
@@ -3679,23 +3837,23 @@ namespace GID::DSU {
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		PixelConstantBuffer() = default;
-		PixelConstantBuffer(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const PixelConstantBufferData& data) {
+		PixelConstantBuffer(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const PixelConstantBufferData& data) {
 			createDestinationResource(pDevice);
 			createIntermediateResource(pDevice);
 			createDescriptorHeap(pDevice);
 			createConstantBufferView(pDevice, pCommandList, data);
 		}
-		void createDestinationResource(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(alignBytes()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
 			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(alignBytes()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 		}
-		void createDescriptorHeap(ComPtr<ID3D12Device9>& pDevice) noexcept {
+		void createDescriptorHeap(ComPtr<ID3D12Device10>& pDevice) noexcept {
 			D3D12_DESCRIPTOR_HEAP_DESC cbvhd{};
 			cbvhd.NumDescriptors = 1u;
 			cbvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -3703,7 +3861,7 @@ namespace GID::DSU {
 			pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
 			mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 		}
-		void createConstantBufferView(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const PixelConstantBufferData& data) noexcept {
+		void createConstantBufferView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const PixelConstantBufferData& data) noexcept {
 			mSRD.pData = &data;
 			mSRD.RowPitch = alignBytes();
 			mSRD.SlicePitch = mSRD.RowPitch;
@@ -3721,17 +3879,17 @@ namespace GID::DSU {
 				? sizeof(PixelConstantBufferData)
 				: 256 - sizeof(PixelConstantBufferData) % 256 + sizeof(PixelConstantBufferData));
 		}
-		void transitionToRead(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToRead(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_COPY_DEST,
 				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList6>& pCommandList) noexcept {
+		void transitionToWrite(ComPtr<ID3D12GraphicsCommandList7>& pCommandList) noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpDestRes.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void updateResource(ComPtr<ID3D12Device9>& pDevice, ComPtr<ID3D12GraphicsCommandList6>& pCommandList, const PixelConstantBufferData& data) {
+		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const PixelConstantBufferData& data) {
 			mSRD.pData = &data;
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{}; {
@@ -3772,13 +3930,13 @@ namespace GID::DSU {
 		std::string name{};
 		std::vector<AssistMath::AMFLOAT2> tex{};
 		std::vector<AssistMath::AMFLOAT3> pos{}, norm{};
-		std::vector<AssistMath::AMUINT3X3> ind{};
 		MaterialFileData mtl{};
 	};
 	struct ModelFileData {
 		std::vector<ObjectFileData> ofd{};
 	};
 	struct AnimationPackageData {
+		std::vector<std::vector<AssistMath::AMUINT3X3>> ind{};
 		std::vector<ModelFileData> apd{};
 	};
 	struct ActorData {
@@ -3797,57 +3955,60 @@ namespace GID::Util::FileParsing {
 		using namespace GID::DSU;
 
 		ActorData data{};
-		std::ifstream file("res\\actor\\" + dir + ".bin", std::ios::binary); size_t _size{}; std::string _str{};
+		std::ifstream file("res\\actor\\" + dir + ".bin", std::ios::binary); uint32_t _size{}; std::string _str{};
 
 		// Actor name
-		file.read((char*)&_size, sizeof size_t);
+		file.read((char*)&_size, sizeof uint32_t);
 		_str.resize(_size);
 		file.read(_str.data(), _size);
 		data.name = _str;
 		
 		// Amount of animations
-		file.read((char*)&_size, sizeof size_t);
+		file.read((char*)&_size, sizeof uint32_t);
 		data.ad.resize(_size);
 		for (auto& ad : data.ad) {
 			
+			file.read((char*)&_size, sizeof uint32_t);
+			ad.ind.resize(_size);
+			for (auto& i : ad.ind) {
+				file.read((char*)&_size, sizeof uint32_t);
+				i.resize(_size);
+				for (auto& ind : i) file.read((char*)&ind, sizeof UINT3X3);
+			}
+
 			// Amount of frames (models)
-			file.read((char*)&_size, sizeof size_t);
+			file.read((char*)&_size, sizeof uint32_t);
 			ad.apd.resize(_size);
 			for (auto& apd : ad.apd) {
 				
 				// Amount of objects
-				file.read((char*)&_size, sizeof size_t);
+				file.read((char*)&_size, sizeof uint32_t);
 				apd.ofd.resize(_size);
 				for (auto& ofd : apd.ofd) {
 					
 					// Object name
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
 					ofd.name = _str;
 					
 					// Position Data
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					ofd.pos.resize(_size);
 					for (auto& pos : ofd.pos) file.read((char*)&pos, sizeof FLOAT3);
 					
 					// Texture Data
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					ofd.tex.resize(_size);
 					for (auto& tex : ofd.tex) file.read((char*)&tex, sizeof FLOAT2);
 					
 					// Normal Data
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					ofd.norm.resize(_size);
 					for (auto& norm : ofd.norm) file.read((char*)&norm, sizeof FLOAT3);
 					
-					// Indices Data
-					file.read((char*)&_size, sizeof size_t);
-					ofd.ind.resize(_size);
-					for (auto& ind : ofd.ind) file.read((char*)&ind, sizeof UINT3X3);
-					
 					// Material name
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
 					ofd.mtl.name = _str;
@@ -3859,7 +4020,7 @@ namespace GID::Util::FileParsing {
 					file.read((char*)&ofd.mtl.KA.isXYZ, sizeof(bool));
 					file.read((char*)&ofd.mtl.KA.RGB, sizeof(FLOAT3));
 					file.read((char*)&ofd.mtl.KA.XYZ, sizeof(FLOAT3));
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
 					ofd.mtl.KA.file = _str;
@@ -3872,7 +4033,7 @@ namespace GID::Util::FileParsing {
 					file.read((char*)&ofd.mtl.KD.isXYZ, sizeof(bool));
 					file.read((char*)&ofd.mtl.KD.RGB, sizeof(FLOAT3));
 					file.read((char*)&ofd.mtl.KD.XYZ, sizeof(FLOAT3));
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
 					ofd.mtl.KD.file = _str;
@@ -3885,7 +4046,7 @@ namespace GID::Util::FileParsing {
 					file.read((char*)&ofd.mtl.KS.isXYZ, sizeof(bool));
 					file.read((char*)&ofd.mtl.KS.RGB, sizeof(FLOAT3));
 					file.read((char*)&ofd.mtl.KS.XYZ, sizeof(FLOAT3));
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
 					ofd.mtl.KS.file = _str;
@@ -3898,7 +4059,7 @@ namespace GID::Util::FileParsing {
 					file.read((char*)&ofd.mtl.TF.isXYZ, sizeof(bool));
 					file.read((char*)&ofd.mtl.TF.RGB, sizeof(FLOAT3));
 					file.read((char*)&ofd.mtl.TF.XYZ, sizeof(FLOAT3));
-					file.read((char*)&_size, sizeof size_t);
+					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
 					file.read(_str.data(), _size);
 					ofd.mtl.TF.file = _str;
@@ -3932,7 +4093,6 @@ namespace GID::DSU {
 		Speed mSpeed{};
 		SphereCollisionCheckData mCollision{};
 
-		VertexBuffer mVertexBuffer{};
 		VSSRVPosSBData mVSPosSB{};
 		VSSRVTexSBData mVSTexSB{};
 		VSSRVNormSBData mVSNormSB{};
@@ -3942,13 +4102,9 @@ namespace GID::DSU {
 		PixelConstantBufferData pcbData{};
 
 		// Object Data
-		ObjectFileData mObjectFileData{};
+		//ObjectFileData mObjectFileData{};
 		MaterialData mMaterialData{};
-		std::vector<VSInputData> mObjectData{};
-
-		std::vector<AssistMath::AMFLOAT3> pos{};
-		std::vector<AssistMath::AMFLOAT2> tex{};
-		std::vector<AssistMath::AMFLOAT3> norm{};
+		
 
 		Object() = default;
 		Object(ObjectFileData& data) {
@@ -3956,19 +4112,13 @@ namespace GID::DSU {
 			using namespace AssistMath;
 
 			// Process data
-			mObjectFileData = data;
+			ObjectFileData mObjectFileData = data;
+			std::vector<AssistMath::AMFLOAT3> pos{};
+			std::vector<AssistMath::AMFLOAT2> tex{};
+			std::vector<AssistMath::AMFLOAT3> norm{};
 			for (auto& p : mObjectFileData.pos) pos.push_back(p);
 			for (auto& t : mObjectFileData.tex) tex.push_back(t);
 			for (auto& n : mObjectFileData.norm) norm.push_back(n);
-			
-			mObjectData.resize(mObjectFileData.ind.size() * 3);
-			uint32_t iter{};
-			for (auto& i : mObjectFileData.ind) {
-				mObjectData.at(iter) = { i.d[0], i.d[1], i.d[2] };
-				mObjectData.at(iter + 1) = { i.d[3], i.d[4], i.d[5] };
-				mObjectData.at(iter + 2) = { i.d[6], i.d[7], i.d[8] };
-				iter += 3;
-			}
 
 			// Material Data
 			{
@@ -4007,8 +4157,6 @@ namespace GID::DSU {
 				}
 			}
 
-			mVertexBuffer = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), mObjectData.data(), mObjectData.size() };
-
 			mVSPosSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), pos };
 			mVSTexSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), tex };
 			mVSNormSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), norm };
@@ -4041,6 +4189,14 @@ namespace GID::DSU {
 			//mPos.center = _mm_add_ps(mPos.center, _mm_mul_ps(mSpeed.deltaTranslation, dt));
 		}
 		void draw() noexcept {
+				
+			//mVertexBuffer.transitionToRead(mainGFX().getCommandList());
+			//mainGFX().getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
+			//mainGFX().getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
+			//mVertexBuffer.transitionToWrite(mainGFX().getCommandList());
+			
+		}
+		void updateResources() noexcept {
 			using namespace GSO::Render;
 			AssistMath::FAMMATRIX transformM{ getTransformMx() };
 			AssistMath::FAMVECTOR det{ FAMMatrixDeterminant(transformM) };
@@ -4055,32 +4211,35 @@ namespace GID::DSU {
 			pcbData.globalAmbient = { 0.f, 0.f, 0.f, 1.f };
 			for (int i = 0; i < GSO::Scene::gLights.size(); i++)
 				pcbData.lights[i] = GSO::Scene::gLights[i];
-				
+
 			mVCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices);
 			mPCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData);
-				
-			mVertexBuffer.transitionToRead(mainGFX().getCommandList());
+		}
+		void transitionResourcesToRead() noexcept {
+			using namespace GSO::Render;
 			mVCB.transitionToRead(mainGFX().getCommandList());
 			mVSPosSB.transitionToRead(mainGFX().getCommandList());
 			mVSTexSB.transitionToRead(mainGFX().getCommandList());
 			mVSNormSB.transitionToRead(mainGFX().getCommandList());
 			mPCB.transitionToRead(mainGFX().getCommandList());
+		}
+		void doCommandList() noexcept {
+			using namespace GSO::Render;
 			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(0u, mVCB.getDestRes()->GetGPUVirtualAddress());
 			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(1u, mVSPosSB.getDestRes()->GetGPUVirtualAddress());
 			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(2u, mVSTexSB.getDestRes()->GetGPUVirtualAddress());
 			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(3u, mVSNormSB.getDestRes()->GetGPUVirtualAddress());
 			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(4u, mPCB.getDestRes()->GetGPUVirtualAddress());
 			mainGFX().getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			mainGFX().getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
-			mainGFX().getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
-			mVertexBuffer.transitionToWrite(mainGFX().getCommandList());
+		}
+		void transitionResourcesToWrite() noexcept {
+			using namespace GSO::Render;
 			mVCB.transitionToWrite(mainGFX().getCommandList());
 			mVSPosSB.transitionToWrite(mainGFX().getCommandList());
 			mVSTexSB.transitionToWrite(mainGFX().getCommandList());
 			mVSNormSB.transitionToWrite(mainGFX().getCommandList());
 			mPCB.transitionToWrite(mainGFX().getCommandList());
 		}
-
 		AssistMath::FAMMATRIX getTransformMx() noexcept {
 			return {
 			AssistMath::FAMMatrixRotationRollPitchYaw(mPos.rotation)
@@ -4126,12 +4285,12 @@ namespace GID::GSO::Collections::ActorData {
 namespace GID::DSU {
 	struct Model {
 
-		GID::DSU::ModelFileData mModelFileData{};
+		//ModelFileData mModelFileData{};
 		std::vector<Object> mObjects{};
 
 		Model() = default;
 		Model(GID::DSU::ModelFileData& mfd) {
-			mModelFileData = mfd;
+			ModelFileData mModelFileData = mfd;
 			for (auto& objectdata : mModelFileData.ofd) {
 				mObjects.push_back({ objectdata });
 			}
@@ -4141,7 +4300,7 @@ namespace GID::DSU {
 
 		void draw() noexcept { for (auto& o : mObjects) o.draw(); }
 
-		GID::DSU::ModelFileData& getModelData() noexcept { return mModelFileData; }
+		//GID::DSU::ModelFileData& getModelData() noexcept { return mModelFileData; }
 		std::vector<Object>& getObjects() noexcept { return mObjects; }
 	};
 }
@@ -4184,8 +4343,9 @@ namespace GID::DSU {
 	struct Actor : Inputtable, Scriptable {
 
 		std::pair<std::string, UINT> mActorID{};
-		GID::DSU::ActorData mActorData{};
-		GID::DSU::AnimationPackage mAnimationPackage{};
+		AnimationPackage mAnimationPackage{};
+		
+		std::vector<GID::DSU::VertexBuffer> mVertexBuffer{};
 
 		Timer mInitTimer{};
 		Timer mCurrentStateTimer{};
@@ -4193,10 +4353,30 @@ namespace GID::DSU {
 		ActorGroundState mGroundState{ ActorGroundState::GROUND };
 
 		Actor() = default;
-		Actor(GraphicsOutput& gfx, std::string& objPath) {
+		Actor(GFX3D& gfx, std::string& objPath) {
+			using namespace GSO::Render;
+			std::vector<std::vector<VSInputData>> mIndices{};
+			
 			mActorID.first = objPath;
 			mActorID.second = GID::GSO::Collections::ActorID::add(objPath);
-			mActorData = GID::GSO::Collections::ActorData::quickSearchAndAdd(objPath);
+			//mActorData = GID::GSO::Collections::ActorData::quickSearchAndAdd(objPath);
+			ActorData mActorData = GID::Util::FileParsing::parse(objPath);
+
+			uint32_t objectidx{};
+			mIndices.resize(mActorData.ad.at(0).ind.size());
+			std::cout << sizeof mActorData << '\n';
+			for (auto& ind1 : mActorData.ad.at(0).ind) {
+				mIndices.at(objectidx).resize(ind1.size() * 3);
+				size_t iter{};
+				for (auto& i : ind1) {
+					mIndices.at(objectidx).at(iter) = {i.d[0], i.d[1], i.d[2]};
+					mIndices.at(objectidx).at(iter + 1) = { i.d[3], i.d[4], i.d[5] };
+					mIndices.at(objectidx).at(iter + 2) = { i.d[6], i.d[7], i.d[8] };
+					iter += 3;
+				}
+				mVertexBuffer.push_back({ mainGFX().getDevice(), mainGFX().getCommandList(), mIndices.at(objectidx).data(), mIndices.at(objectidx).size()});
+				objectidx++;
+			}
 			mAnimationPackage.mAnimations.resize(mActorData.ad.size());
 			mAnimationPackage.mAnimationID = mActorData.name;
 			for (uint16_t iter{}; iter < mActorData.ad.at(0).apd.size(); iter++) {
@@ -4205,7 +4385,6 @@ namespace GID::DSU {
 			mCurrentStateTimer.mark();
 			mInitTimer.mark();
 		}
-
 		void input() noexcept override {
 
 		}
@@ -4215,9 +4394,22 @@ namespace GID::DSU {
 					m.update();
 		}
 		void draw() noexcept {
-			uint16_t currFrameIndex{ (uint16_t)std::truncf(mInitTimer.peek() * 30.f) };
+			using namespace GSO::Render;
+			uint32_t currFrameIndex{ (uint32_t)std::truncf(mInitTimer.peek() * 30.f * GSO::General::gCfgGen.gSpeedMultiplier) };
 			currFrameIndex %= mAnimationPackage.mAnimations.at(0).mFrames.size();
-			mAnimationPackage.mAnimations.at(0).mFrames.at(currFrameIndex).draw();
+			//currFrameIndex = 0;
+			uint32_t objectidx{};
+			for (auto& o : mAnimationPackage.mAnimations.at(0).mFrames.at(currFrameIndex).getObjects()) {
+				mVertexBuffer.at(objectidx).transitionToRead(GSO::Render::mainGFX().getCommandList());
+				o.updateResources();
+				o.transitionResourcesToRead();
+				o.doCommandList();
+				mainGFX().getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.at(objectidx).getView());
+				mainGFX().getCommandList()->DrawInstanced(mVertexBuffer.at(objectidx).getCount(), 1u, 0u, 0u);
+				mVertexBuffer.at(objectidx).transitionToWrite(mainGFX().getCommandList());
+				o.transitionResourcesToWrite();
+				objectidx++;
+			}
 		}
 		auto& getGroundState() noexcept {
 			return mGroundState;
@@ -4244,9 +4436,11 @@ namespace GID::GSO::Util {
 namespace GID::GSO::Util {
 	inline void initQuickStart() {
 		using namespace GSO; using namespace GSO::Render::Viewport;
-		WindowNS::addWindow(1280, 720, L"Main Window");
+		WindowNS::addWindow(1600, 900, L"Window");
 		Util::initGSO();
 		Render::addGFX(GID::DSU::WindowType::MAINWINDOW, { ViewportPresets[(uint32_t)GID::DSU::ViewportPreset::VP1_DEFAULT] });
+		Render::mainGFX().m2D.initDebugText();
+
 	}
 }
 
@@ -4699,8 +4893,7 @@ namespace GID::GSO::Scripts::Update {
 }
 
 namespace GID::GSO::Scripts::GlobalVariables {
-	inline size_t gCameraActorFollowIndex{};
-	inline bool gbCameraFollow{};
+	inline uint16_t gCameraActorFollowIndex{};
 }
 
 namespace GID::GSO::Scripts::Update {
@@ -4753,7 +4946,6 @@ namespace GID::GSO::Update {
 		for (auto& a : Scene::gActors)
 			a.update();
 		Scripts::Factory::processCameraScripts();
-
 	}
 }
 
