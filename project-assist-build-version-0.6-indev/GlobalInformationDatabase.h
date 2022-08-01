@@ -1831,8 +1831,7 @@ namespace GID::DSU {
 				Keyboard::Event e = mKeyBuffer.front();
 				mKeyBuffer.pop();
 				return e;
-			}
-			else { return Keyboard::Event(); }
+			} else { return Keyboard::Event(); }
 		}
 		bool isKeyQueueEmpty() const noexcept {
 			return mKeyBuffer.empty();
@@ -1847,8 +1846,7 @@ namespace GID::DSU {
 				uint8_t charCode = mCharBuffer.front();
 				mCharBuffer.pop();
 				return charCode;
-			}
-			else return 0;
+			} else return 0;
 		}
 		bool isCharQueueEmpty() const noexcept {
 			return mCharBuffer.empty();
@@ -2024,8 +2022,7 @@ namespace GID::DSU {
 				Mouse::Event e = mBuffer.front();
 				mBuffer.pop();
 				return e;
-			}
-			else { return Mouse::Event(); }
+			} else { return Mouse::Event(); }
 		}
 
 		// Empty the Buffer
@@ -2051,6 +2048,7 @@ namespace GID::DSU {
 // General Global State (parsed from general cfg file)
 namespace GID::GSO::General {
 	struct {
+		bool gIsWindowResized{};
 		float gCurrentFrameDeltaTime{};
 	} gGenVar;
 	struct {
@@ -2063,7 +2061,7 @@ namespace GID::GSO::General {
 
 // Global Per-frame Packed Input Vector
 namespace GID::GSO::Input {
-	inline std::vector<GID::DSU::PackedInput> gInput{};
+	inline GID::DSU::PackedInput gInput{};
 }
 
 // Global Window Count
@@ -2102,40 +2100,40 @@ namespace GID::DSU {
 			switch (msg) {
 
 				// Close Window
-			case WM_CLOSE:
-				PostQuitMessage(0);
-				return 0;
+				case WM_CLOSE:
+					PostQuitMessage(0);
+					return 0;
 
 				// ---- KEYBOARD MESSAGES ---- //
-
-					// When Key is Pressed
-			case WM_KEYDOWN:
-				if (!(lParam & 0x40000000) || gInput[WindowID].kb.isAutoRepeatEnabled()) {
-					gInput[WindowID].kb.onKeyPressed((uint8_t)wParam);
-				}
-				break;
+					
+				// When Key is Pressed
+				case WM_KEYDOWN:
+					if (!(lParam & 0x40000000) || gInput.kb.isAutoRepeatEnabled()) {
+						gInput.kb.onKeyPressed((uint8_t)wParam);
+					}
+					break;
 
 				// When System Key is Pressed
-			case WM_SYSKEYDOWN:
-				if (!(lParam & 0x40000000) || gInput[WindowID].kb.isAutoRepeatEnabled()) {
-					gInput[WindowID].kb.onKeyPressed((uint8_t)wParam);
-				}
-				break;
+				case WM_SYSKEYDOWN:
+					if (!(lParam & 0x40000000) || gInput.kb.isAutoRepeatEnabled()) {
+						gInput.kb.onKeyPressed((uint8_t)wParam);
+					}
+					break;
 
 				// When Key is Released
-			case WM_KEYUP:
-				gInput[WindowID].kb.onKeyReleased((uint8_t)wParam);
-				break;
+				case WM_KEYUP:
+					gInput.kb.onKeyReleased((uint8_t)wParam);
+					break;
 
 				// When System Key is Released
-			case WM_SYSKEYUP:
-				gInput[WindowID].kb.onKeyReleased((uint8_t)wParam);
-				break;
+				case WM_SYSKEYUP:
+					gInput.kb.onKeyReleased((uint8_t)wParam);
+					break;
 
 				// The Value of the Pressed Key
-			case WM_CHAR:
-				gInput[WindowID].kb.onChar((uint8_t)wParam);
-				break;
+				case WM_CHAR:
+					gInput.kb.onChar((uint8_t)wParam);
+					break;
 
 				// ---- MOUSE MESSAGES ---- //
 
@@ -2154,88 +2152,87 @@ namespace GID::DSU {
 				}*/
 
 				// When the Mouse is Moved
-			case WM_MOUSEMOVE: {
-				const POINTS point = MAKEPOINTS(lParam);
+				case WM_MOUSEMOVE: {
+					const POINTS point = MAKEPOINTS(lParam);
 
-				// If mouse is inside window
-				if (point.x >= 0
-					&& point.x < mWidth
-					&& point.y >= 0
-					&& point.y < mHeight) {
-					gInput[WindowID].mouse.onMouseMove(point.x, point.y);
-					if (!gInput[WindowID].mouse.isInsideWindow()) {
-						SetCapture(hWnd);
-						gInput[WindowID].mouse.onMouseEnter();
-					}
-				}
-
-				// Else (mouse is outside window)
-				else {
-
-					// If LMB or RMB is pressed
-					if (gInput[WindowID].mouse.isLMBPressed() || gInput[WindowID].mouse.isRMBPressed()) {
-						gInput[WindowID].mouse.onMouseMove(point.x, point.y);
+					// If mouse is inside window
+					if (point.x >= 0
+						&& point.x < mWidth
+						&& point.y >= 0
+						&& point.y < mHeight) {
+						gInput.mouse.onMouseMove(point.x, point.y);
+						if (!gInput.mouse.isInsideWindow()) {
+							SetCapture(hWnd);
+							gInput.mouse.onMouseEnter();
+						}
 					}
 
-					// Else (LMB and RMB not pressed)
+					// Else (mouse is outside window)
 					else {
-						ReleaseCapture();
-						gInput[WindowID].mouse.onMouseExit();
+
+						// If LMB or RMB is pressed
+						if (gInput.mouse.isLMBPressed() || gInput.mouse.isRMBPressed()) {
+							gInput.mouse.onMouseMove(point.x, point.y);
+						}
+
+						// Else (LMB and RMB not pressed)
+						else {
+							ReleaseCapture();
+							gInput.mouse.onMouseExit();
+						}
 					}
-				}
-				break;
-			}
-
-								// When the LeftMouseButton is Pressed
-			case WM_LBUTTONDOWN: {
-				const POINTS point = MAKEPOINTS(lParam);
-				gInput[WindowID].mouse.onLMBPressed(point.x, point.y);
-				break;
-			}
-
-								// When the LeftMouseButton is Released
-			case WM_LBUTTONUP: {
-				const POINTS point = MAKEPOINTS(lParam);
-				gInput[WindowID].mouse.onLMBReleased(point.x, point.y);
-				break;
-			}
-
-								// When the RightMouseButton is Pressed
-			case WM_RBUTTONDOWN: {
-				const POINTS point = MAKEPOINTS(lParam);
-				gInput[WindowID].mouse.onRMBPressed(point.x, point.y);
-				break;
-			}
-
-								// When the RightMouseButton is Released
-			case WM_RBUTTONUP: {
-				const POINTS point = MAKEPOINTS(lParam);
-				gInput[WindowID].mouse.onRMBReleased(point.x, point.y);
-				break;
-			}
-
-								// When the Mouse Wheel is Moved
-			case WM_MOUSEWHEEL: {
-				const POINTS point = MAKEPOINTS(lParam);
-				const int delta = GET_WHEEL_DELTA_WPARAM(wParam);
-				gInput[WindowID].mouse.onWheelDelta(point.x, point.y, delta);
-				break;
-			}
-
-								// ---- MISCELLANEOUS MESSAGES ---- //
-
-									// Losing Focus On Window
-			case WM_KILLFOCUS:
-				gInput[WindowID].kb.clearState();
-				break;
-				/*case WM_SIZE: {
-					RECT clientRc{};
-					GetClientRect(hWnd, &clientRc);
-					UINT width = clientRc.right - clientRc.left;
-					UINT height = clientRc.bottom = clientRc.top;
-					pGFX3D->resizeWindow(width, height);
 					break;
-				}*/
+				}
+
+				// When the LeftMouseButton is Pressed
+				case WM_LBUTTONDOWN: {
+					const POINTS point = MAKEPOINTS(lParam);
+					gInput.mouse.onLMBPressed(point.x, point.y);
+					break;
+				}
+
+				// When the LeftMouseButton is Released
+				case WM_LBUTTONUP: {
+					const POINTS point = MAKEPOINTS(lParam);
+					gInput.mouse.onLMBReleased(point.x, point.y);
+					break;
+				}
+
+				// When the RightMouseButton is Pressed
+				case WM_RBUTTONDOWN: {
+					const POINTS point = MAKEPOINTS(lParam);
+					gInput.mouse.onRMBPressed(point.x, point.y);
+					break;
+				}
+
+				// When the RightMouseButton is Released
+				case WM_RBUTTONUP: {
+					const POINTS point = MAKEPOINTS(lParam);
+					gInput.mouse.onRMBReleased(point.x, point.y);
+					break;
+				}
+
+				// When the Mouse Wheel is Moved
+				case WM_MOUSEWHEEL: {
+					const POINTS point = MAKEPOINTS(lParam);
+					const int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+					gInput.mouse.onWheelDelta(point.x, point.y, delta);
+					break;
+				}
+
+				// ---- MISCELLANEOUS MESSAGES ---- //
+
+				// Losing Focus On Window
+				case WM_KILLFOCUS:
+					gInput.kb.clearState();
+					break;
+				case WM_SIZE: {
+					WINDOWINFO wndInfo{ getWindowInfo() };
+					mWidth = wndInfo.rcClient.right - wndInfo.rcClient.left;
+					mHeight = wndInfo.rcClient.bottom - wndInfo.rcClient.top;
+					GID::GSO::General::gGenVar.gIsWindowResized = true;
+					break;
+				}
 			}
 			return DefWindowProc(hWnd, msg, wParam, lParam);
 		}
@@ -2315,16 +2312,15 @@ namespace GID::DSU {
 			return wndInfo;
 		}
 		HWND& getHandle() noexcept { return mhWnd; }
+		float getAspectRatio() noexcept { return (float)mWidth / (float)mHeight; }
 	};
 }
 
 // Window Global State
 namespace GID::GSO::WindowNS {
-	inline std::vector<std::shared_ptr<GID::DSU::Window>> gWnd{};
-	inline void addWindow(UINT w, UINT h, const TCHAR* name) {
-		gWnd.push_back(std::make_shared<GID::DSU::Window>(w, h, name));
-		GID::GSO::Input::gInput.push_back({ });
-		windowCt++;
+	inline std::shared_ptr<GID::DSU::Window> gWnd{};
+	inline void initWindow(UINT w, UINT h, const TCHAR* name) {
+		gWnd = std::make_shared<GID::DSU::Window>(w, h, name);
 	}
 }
 
@@ -2350,7 +2346,7 @@ namespace GID::DSU {
 namespace GID::GSO::Render::Viewport {
 	inline std::array<GID::DSU::VIEWPORT_DESC, 4u> ViewportPresets;
 	inline void initViewportPresets() {
-		RECT wnd{ WindowNS::gWnd.at((uint8_t)GID::DSU::WindowType::MAINWINDOW).get()->getWindowInfo().rcClient };
+		RECT wnd{ WindowNS::gWnd.get()->getWindowInfo().rcClient };
 		// VP1_DEFAULT
 		ViewportPresets[0] = {
 			{
@@ -2471,8 +2467,8 @@ namespace GID::GSO::Update {
 // Initialize the update cycle (record ticks passed)
 namespace GID::GSO::Update {
 	inline void initUpdateCycle() {
-				gTicks = gTickTimer.mark() * General::gCfgGen.gSpeedMultiplier;
-			}
+		gTicks = gTickTimer.mark() * General::gCfgGen.gSpeedMultiplier;
+	}
 }
 
 // Camera Container
@@ -2528,51 +2524,50 @@ namespace GID::DSU {
 		void input() noexcept override {
 
 			using namespace GSO::Input; using namespace AssistMath;
-			auto ind = (uint8_t)WindowType::MAINWINDOW;
 
 			if (!mbFollow) {
 					
-				BOOL shift = gInput[ind].kb.isKeyPressed(VK_SHIFT);
+				BOOL shift = gInput.kb.isKeyPressed(VK_SHIFT);
 				shift++;
 
-				if (gInput[ind].kb.isKeyPressed('W')) {
+				if (gInput.kb.isKeyPressed('W')) {
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
-				if (gInput[ind].kb.isKeyPressed('S')) {
+				if (gInput.kb.isKeyPressed('S')) {
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					mDTranslation.m128_f32[Translation::X] += 25.f * -xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * -zcom * shift;
 				}
-				if (gInput[ind].kb.isKeyPressed('A')) {
+				if (gInput.kb.isKeyPressed('A')) {
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
-				if (gInput[ind].kb.isKeyPressed('D')) {
+				if (gInput.kb.isKeyPressed('D')) {
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
-				if (gInput[ind].kb.isKeyPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 25.f * shift;
-				if (gInput[ind].kb.isKeyPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 25.f * shift;
+				if (gInput.kb.isKeyPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 25.f * shift;
+				if (gInput.kb.isKeyPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 25.f * shift;
 
-				if (gInput[ind].kb.isKeyPressed(VK_LEFT)) addYaw(0.25f);
-				if (gInput[ind].kb.isKeyPressed(VK_RIGHT)) addYaw(-0.25f);
-				if (gInput[ind].kb.isKeyPressed(VK_UP)) addPitch(0.25f);
-				if (gInput[ind].kb.isKeyPressed(VK_DOWN)) addPitch(-0.25f);
+				if (gInput.kb.isKeyPressed(VK_LEFT)) addYaw(0.25f);
+				if (gInput.kb.isKeyPressed(VK_RIGHT)) addYaw(-0.25f);
+				if (gInput.kb.isKeyPressed(VK_UP)) addPitch(0.25f);
+				if (gInput.kb.isKeyPressed(VK_DOWN)) addPitch(-0.25f);
 
-				RECT rc{ GSO::WindowNS::gWnd[ind]->getWindowInfo().rcClient };
+				RECT rc{ GSO::WindowNS::gWnd->getWindowInfo().rcClient };
 
 				if (mbMouseControl) {
-					BOOL control = gInput[ind].kb.isKeyPressed(VK_CONTROL);
+					BOOL control = gInput.kb.isKeyPressed(VK_CONTROL);
 					control++;
-					for (auto& e : gInput[ind].mouseEvents) {
+					for (auto& e : gInput.mouseEvents) {
 						if (e.getType() == Mouse::Event::Type::Move) {
 							auto centerX = (rc.right - rc.left) / 2;
 							auto centerY = (rc.bottom - rc.top) / 2;
@@ -2585,7 +2580,7 @@ namespace GID::DSU {
 					}
 				}
 
-				for (auto& e : gInput[ind].mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress) {
+				for (auto& e : gInput.mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress) {
 					mbMouseControl = !mbMouseControl;
 					ShowCursor(!mbMouseControl);
 					if (mbMouseControl) ClipCursor(&rc);
@@ -2657,6 +2652,7 @@ namespace GID::DSU {
 		std::vector<ComPtr<IDWriteTextFormat3>> mpFormats{};
 
 		std::queue<std::wstring> mDebugQueue{};
+		std::queue<std::wstring> mDebugQueue2{};
 
 		uint8_t mFrameIndex{};
 
@@ -2686,7 +2682,7 @@ namespace GID::DSU {
 			DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory7), &mpWriteFactory);
 		}
 		inline float getDPI() {
-			return GetDpiForWindow(GID::GSO::WindowNS::gWnd.front().get()->mhWnd);
+			return GetDpiForWindow(GID::GSO::WindowNS::gWnd.get()->mhWnd);
 		}
 		inline void wrapRenderTargets(std::vector<ComPtr<ID3D12Resource2>>& pRenderTargets, float dpi) {
 			D2D1_BITMAP_PROPERTIES1 bmprop{ D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
@@ -2755,7 +2751,7 @@ namespace GID::DSU {
 			float indent{ 10.0f };
 			float offset{ 3.0f };
 			float spacing{ mpFormats.at(0).Get()->GetFontSize() };
-			float additiveSpacing{ 5.0f };
+			float additiveSpacing{ indent / 2.0f };
 			D2D1_RECT_F textRect1{};
 			D2D1_RECT_F textRect2{};
 			std::wstring line{};
@@ -2790,7 +2786,7 @@ namespace GID::DSU {
 		D3D_FEATURE_LEVEL								mFeatureLevel{ D3D_FEATURE_LEVEL_12_1 };
 		bool											mWireframe{ false };
 		// Debug
-		#if defined(_DEBUG)
+		#if _DEBUG
 		ComPtr<ID3D12Debug6>							mpDebugController{};
 		ComPtr<ID3D12InfoQueue1>						mpInfoQueue{};
 		#endif
@@ -2838,11 +2834,14 @@ namespace GID::DSU {
 		HRESULT											mHR{};
 		std::string										mLastType{};
 		Camera											mCamera{};
+		GFX_DESC										mDesc{};
 		// 2D GFX Pipeline
 		GFX2D											m2D{};
 
 		// Constructor
 		GFX3D(HWND& hWnd, GFX_DESC& desc) {
+
+			mDesc = desc;
 
 			WINDOWINFO wndInfo{};
 			wndInfo.cbSize = sizeof WINDOWINFO;
@@ -2900,7 +2899,7 @@ namespace GID::DSU {
 		//~GFX3D() = default;
 
 		void parseGraphicsConfig() noexcept {
-			enum GFXConfigDataType {
+			enum class GFXConfigDataType {
 				UIBackBufferCount,
 				BUseWARPAdapter,
 				BVSync,
@@ -2916,37 +2915,37 @@ namespace GID::DSU {
 					std::getline(file, strCurrentLine);
 					if (strCurrentLine.empty()) continue;
 					GFXConfigDataType currentData;
-					if (strCurrentLine.starts_with("UIBackBufferCount")) currentData = UIBackBufferCount;
-					else if (strCurrentLine.starts_with("BUseWARPAdapter")) currentData = BUseWARPAdapter;
-					else if (strCurrentLine.starts_with("BVSync")) currentData = BVSync;
-					else if (strCurrentLine.starts_with("BFullScreenOnStartup")) currentData = BFullScreenOnStartup;
-					else if (strCurrentLine.starts_with("BEnableWireframe")) currentData = BEnableWireframe;
-					else currentData = Invalid;
+					if (strCurrentLine.starts_with("UIBackBufferCount")) currentData = GFXConfigDataType::UIBackBufferCount;
+					else if (strCurrentLine.starts_with("BUseWARPAdapter")) currentData = GFXConfigDataType::BUseWARPAdapter;
+					else if (strCurrentLine.starts_with("BVSync")) currentData = GFXConfigDataType::BVSync;
+					else if (strCurrentLine.starts_with("BFullScreenOnStartup")) currentData = GFXConfigDataType::BFullScreenOnStartup;
+					else if (strCurrentLine.starts_with("BEnableWireframe")) currentData = GFXConfigDataType::BEnableWireframe;
+					else currentData = GFXConfigDataType::Invalid;
 					switch (currentData) {
-					case UIBackBufferCount:
-						strCurrentLine.erase(0u, 19u);
-						mBackBufferCount = std::stoi(strCurrentLine);
-						break;
-					case BUseWARPAdapter:
-						strCurrentLine.erase(0u, 17u);
-						if (strCurrentLine == "TRUE") mUseWARPAdapter = true;
-						break;
-					case BVSync:
-						strCurrentLine.erase(0u, 8u);
-						if (strCurrentLine == "TRUE") mVSync = true;
-						break;
-					case BFullScreenOnStartup:
-						strCurrentLine.erase(0u, 22u);
-						if (strCurrentLine == "TRUE") mFullscreen = true;
-						break;
-					case BEnableWireframe:
-						strCurrentLine.erase(0u, 18u);
-						if (strCurrentLine == "TRUE") mWireframe = true;
-						break;
-					case Invalid:
-						if (mDebug) std::cout << "[WARNING] Invalid line parsed from \"gfx_config.txt\"\n"
-							<< "[LINE] " << strCurrentLine;
-						break;
+						case GFXConfigDataType::UIBackBufferCount:
+							strCurrentLine.erase(0u, 19u);
+							mBackBufferCount = std::stoi(strCurrentLine);
+							break;
+						case GFXConfigDataType::BUseWARPAdapter:
+							strCurrentLine.erase(0u, 17u);
+							if (strCurrentLine == "TRUE") mUseWARPAdapter = true;
+							break;
+						case GFXConfigDataType::BVSync:
+							strCurrentLine.erase(0u, 8u);
+							if (strCurrentLine == "TRUE") mVSync = true;
+							break;
+						case GFXConfigDataType::BFullScreenOnStartup:
+							strCurrentLine.erase(0u, 22u);
+							if (strCurrentLine == "TRUE") mFullscreen = true;
+							break;
+						case GFXConfigDataType::BEnableWireframe:
+							strCurrentLine.erase(0u, 18u);
+							if (strCurrentLine == "TRUE") mWireframe = true;
+							break;
+						case GFXConfigDataType::Invalid:
+							if (mDebug) std::cout << "[WARNING] Invalid line parsed from \"gfx_config.txt\"\n"
+								<< "[LINE] " << strCurrentLine;
+							break;
 					}
 					strCurrentLine.clear();
 				}
@@ -3024,7 +3023,7 @@ namespace GID::DSU {
 				scd.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 				scd.Stereo = FALSE;
 				scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-				scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+				scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 				scd.SampleDesc.Count = 1u; scd.SampleDesc.Quality = 0u;
 				scd.Scaling = DXGI_SCALING_STRETCH;
 				scd.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
@@ -3037,9 +3036,7 @@ namespace GID::DSU {
 				scfd.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 			}
 			if (mFullscreen) scfd.Windowed = FALSE; else scfd.Windowed = TRUE;
-			ComPtr<IDXGISwapChain1> refSwapChain{};
-			mpFactory->CreateSwapChainForHwnd(mpCommandQueue.Get(), hWnd, &scd, &scfd, nullptr, refSwapChain.GetAddressOf());
-			refSwapChain.As(&mpSwapChain);
+			mpFactory->CreateSwapChainForHwnd(mpCommandQueue.Get(), hWnd, &scd, &scfd, nullptr, (IDXGISwapChain1**)mpSwapChain.GetAddressOf());
 			// Manual fullscreen support
 			mpFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER); // DXGI_MWA_VALID
 		}
@@ -3055,8 +3052,8 @@ namespace GID::DSU {
 			mpRTVHeap->SetName(L"[RTV] [ID3D12DescriptorHeap] Member of GFX3D");
 			// Create frame resources
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart());
+			mpRenderTargets.resize(mBackBufferCount);
 			for (UINT i = 0u; i < mBackBufferCount; i++) {
-				mpRenderTargets.push_back(*std::make_unique<ComPtr<ID3D12Resource2>>());
 				mpSwapChain->GetBuffer(i, IID_PPV_ARGS(&mpRenderTargets.at(i)));
 				mpDevice->CreateRenderTargetView(mpRenderTargets[i].Get(), nullptr, hRTV);
 				std::wstringstream woss{};
@@ -3151,17 +3148,14 @@ namespace GID::DSU {
 					if (mWireframe) {
 						mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
 							D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-					}
-					else {
+					} else {
 						mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
 							D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 					}
-				}
-				else if (mWireframe) {
+				} else if (mWireframe) {
 					mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
 						D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-				}
-				else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+				} else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 				pssd.pPipelineStateSubobjectStream = &mPSS;
 				pssd.SizeInBytes = sizeof GID::DSU::PipelineStateStream;
 				mHR = mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
@@ -3229,6 +3223,8 @@ namespace GID::DSU {
 
 		// Render
 		void startFrame() noexcept {
+			[[unlikely]]
+			if (GID::GSO::General::gGenVar.gIsWindowResized) resizeWindow();
 			transitionRTVToWrite();
 			clearRTV();
 			clearDSV();
@@ -3239,7 +3235,6 @@ namespace GID::DSU {
 			mpCommandList->RSSetScissorRects(1u, &mScissorRc);
 		}
 		void doFrame() noexcept {
-
 			//const std::array<DSU::PositionData, 8u> vertices{
 			//	DX::XMFLOAT3(-1.0f, -1.0f, -1.0f),
 			//	DX::XMFLOAT3(-1.0f, 1.0f, -1.0f),
@@ -3290,7 +3285,6 @@ namespace GID::DSU {
 			
 			flushGPU();
 			m2D.draw();
-			//transitionRTVToRead();
 			flushGPU();
 			//UINT syncInterval = mVSync ? 1u : 0u;
 			//UINT presentFlags = mTearingSupport && !mVSync ? DXGI_PRESENT_ALLOW_TEARING : 0u;
@@ -3300,30 +3294,51 @@ namespace GID::DSU {
 		}
 
 		// Util
-		int resizeWindow(UINT width, UINT height) noexcept {
+		void resizeWindow() noexcept {
+			WINDOWINFO windowInfo{};
+			windowInfo.cbSize = sizeof WINDOWINFO;
+			windowInfo = GID::GSO::WindowNS::gWnd.get()->getWindowInfo();
 
-			/*HWND hWnd{};
-			mpSwapChain->GetHwnd(&hWnd);
-			WINDOWINFO wndInfo{};
-			wndInfo.cbSize = sizeof(WINDOWINFO);
-			GetWindowInfo(hWnd, &wndInfo);
+			int16_t clientWidth{ ((int16_t)windowInfo.rcClient.right - (int16_t)windowInfo.rcClient.left == 0)
+				? 1 : (int16_t)windowInfo.rcClient.right - (int16_t)windowInfo.rcClient.left };
+			
+			int16_t clientHeight{ ((int16_t)windowInfo.rcClient.bottom - (int16_t)windowInfo.rcClient.top == 0)
+				? 1 : (int16_t)windowInfo.rcClient.bottom - (int16_t)windowInfo.rcClient.top };
 
-			LONG clientWidth{ wndInfo.rcWindow.right - wndInfo.rcWindow.left };
-			LONG clientHeight{ wndInfo.rcWindow.bottom - wndInfo.rcWindow.top };
+			flushGPU();
 
-			if (clientWidth != width || clientHeight != height) {
-				clientWidth = max(1u, width); clientHeight = max(1u, height);
-				flushGPU();
-				for (int i = 0; i < mBackBufferCount; i++) {
-					mpRenderTargets[i].Reset();
-				}
-				DXGI_SWAP_CHAIN_DESC1 scd{};
-				mpSwapChain->GetDesc1(&scd);
-				mpSwapChain->ResizeBuffers(mBackBufferCount, clientWidth, clientHeight, scd.Format, scd.Flags);
-				mFrameIndex = mpSwapChain->GetCurrentBackBufferIndex();
-				createRTV();
-			}*/
-			return 0;
+			for (auto& rt : mpRenderTargets) rt.Reset();
+			for (auto& rt : mpRenderTargets) rt.Reset();
+			mpRenderTargets.clear();
+			mpDepthStencilTexture.Reset();
+
+			for (auto& wrt : m2D.mpWrappedRenderTargets) wrt.Reset();
+			for (auto& wrt : m2D.mpWrappedRenderTargets) wrt.Reset();
+			m2D.mpWrappedRenderTargets.clear();
+
+			for (auto& bm : m2D.mpBitmaps) bm.Reset();
+			m2D.mpBitmaps.clear();
+			
+			flushGPU();
+
+			DXGI_SWAP_CHAIN_DESC1 scd{};
+			mpSwapChain->GetDesc1(&scd);
+			mpSwapChain->ResizeBuffers(0, clientWidth, clientHeight, scd.Format, scd.Flags);
+			
+			createRTV();
+			createDSV(clientWidth, clientHeight);
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
+				dsv.Format = DXGI_FORMAT_D32_FLOAT;
+				dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+				dsv.Texture2D.MipSlice = 0u;
+				dsv.Flags = D3D12_DSV_FLAG_NONE;
+				CD3DX12_CPU_DESCRIPTOR_HANDLE hDSV(mpDSVHeap->GetCPUDescriptorHandleForHeapStart());
+				mpDevice->CreateDepthStencilView(mpDepthStencilTexture.Get(), &dsv, hDSV);
+			}
+			m2D.wrapRenderTargets(mpRenderTargets, m2D.getDPI());
+			mViewport.at(0).Width = clientWidth;
+			mViewport.at(0).Height = clientHeight;
+			GID::GSO::General::gGenVar.gIsWindowResized = false;
 		}
 		int setFullscreen() noexcept {
 
@@ -3345,8 +3360,7 @@ namespace GID::DSU {
 				SetWindowPos(hWnd, HWND_TOP, monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top, monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
 					monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top, SWP_FRAMECHANGED | SWP_NOACTIVATE);
 				ShowWindow(hWnd, SW_MAXIMIZE);
-			}
-			else {
+			} else {
 				SetWindowLong(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
 				SetWindowPos(hWnd, HWND_NOTOPMOST, mWindowRc.left, mWindowRc.top, mWindowRc.right - mWindowRc.left, mWindowRc.bottom - mWindowRc.top,
 					SWP_FRAMECHANGED | SWP_NOACTIVATE);
@@ -3401,30 +3415,11 @@ namespace GID::DSU {
 	};
 }
 
-// GFX Pipeline Container
-namespace GID::DSU {
-	struct GFXPipelineContainer {
-		GID::DSU::WindowType wndtype{};
-		GID::DSU::GFX3D gfx{};
-	};
-}
-
 // Global GFX Vector and External GFX Functions
 namespace GID::GSO::Render {
-	inline std::vector<GID::DSU::GFXPipelineContainer> gGFX;
-	inline void addGFX(GID::DSU::WindowType type, GID::DSU::GFX_DESC desc) {
-		bool found = false;
-		for (auto& w : gGFX) if (w.wndtype == type) found = true;
-		if (!found) gGFX.push_back({ type, {} });
-		for (auto& w : gGFX) if (w.wndtype == type) w.gfx = { WindowNS::gWnd.at((uint8_t)type)->getHandle(), desc };
-	}
-	inline GID::DSU::GFX3D& findGFX(GID::DSU::WindowType type) {
-		for (auto& w : gGFX) if (w.wndtype == type) return w.gfx;
-	}
-	inline GID::DSU::GFX3D& mainGFX() { return findGFX(GID::DSU::WindowType::MAINWINDOW); }
-	inline void setGFXProjection(GID::DSU::WindowType wndType, GID::DSU::AssistMath::FAMMATRIX& projection) {
-		for (auto& g : gGFX) if (g.wndtype == wndType) g.gfx.setProjection(projection);
-	}
+	inline GID::DSU::GFX3D gGFX{};
+	inline void initGFX(GID::DSU::GFX_DESC desc) { gGFX = { GID::GSO::WindowNS::gWnd.get()->mhWnd, desc }; }
+	inline void setGFXProjection(GID::DSU::WindowType wndType, GID::DSU::AssistMath::FAMMATRIX& projection) { gGFX.setProjection(projection); }
 }
 
 // Vertex Buffer Structure
@@ -3930,13 +3925,13 @@ namespace GID::DSU {
 		std::string name{};
 		std::vector<AssistMath::AMFLOAT2> tex{};
 		std::vector<AssistMath::AMFLOAT3> pos{}, norm{};
+		std::vector<AssistMath::AMUINT3X3> ind{};
 		MaterialFileData mtl{};
 	};
 	struct ModelFileData {
 		std::vector<ObjectFileData> ofd{};
 	};
 	struct AnimationPackageData {
-		std::vector<std::vector<AssistMath::AMUINT3X3>> ind{};
 		std::vector<ModelFileData> apd{};
 	};
 	struct ActorData {
@@ -3967,14 +3962,6 @@ namespace GID::Util::FileParsing {
 		file.read((char*)&_size, sizeof uint32_t);
 		data.ad.resize(_size);
 		for (auto& ad : data.ad) {
-			
-			file.read((char*)&_size, sizeof uint32_t);
-			ad.ind.resize(_size);
-			for (auto& i : ad.ind) {
-				file.read((char*)&_size, sizeof uint32_t);
-				i.resize(_size);
-				for (auto& ind : i) file.read((char*)&ind, sizeof UINT3X3);
-			}
 
 			// Amount of frames (models)
 			file.read((char*)&_size, sizeof uint32_t);
@@ -4007,6 +3994,11 @@ namespace GID::Util::FileParsing {
 					ofd.norm.resize(_size);
 					for (auto& norm : ofd.norm) file.read((char*)&norm, sizeof FLOAT3);
 					
+					// Indices Data
+					file.read((char*)&_size, sizeof uint32_t);
+					ofd.ind.resize(_size);
+					for (auto& ind : ofd.ind) file.read((char*)&ind, sizeof UINT3X3);
+
 					// Material name
 					file.read((char*)&_size, sizeof uint32_t);
 					_str.resize(_size);
@@ -4096,6 +4088,7 @@ namespace GID::DSU {
 		VSSRVPosSBData mVSPosSB{};
 		VSSRVTexSBData mVSTexSB{};
 		VSSRVNormSBData mVSNormSB{};
+		VertexBuffer mVertexBuffer{};
 		VertexConstantBuffer mVCB{};
 		PixelConstantBuffer mPCB{};
 
@@ -4113,12 +4106,18 @@ namespace GID::DSU {
 
 			// Process data
 			ObjectFileData mObjectFileData = data;
+			std::vector<DSU::VSInputData> idx{};
 			std::vector<AssistMath::AMFLOAT3> pos{};
 			std::vector<AssistMath::AMFLOAT2> tex{};
 			std::vector<AssistMath::AMFLOAT3> norm{};
 			for (auto& p : mObjectFileData.pos) pos.push_back(p);
 			for (auto& t : mObjectFileData.tex) tex.push_back(t);
 			for (auto& n : mObjectFileData.norm) norm.push_back(n);
+			for (auto& i : data.ind) {
+				idx.push_back({ i.d[0], i.d[1], i.d[2] });
+				idx.push_back({ i.d[3], i.d[4], i.d[5] });
+				idx.push_back({ i.d[6], i.d[7], i.d[8] });
+			}
 
 			// Material Data
 			{
@@ -4157,25 +4156,21 @@ namespace GID::DSU {
 				}
 			}
 
-			mVSPosSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), pos };
-			mVSTexSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), tex };
-			mVSNormSB = { GSO::Render::mainGFX().getDevice(), GSO::Render::mainGFX().getCommandList(), norm };
+			mVSPosSB = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), pos };
+			mVSTexSB = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), tex };
+			mVSNormSB = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), norm };
+			mVertexBuffer = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), idx.data(), idx.size() };
 
 			using namespace GSO::Render;
 			AssistMath::FAMMATRIX transformM{ getTransformMx() };
 			AssistMath::FAMVECTOR det{ FAMMatrixDeterminant(transformM) };
 			AssistMath::FAMMATRIX tpose{ FAMMatrixTranspose(transformM) };
-			VertexConstantBufferData matrices{
-				transformM,
-				mainGFX().getCamera().getMatrix(),
-				mainGFX().getProjection(),
-				FAMMatrixInverse(det, tpose)
-			};
+			VertexConstantBufferData matrices{ transformM, gGFX.getCamera().getMatrix(), gGFX.getProjection(), FAMMatrixInverse(det, tpose) };
 
-			mVCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices };
+			mVCB = { GSO::Render::gGFX.getDevice(), gGFX.getCommandList(), matrices };
 
 			pcbData.mtl = mMaterialData;
-			mPCB = { GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData };
+			mPCB = { GSO::Render::gGFX.getDevice(), gGFX.getCommandList(), pcbData };
 		}
 
 		Position& getPos() noexcept { return mPos; }
@@ -4203,42 +4198,46 @@ namespace GID::DSU {
 			AssistMath::FAMMATRIX tpose{ FAMMatrixTranspose(transformM) };
 			VertexConstantBufferData matrices{
 				transformM,
-				mainGFX().getCamera().getMatrix(),
-				mainGFX().getProjection(),
+				gGFX.getCamera().getMatrix(),
+				gGFX.getProjection(),
 				FAMMatrixInverse(det, tpose)
 			};
-			pcbData.eyePos = { mainGFX().getCamera().mEye.m128_f32[0], mainGFX().getCamera().mEye.m128_f32[1], mainGFX().getCamera().mEye.m128_f32[2], 1.0f };
+			pcbData.eyePos = { gGFX.getCamera().mEye.m128_f32[0], gGFX.getCamera().mEye.m128_f32[1], gGFX.getCamera().mEye.m128_f32[2], 1.0f };
 			pcbData.globalAmbient = { 0.f, 0.f, 0.f, 1.f };
 			for (int i = 0; i < GSO::Scene::gLights.size(); i++)
 				pcbData.lights[i] = GSO::Scene::gLights[i];
 
-			mVCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), matrices);
-			mPCB.updateResource(GSO::Render::mainGFX().getDevice(), mainGFX().getCommandList(), pcbData);
+			mVCB.updateResource(GSO::Render::gGFX.getDevice(), gGFX.getCommandList(), matrices);
+			mPCB.updateResource(GSO::Render::gGFX.getDevice(), gGFX.getCommandList(), pcbData);
 		}
 		void transitionResourcesToRead() noexcept {
 			using namespace GSO::Render;
-			mVCB.transitionToRead(mainGFX().getCommandList());
-			mVSPosSB.transitionToRead(mainGFX().getCommandList());
-			mVSTexSB.transitionToRead(mainGFX().getCommandList());
-			mVSNormSB.transitionToRead(mainGFX().getCommandList());
-			mPCB.transitionToRead(mainGFX().getCommandList());
+			mVertexBuffer.transitionToRead(gGFX.getCommandList());
+			mVCB.transitionToRead(gGFX.getCommandList());
+			mVSPosSB.transitionToRead(gGFX.getCommandList());
+			mVSTexSB.transitionToRead(gGFX.getCommandList());
+			mVSNormSB.transitionToRead(gGFX.getCommandList());
+			mPCB.transitionToRead(gGFX.getCommandList());
 		}
 		void doCommandList() noexcept {
 			using namespace GSO::Render;
-			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(0u, mVCB.getDestRes()->GetGPUVirtualAddress());
-			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(1u, mVSPosSB.getDestRes()->GetGPUVirtualAddress());
-			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(2u, mVSTexSB.getDestRes()->GetGPUVirtualAddress());
-			mainGFX().getCommandList()->SetGraphicsRootShaderResourceView(3u, mVSNormSB.getDestRes()->GetGPUVirtualAddress());
-			mainGFX().getCommandList()->SetGraphicsRootConstantBufferView(4u, mPCB.getDestRes()->GetGPUVirtualAddress());
-			mainGFX().getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			gGFX.getCommandList()->SetGraphicsRootConstantBufferView(0u, mVCB.getDestRes()->GetGPUVirtualAddress());
+			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(1u, mVSPosSB.getDestRes()->GetGPUVirtualAddress());
+			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(2u, mVSTexSB.getDestRes()->GetGPUVirtualAddress());
+			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(3u, mVSNormSB.getDestRes()->GetGPUVirtualAddress());
+			gGFX.getCommandList()->SetGraphicsRootConstantBufferView(4u, mPCB.getDestRes()->GetGPUVirtualAddress());
+			gGFX.getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			gGFX.getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
+			gGFX.getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
 		}
 		void transitionResourcesToWrite() noexcept {
 			using namespace GSO::Render;
-			mVCB.transitionToWrite(mainGFX().getCommandList());
-			mVSPosSB.transitionToWrite(mainGFX().getCommandList());
-			mVSTexSB.transitionToWrite(mainGFX().getCommandList());
-			mVSNormSB.transitionToWrite(mainGFX().getCommandList());
-			mPCB.transitionToWrite(mainGFX().getCommandList());
+			mVertexBuffer.transitionToWrite(gGFX.getCommandList());
+			mVCB.transitionToWrite(gGFX.getCommandList());
+			mVSPosSB.transitionToWrite(gGFX.getCommandList());
+			mVSTexSB.transitionToWrite(gGFX.getCommandList());
+			mVSNormSB.transitionToWrite(gGFX.getCommandList());
+			mPCB.transitionToWrite(gGFX.getCommandList());
 		}
 		AssistMath::FAMMATRIX getTransformMx() noexcept {
 			return {
@@ -4344,8 +4343,6 @@ namespace GID::DSU {
 
 		std::pair<std::string, UINT> mActorID{};
 		AnimationPackage mAnimationPackage{};
-		
-		std::vector<GID::DSU::VertexBuffer> mVertexBuffer{};
 
 		Timer mInitTimer{};
 		Timer mCurrentStateTimer{};
@@ -4362,21 +4359,6 @@ namespace GID::DSU {
 			//mActorData = GID::GSO::Collections::ActorData::quickSearchAndAdd(objPath);
 			ActorData mActorData = GID::Util::FileParsing::parse(objPath);
 
-			uint32_t objectidx{};
-			mIndices.resize(mActorData.ad.at(0).ind.size());
-			std::cout << sizeof mActorData << '\n';
-			for (auto& ind1 : mActorData.ad.at(0).ind) {
-				mIndices.at(objectidx).resize(ind1.size() * 3);
-				size_t iter{};
-				for (auto& i : ind1) {
-					mIndices.at(objectidx).at(iter) = {i.d[0], i.d[1], i.d[2]};
-					mIndices.at(objectidx).at(iter + 1) = { i.d[3], i.d[4], i.d[5] };
-					mIndices.at(objectidx).at(iter + 2) = { i.d[6], i.d[7], i.d[8] };
-					iter += 3;
-				}
-				mVertexBuffer.push_back({ mainGFX().getDevice(), mainGFX().getCommandList(), mIndices.at(objectidx).data(), mIndices.at(objectidx).size()});
-				objectidx++;
-			}
 			mAnimationPackage.mAnimations.resize(mActorData.ad.size());
 			mAnimationPackage.mAnimationID = mActorData.name;
 			for (uint16_t iter{}; iter < mActorData.ad.at(0).apd.size(); iter++) {
@@ -4397,16 +4379,12 @@ namespace GID::DSU {
 			using namespace GSO::Render;
 			uint32_t currFrameIndex{ (uint32_t)std::truncf(mInitTimer.peek() * 30.f * GSO::General::gCfgGen.gSpeedMultiplier) };
 			currFrameIndex %= mAnimationPackage.mAnimations.at(0).mFrames.size();
-			//currFrameIndex = 0;
+			currFrameIndex = 0;
 			uint32_t objectidx{};
 			for (auto& o : mAnimationPackage.mAnimations.at(0).mFrames.at(currFrameIndex).getObjects()) {
-				mVertexBuffer.at(objectidx).transitionToRead(GSO::Render::mainGFX().getCommandList());
 				o.updateResources();
 				o.transitionResourcesToRead();
 				o.doCommandList();
-				mainGFX().getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.at(objectidx).getView());
-				mainGFX().getCommandList()->DrawInstanced(mVertexBuffer.at(objectidx).getCount(), 1u, 0u, 0u);
-				mVertexBuffer.at(objectidx).transitionToWrite(mainGFX().getCommandList());
 				o.transitionResourcesToWrite();
 				objectidx++;
 			}
@@ -4421,7 +4399,7 @@ namespace GID::DSU {
 namespace GID::GSO::Scene {
 	inline std::vector<GID::DSU::Actor> gActors{};
 	inline void addActor(std::string actorName) {
-		gActors.push_back({ Render::mainGFX(), actorName });
+		gActors.push_back({ Render::gGFX, actorName });
 	}
 }
 
@@ -4436,10 +4414,10 @@ namespace GID::GSO::Util {
 namespace GID::GSO::Util {
 	inline void initQuickStart() {
 		using namespace GSO; using namespace GSO::Render::Viewport;
-		WindowNS::addWindow(1600, 900, L"Window");
+		WindowNS::initWindow(1600, 900, L"Window");
 		Util::initGSO();
-		Render::addGFX(GID::DSU::WindowType::MAINWINDOW, { ViewportPresets[(uint32_t)GID::DSU::ViewportPreset::VP1_DEFAULT] });
-		Render::mainGFX().m2D.initDebugText();
+		Render::initGFX({ ViewportPresets[(uint8_t)GID::DSU::ViewportPreset::VP1_DEFAULT] });
+		Render::gGFX.m2D.initDebugText();
 
 	}
 }
@@ -4447,12 +4425,8 @@ namespace GID::GSO::Util {
 // Debug Input Processing
 namespace GID::GSO::Input {
 	inline int doDebugInput() {
-		uint8_t iter{};
-		for (auto& wnd : WindowNS::gWnd) {
-			if (IsWindowEnabled(wnd->getHandle())) {
-				if (gInput[iter].kb.isKeyPressed(VK_ESCAPE)) return 1;
-			}
-			iter++;
+		if (IsWindowEnabled(WindowNS::gWnd->getHandle())) {
+			if (gInput.kb.isKeyPressed(VK_ESCAPE)) return 1;
 		}
 		return 0;
 	}
@@ -4465,19 +4439,19 @@ namespace GID::GSO::Input {
 		auto ind = (uint8_t)WindowType::MAINWINDOW;
 		bool inputDebug{ false };
 
-		while (!gInput[ind].kb.isKeyQueueEmpty()) {
-			gInput[ind].keys.push_back(gInput.at(ind).kb.readKey());
-			if (inputDebug) std::cout << "[Key Pressed (Code)] (" << gInput[ind].keys.back().getCode() << ")" << '\n';
+		while (!gInput.kb.isKeyQueueEmpty()) {
+			gInput.keys.push_back(gInput.kb.readKey());
+			if (inputDebug) std::cout << "[Key Pressed (Code)] (" << gInput.keys.back().getCode() << ")" << '\n';
 		}
-		while (!gInput[ind].kb.isCharQueueEmpty()) {
-			gInput[ind].keysChar.push_back(gInput[ind].kb.readChar());
-			if (inputDebug) std::cout << "[Character Inputted] (" << gInput[ind].keysChar.back() << ")" << '\n';
+		while (!gInput.kb.isCharQueueEmpty()) {
+			gInput.keysChar.push_back(gInput.kb.readChar());
+			if (inputDebug) std::cout << "[Character Inputted] (" << gInput.keysChar.back() << ")" << '\n';
 		}
-		while (!gInput[ind].mouse.isEmpty()) {
-			gInput[ind].mouseEvents.push_back(gInput[ind].mouse.readEvent());
+		while (!gInput.mouse.isEmpty()) {
+			gInput.mouseEvents.push_back(gInput.mouse.readEvent());
 			if (inputDebug) {
 				std::cout << "[";
-				switch (gInput[ind].mouseEvents.back().getType()) {
+				switch (gInput.mouseEvents.back().getType()) {
 				case Mouse::Event::Type::Enter:
 					std::cout << "Enter]";
 					break;
@@ -4491,7 +4465,7 @@ namespace GID::GSO::Input {
 					std::cout << "LMBRelease]";
 					break;
 				case Mouse::Event::Type::Move:
-					std::cout << "Move] (" << gInput[ind].mouseEvents.back().getX() << ", " << gInput[ind].mouseEvents.back().getY() << ")";
+					std::cout << "Move] (" << gInput.mouseEvents.back().getX() << ", " << gInput.mouseEvents.back().getY() << ")";
 					break;
 				case Mouse::Event::Type::RMBPress:
 					std::cout << "RMBPress]";
@@ -4511,13 +4485,11 @@ namespace GID::GSO::Input {
 		}
 
 		if (doDebugInput() != 0) return 1;
-		Render::mainGFX().mCamera.input();
+		Render::gGFX.mCamera.input();
 
-		for (auto& input : gInput) {
-			input.keys.clear();
-			input.keysChar.clear();
-			input.mouseEvents.clear();
-		}
+		gInput.keys.clear();
+		gInput.keysChar.clear();
+		gInput.mouseEvents.clear();
 
 		return 0;
 	}
@@ -4898,7 +4870,7 @@ namespace GID::GSO::Scripts::GlobalVariables {
 
 namespace GID::GSO::Scripts::Update {
 	inline void doAdvancedCameraFollow() {
-		if (Render::mainGFX().getCamera().mbFollow) {
+		if (Render::gGFX.getCamera().mbFollow) {
 
 		}
 	}
@@ -4928,7 +4900,7 @@ namespace GID::GSO::Scripts::Factory {
 		}
 	}
 	inline void processCameraScripts() noexcept {
-		for (auto& script : Render::mainGFX().getCamera().getScripts()) {
+		for (auto& script : Render::gGFX.getCamera().getScripts()) {
 			switch (script) {
 			case DSU::ScriptID::AdvancedCameraFollow:
 				Update::doAdvancedCameraFollow();
@@ -4941,7 +4913,7 @@ namespace GID::GSO::Scripts::Factory {
 // Do update stuff
 namespace GID::GSO::Update {
 	inline void doUpdate() {
-		Render::mainGFX().mCamera.update();
+		Render::gGFX.mCamera.update();
 		Scripts::Factory::processUpdateScripts();
 		for (auto& a : Scene::gActors)
 			a.update();

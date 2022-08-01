@@ -19,7 +19,7 @@ private: // Private Fields
 
 	double rem{};
 
-	float FPSsum{};
+	std::array<float, 1000u> FPSsum{};
 	uint64_t FPScount{};
 
 	// Benchmarking

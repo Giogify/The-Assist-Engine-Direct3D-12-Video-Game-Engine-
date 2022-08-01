@@ -1,5 +1,7 @@
 #include "Application.h"
 #include <memory>
+#include <algorithm>
+#include <numeric>
 #include <iostream>
 #include <iomanip>
 #include <array>
@@ -18,41 +20,41 @@ int Application::applicationUpdate() {
 		output.append(L"Elapsed Time: ");
 		output.append(std::to_wstring((int32_t)mTimerStart.peek()));
 		output.append(L"s");
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 	output.clear(); {
 		output.append(L"FPS: ");
 		output.append(std::to_wstring((int32_t)(1 / mTimerRender.mark())));
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 
 	[[likely]]
 	if (FPScount != 0) {
 		output.clear(); {
 			output.append(L"Avg. FPS: ");
-			output.append(std::to_wstring((int32_t)(FPSsum / FPScount)));
-			mainGFX().m2D.addDebugQueue(output);
+			output.append(std::to_wstring((int32_t)(std::accumulate(FPSsum.cbegin(), FPSsum.cend(), 0.f) / FPSsum.size())));
+			gGFX.m2D.addDebugQueue(output);
 		}
 	}
 	output.clear(); {
 		output.append(L"Actor Count: ");
 		output.append(std::to_wstring(GID::GSO::Scene::gActors.size()));
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 	output.clear(); {
 		output.append(L"Mouse Position: (");
-		output.append(std::to_wstring(gInput.at(0).mouse.getX()));
+		output.append(std::to_wstring(gInput.mouse.getX()));
 		output.append(L", ");
-		output.append(std::to_wstring(gInput.at(0).mouse.getY()));
+		output.append(std::to_wstring(gInput.mouse.getY()));
 		output.append(L")");
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 
 	if (doInput() != 0) return 1;
 	if (doUpdate() != 0) return 1;
 	if (doRender() != 0) return 1;
 
-	FPSsum += 1 / avgfpstimer.mark();
+	FPSsum.at(FPScount % 1000) = 1 / avgfpstimer.mark();
 	FPScount++;
 
 
@@ -86,9 +88,11 @@ Application::Application() {
 	
 	GSO::Util::initQuickStart();
 	
+
+
 	FAMMATRIX projectionTemp{ 
 		FAMMatrixPerspectiveFovLH(
-			AMConvertToRadians(General::gCfgGen.gCameraAngle), 16.0f / 9.0f, 0.25f, 5000.0f
+			AMConvertToRadians(General::gCfgGen.gCameraAngle), WindowNS::gWnd.get()->getAspectRatio(), 0.25f, 1000.0f
 		) 
 	};
 	Render::setGFXProjection(GID::DSU::WindowType::MAINWINDOW, projectionTemp);
@@ -101,7 +105,7 @@ Application::Application() {
 	}
 	Scene::addLight(light0);
 
-	Render::mainGFX().getCamera().addScript(GID::DSU::ScriptID::AdvancedCameraFollow);
+	Render::gGFX.getCamera().addScript(GID::DSU::ScriptID::AdvancedCameraFollow);
 
 	Scene::addActor({ "dragon" });
 	//Scene::addActor({ "testCube" });
@@ -123,19 +127,14 @@ int Application::applicationStart() {
 	mTimerRender.mark();
 	while (true) {
 		int hr{};
-		for (auto& w : GID::GSO::WindowNS::gWnd)
-			if (const auto msgCode = w->handleMessages()) {
-				for (auto& gfx : GID::GSO::Render::gGFX) {
-					gfx.gfx.flushGPU();
-					CloseHandle(gfx.gfx.mhFenceEvent);
-				}
-				return *msgCode;
-			}
+		if (const auto msgCode = GID::GSO::WindowNS::gWnd->handleMessages()) {
+			GID::GSO::Render::gGFX.flushGPU();
+			CloseHandle(GID::GSO::Render::gGFX.mhFenceEvent);
+			return *msgCode;
+		}
 		if (hr = applicationUpdate() != 0) {
-			for (auto& gfx : GID::GSO::Render::gGFX) {
-				gfx.gfx.flushGPU();
-				CloseHandle(gfx.gfx.mhFenceEvent);
-			}
+			GID::GSO::Render::gGFX.flushGPU();
+			CloseHandle(GID::GSO::Render::gGFX.mhFenceEvent);
 			return hr;
 		}
 	}
@@ -159,7 +158,7 @@ int Application::doInput() noexcept {
 		output.append(L"Input Time:\t");
 		output.append(std::to_wstring((int32_t)(time * 1e6f)));
 		output.append(L"\tus");
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 	return 0;
 }
@@ -182,7 +181,7 @@ int Application::doUpdate() noexcept {
 		output.append(L"Update Time:\t");
 		output.append(std::to_wstring((int32_t)(time * 1e6f)));
 		output.append(L"\tus");
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 	return 0;
 }
@@ -196,7 +195,7 @@ int Application::doRender() noexcept {
 	timer.mark();
 
 	
-	mainGFX().startFrame();
+	gGFX.startFrame();
 	for (auto& a : gActors) a.draw();
 	
 	
@@ -205,11 +204,11 @@ int Application::doRender() noexcept {
 		output.append(L"Render Time:\t");
 		output.append(std::to_wstring((int32_t)(time * 1e6f)));
 		output.append(L"\tus");
-		mainGFX().m2D.addDebugQueue(output);
+		gGFX.m2D.addDebugQueue(output);
 	}
 	
 	
-	mainGFX().endFrame();
+	gGFX.endFrame();
 	
 	
 	return 0;
