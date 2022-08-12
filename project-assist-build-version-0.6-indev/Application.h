@@ -30,7 +30,7 @@ private: // Private Fields
 private: // Private Methods
 
 	// Application Logic
-	int applicationUpdate();
+	uint8_t applicationUpdate();
 
 public: // Public Methods
 
@@ -39,11 +39,11 @@ public: // Public Methods
 	~Application();
 
 	// Application Startup Procedures
-	int applicationStart();
+	uint8_t applicationStart();
 	
 	// Game Loop
-	int doInput() noexcept;
-	int doUpdate() noexcept;
-	int doRender() noexcept;
+	uint8_t doInput() noexcept;
+	uint8_t doUpdate() noexcept;
+	uint8_t doRender() noexcept;
 
 };

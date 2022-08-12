@@ -1,0 +1,85 @@
+////////////////////////////////////////////////
+//                                            //
+// This file contains a to-do list for future //
+// features that will be added to the Assist  //
+// Engine in chonological order, unless       //
+// determined otherwise.                      //
+//                                            //
+////////////////////////////////////////////////
+
+- Resource struct (2d)
+
+- Texture struct (2d)
+
+~ 08/16/22
+
+- Shadows (volumetric lighting with rays?) (1w)
+
+- Reflection and refraction with more rays? (2w)
+
+- Memory format changes (1w)
+	- Vertex position indices
+	- Vertex texture indices
+	- Vertex normal indices
+	- Face index indices
+
+- Geometry abstraction (3d)
+	- Collision = mesh
+	- No scripting (maybe)
+
+- Trigger absraction (3d)
+	- Collision = mesh
+	- Invisible
+	- Has scripts
+	- Categories (in the form of inherited structs?)
+		- Cutscene trigger
+		- Plane trigger
+		- Flag trigger
+		- Misc. trigger
+
+- Actor overlays (5d)
+	> Actor overlays contain the unique information about a particular actor (like 
+	animations->models->objects stored in buffers/heaps) and then actor nodes contain 
+	positional/rotational data and other data that ALL ACTORS MUST SHARE (like ground 
+	interaction flags and default interactivity script)
+
+- Scenes (4d)
+	> Scenes implemented properly! Of course, there are global things that belong to the scene, 
+	like the camera. Lights, actors, geometry, and triggers are per-scene objects and are 
+	handled in each scene's file.
+
+- Configs & Parsing (2d)
+	- Scene configs
+
+- Create testing room (3w)
+	- Sample geometry, actors, and triggers for testing these features
+	- Textures
+	- Player character
+
+- Advanced Camera Follow Script (3d)
+	- size of followed object (the max between width points and height points of actor's bounding box)
+
+- Dialogue testing (1w)
+	- Dialogue struct
+		- Drawing dialogue box and then text at one character every eighth-second
+	- Every actor has a default dialogue script
+	- Place a sign post actor in the testing room for testing dialogue box and interactions from 
+	the player
+
+- Inventory System (2w)
+	- Basic design for now
+	- Stores items
+
+- Item struct (1w)
+	- Stored in the inventory
+	- 3D Actor overlay
+	- 2D inventory overlay
+	- item ID
+	- Item default use script
+
+- Item testing (2w)
+	- place items on the ground in testing room
+	- pickup animation
+	- item get dialogue
+
+~ 12/05/22

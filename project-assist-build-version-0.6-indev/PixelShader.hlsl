@@ -12,10 +12,6 @@
 #define POINT_LIGHT 1
 #define SPOT_LIGHT 2
 
-// Texture and Sampler
-//Texture2D Texture : register(t0);
-//sampler Sampler : register(s0);
-
 // Material Struct (5 vectors)
 struct Material {
 	
@@ -62,13 +58,17 @@ cbuffer pixelCBuffer : register(b0) {
 
 }
 
+// Texture and Sampler
+SamplerState Sampler : register(s0);
+Texture2D Texture : register(t0);
+
 // Lighting Result Struct
 struct LightingResult {
 	float4 diffuse;
 	float4 specular;
 };
 
-// ---Helper Functions---
+// --Helper Functions--
 
 // Diffuse
 float4 doDiffuse(Light light, float3 L, float3 N) {
@@ -183,7 +183,9 @@ LightingResult computeLighting(float4 P, float3 N) {
 	return totalResult;
 }
 
-// ---Helper Functions---
+float3 toSRGB(float3 rgb) {
+	return rgb < 0.0031308 ? 12.92 * rgb : 1.055 * pow(abs(rgb), 1.0 / 2.4) - 0.055;
+}
 
 // Input Struct
 struct PS_INPUT {
@@ -195,6 +197,7 @@ struct PS_INPUT {
 // Shader Main
 float4 main(PS_INPUT input) : SV_TARGET0 {
 
+	// Obtain the lighting data for that pixel based on local vertices and those vertices normals
 	LightingResult lit = computeLighting(input.posWS, normalize(input.normWS));
 
 	float4 emissive = mtl.emissive;
@@ -202,12 +205,27 @@ float4 main(PS_INPUT input) : SV_TARGET0 {
 	float4 diffuse = mtl.diffuse * lit.diffuse;
 	float4 specular = mtl.specular * lit.specular;
 
-	float4 texColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	//return Texture.Sample(Sampler, input.tex);
 
-	//if (mtl.isTextured)	texColor = Texture.Sample(Sampler, input.tex);
+	//float4 texColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	//if (mtl.isTextured) texColor = Texture.Sample(Sampler, input.tex);
+	float4 texColor = Texture.Sample(Sampler, float2(input.tex.x, 1.0f - input.tex.y));
+
+	
 	float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
 
 	return finalColor;
 
+	//return float4(toSRGB(texColor.rgb), texColor.a);
+	
+	//float4 finalColor = texColor;
+	
+	// pixel color based on normal
+	
+	// normal color
+	//return float4(input.normWS, 1.0f);
+
+	// pastel color
+	//return float4((input.normWS.x + 1.0f) / 2.0f,(input.normWS.y + 1.0f) / 2.0f,(input.normWS.z + 1.0f) / 2.0f, 1.0f);
 }

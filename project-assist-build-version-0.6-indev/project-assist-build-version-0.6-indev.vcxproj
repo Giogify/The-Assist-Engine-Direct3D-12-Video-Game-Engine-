@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -100,19 +103,20 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;FBXSDK_SHARED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\giavo\source\repos\direct3d11tutorial2\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.1</ShaderModel>
@@ -130,7 +134,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\giavo\source\repos\direct3d11tutorial2\project-assist-build-version-0.6-indev\lib\DirectXTex-main\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <Optimization>MinSpace</Optimization>
     </ClCompile>
@@ -144,24 +148,51 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\BC.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\BC4BC5.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\BC6HBC7.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexCompress.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexConvert.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexD3D11.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexD3D12.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexDDS.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexFlipRotate.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexHDR.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexImage.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexMipmaps.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexMisc.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexNormalMaps.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexPMAlpha.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexResize.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexTGA.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexUtil.cpp" />
+    <ClCompile Include="inc\DirectXTex\DirectXTex\DirectXTexWIC.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="GlobalInformationDatabase.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\BC.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\d3dx12.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\DDS.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\DirectXTex.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\DirectXTexP.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\filters.h" />
+    <ClInclude Include="inc\DirectXTex\DirectXTex\scoped.h" />
     <ClInclude Include="PCWindows.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="ComputeShader.hlsl">
+    <FxCompile Include="MipmapComputeShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -215,6 +246,9 @@
     <Text Include="benchmark.txt" />
     <Text Include="gfx_config.txt" />
     <Text Include="scene00.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="inc\DirectXTex\DirectXTex\DirectXTex.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

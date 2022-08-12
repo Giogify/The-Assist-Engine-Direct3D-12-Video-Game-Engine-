@@ -8,7 +8,7 @@
 #include <fstream>
 
 // Top-Level Application Logic
-int Application::applicationUpdate() {
+uint8_t Application::applicationUpdate() {
 
 	using namespace GID::GSO::Render;
 	using namespace GID::GSO::Input;
@@ -49,6 +49,21 @@ int Application::applicationUpdate() {
 		output.append(L")");
 		gGFX.m2D.addDebugQueue(output);
 	}
+	output.clear(); {
+		output.append(L"Camera Position: (");
+		output.append(std::to_wstring((int32_t)gGFX.mCamera.mEye.m128_f32[0]));
+		output.append(L", ");
+		output.append(std::to_wstring((int32_t)gGFX.mCamera.mEye.m128_f32[1]));
+		output.append(L", ");
+		output.append(std::to_wstring((int32_t)gGFX.mCamera.mEye.m128_f32[2]));
+		output.append(L")");
+		gGFX.m2D.addDebugQueue(output);
+	}
+	output.clear(); {
+		output.append(L"Fence Value: ");
+		output.append(std::to_wstring(gGFX.mFenceValue));
+		gGFX.m2D.addDebugQueue(output);
+	}
 
 	if (doInput() != 0) return 1;
 	if (doUpdate() != 0) return 1;
@@ -87,15 +102,13 @@ Application::Application() {
 	using namespace DSU::AssistMath;
 	
 	GSO::Util::initQuickStart();
-	
-
 
 	FAMMATRIX projectionTemp{ 
 		FAMMatrixPerspectiveFovLH(
 			AMConvertToRadians(General::gCfgGen.gCameraAngle), WindowNS::gWnd.get()->getAspectRatio(), 0.25f, 1000.0f
 		) 
 	};
-	Render::setGFXProjection(GID::DSU::WindowType::MAINWINDOW, projectionTemp);
+	Render::setGFXProjection(projectionTemp);
 
 	DSU::LightData light0{}; {
 		light0.type = (int32_t)DSU::LightConst::POINT_LIGHT;
@@ -113,6 +126,8 @@ Application::Application() {
 	General::gGlobalTimer.mark();
 	Update::gTickTimer.mark();
 
+
+
 	//GID::Render::gfx.mProjection = { FAMMatrixPerspectiveFovLH(AMConvertToRadians(viewingAngle), 16.0f / 9.0f, 0.25f, 5000.0f) };
 	//GID::Scene::gActors.push_back(Actor(GID::Render::gfx, *std::make_unique<std::string>("testCube")));
 	//GID::Scene::gActors.push_back(Actor(GID::Render::gfx, *std::make_unique<std::string>("plane2")));
@@ -123,16 +138,17 @@ Application::Application() {
 	//mScene = std::make_unique<Scene>(mWnd.getGraphicsOutput(), file);
 	//mScene->getCamera().translate(0.0f, 0.0f, 30.0f);
 }
-int Application::applicationStart() {
+uint8_t Application::applicationStart() {
 	mTimerRender.mark();
 	while (true) {
-		int hr{};
+		uint8_t hr{};
 		if (const auto msgCode = GID::GSO::WindowNS::gWnd->handleMessages()) {
 			GID::GSO::Render::gGFX.flushGPU();
 			CloseHandle(GID::GSO::Render::gGFX.mhFenceEvent);
-			return *msgCode;
+			return (uint8_t)*msgCode;
 		}
-		if (hr = applicationUpdate() != 0) {
+		hr = applicationUpdate();
+		if (hr != 0) {
 			GID::GSO::Render::gGFX.flushGPU();
 			CloseHandle(GID::GSO::Render::gGFX.mhFenceEvent);
 			return hr;
@@ -140,7 +156,7 @@ int Application::applicationStart() {
 	}
 }
 
-int Application::doInput() noexcept {
+uint8_t Application::doInput() noexcept {
 	using namespace GID;
 	using namespace GSO;
 	using namespace Input;
@@ -162,7 +178,7 @@ int Application::doInput() noexcept {
 	}
 	return 0;
 }
-int Application::doUpdate() noexcept {
+uint8_t Application::doUpdate() noexcept {
 	using namespace GID;
 	using namespace GSO;
 	using namespace Update;
@@ -185,7 +201,7 @@ int Application::doUpdate() noexcept {
 	}
 	return 0;
 }
-int Application::doRender() noexcept {
+uint8_t Application::doRender() noexcept {
 	using namespace GID;
 	using namespace GSO;
 	using namespace Render;

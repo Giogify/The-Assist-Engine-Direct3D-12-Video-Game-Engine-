@@ -365,3 +365,8 @@ FodyWeavers.xsd
 # Custom Files
 *.bin
 *.mtl
+/project-assist-build-version-0.6-indev/lib/DirectXTex-main
+/project-assist-build-version-0.6-indev/textures
+/project-assist-build-version-0.6-indev/inc/DirectXTex
+*.dds
+*.cso

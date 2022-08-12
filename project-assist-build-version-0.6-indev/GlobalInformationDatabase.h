@@ -1,7 +1,9 @@
 #pragma once
 // Includes below - Note: there shouldn't be any source file includes here.
+
 #include "d3dx12.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <chrono>
@@ -38,6 +40,9 @@
 #include <d2dbasetypes.h>
 #include <dwrite_3.h>
 
+#include "inc/DirectXTex/DirectXTex/DirectXTex.h"
+#include "inc/DirectXTex/DirectXTex/DirectXTex.inl"
+
 //#include <fbxsdk.h>
 
 #pragma comment(lib, "d3dcompiler")
@@ -48,15 +53,24 @@
 #pragma comment(lib, "d2d1")
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "dwrite")
+
+#if defined(min)
+#undef min
+#endif
+
+#if defined(max)
+#undef max
+#endif
+
 //#if defined(_DEBUG)
 //#pragma comment(lib, "C:\\Program Files\\Autodesk\\FBX\\FBX SDK\\2020.2.1\\lib\\vs2019\\x64\\debug\\libfbxsdk.lib")
 //#endif
 //#if defined(NDEBUG)
 //#pragma comment(lib, "C:\\Program Files\\Autodesk\\FBX\\FBX SDK\\2020.2.1\\lib\\vs2019\\x64\\release\\libfbxsdk.lib")
 //#endif
-#define WIN32_LEAN_AND_MEAN
 
 using namespace Microsoft::WRL;
+using namespace DirectX;
 
 // The Global Information Database. Contains data structures to be instantiated by the Global State Object, which is also contained herein.
 // The Global State Object contains instances of data to track the current application state / game state.
@@ -69,6 +83,8 @@ namespace GID::DSU::AssistMath {
 	constexpr float AM_1DIV2PI = 0.15915494309189533576888376337251f;
 	constexpr float AM_PIDIV2 = 1.5707963267948966192313216916398f;
 	constexpr float AM_PIDIV4 = 0.78539816339744830961566084581988f;
+	
+	constexpr float AM_SQRT2DIV2 = 0.70710678118654752440084436210485f;
 
 	constexpr uint32_t AM_SELECT_0 = 0x00000000;
 	constexpr uint32_t AM_SELECT_1 = 0xFFFFFFFF;
@@ -1087,7 +1103,7 @@ namespace GID::DSU::AssistMath {
 							AMLoadDouble4({ mx.m[3].m256d_f64[1], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0] }))))));*/
 	}
 	inline FAMMATRIX FAMMatrixPerspectiveFovLH(float fov, float ar, float n, float f) {
-		float ySc = 1.0 / std::tan(fov / 2.0);
+		float ySc = 1.f / std::tan(fov / 2.f);
 		float dz = f - n;
 		return {
 			ySc / ar,		0.0,		0.0,		0.0,
@@ -1547,6 +1563,17 @@ namespace GID::DSU::AssistMath {
 	double AMVector4SumVector(const AMVECTOR& vec);*/
 }
 
+// Compute Shader CB struct
+namespace GID::DSU {
+	struct alignas(16) ComputeShaderTextureMetadataCB {
+		uint32_t SrcMipLevel;
+		uint32_t NumMipLevels;
+		uint32_t SrcDimension;
+		uint32_t isSRGB;
+		AssistMath::AMFLOAT2 TexelSize;
+	};
+}
+
 // Some basic DSU structs and enums (that don't depend on user-defined types)
 namespace GID::DSU {
 	enum class LightConst {
@@ -1631,7 +1658,7 @@ namespace GID::DSU {
 		SUBWINDOW1,
 		INVALID
 	};
-	struct PipelineStateStream {
+	struct GraphicsPipelineStateStream {
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
 		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
 		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
@@ -1640,6 +1667,10 @@ namespace GID::DSU {
 		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
 		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
 		CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER RS;
+	};
+	struct ComputePipelineStateStream {
+		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
+		CD3DX12_PIPELINE_STATE_STREAM_CS CS;
 	};
 	struct ObjectDrawStaticMatrices {
 		AssistMath::FAMMATRIX camera;
@@ -1668,6 +1699,88 @@ namespace GID::DSU {
 	};
 }
 
+//// Resource Structure
+//namespace GID::DSU {
+//	struct Resource {
+//
+//		ComPtr<ID3D12Resource2> mpResource{};
+//		D3D12_FEATURE_DATA_FORMAT_SUPPORT mFormatSupport{};
+//		std::unique_ptr<D3D12_CLEAR_VALUE> mpClearValue{};
+//
+//		Resource(ComPtr<ID3D12Device10>& pDevice, const D3D12_RESOURCE_DESC& desc, const std::unique_ptr<D3D12_CLEAR_VALUE> pClearValue = nullptr) {
+//
+//			// If a valid (not nullptr) clear value was passed through the parameters, then copy its values to the object's clear value
+//			if (pClearValue) mpClearValue = std::make_unique<D3D12_CLEAR_VALUE>(*pClearValue);
+//
+//			// Create the committed resource
+//			pDevice->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, mpClearValue.get(), IID_PPV_ARGS(&mpResource));
+//		}
+//		Resource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12Resource2>& pResource, const std::unique_ptr<D3D12_CLEAR_VALUE> pClearValue = nullptr) {
+//			
+//			// If a valid (not nullptr) clear value was passed through the parameters, then copy its values to the object's clear value
+//			if (pClearValue) mpClearValue = std::make_unique<D3D12_CLEAR_VALUE>(*pClearValue);
+//
+//			mpResource = pResource;
+//		}
+//
+//		D3D12_RESOURCE_DESC getDesc() {
+//			[[likely]]
+//			if (mpResource) return mpResource->GetDesc(); 
+//			else {
+//				std::wstringstream wss{};
+//				wss << "[DEBUG WARNING] "
+//					<< __FILE__ << "(" << __LINE__ << "): " 
+//					<< "The descriptor of a resource was requested even though it was null.";
+//				std::wcout << wss.str();
+//				return D3D12_RESOURCE_DESC();
+//			}
+//		}
+//	};
+//}
+//
+//// Texture Structure
+//namespace GID::DSU {
+//	struct Texture {
+//		Texture(ComPtr<ID3D12Device10>& pDevice, const D3D12_RESOURCE_DESC& desc, const std::unique_ptr<D3D12_CLEAR_VALUE> pClearValue = nullptr) {
+//
+//		}
+//		Texture(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12Resource2>& pResource, const std::unique_ptr<D3D12_CLEAR_VALUE> pClearValue = nullptr) {
+//
+//		}
+//
+//		void resize(uint32_t width, uint32_t height, uint32_t depthOrArraySize = 1);
+//		D3D12_CPU_DESCRIPTOR_HANDLE getRTV();
+//		D3D12_CPU_DESCRIPTOR_HANDLE getDSV();
+//		D3D12_CPU_DESCRIPTOR_HANDLE getSRV();
+//		D3D12_CPU_DESCRIPTOR_HANDLE getUAV(uint32_t mip);
+//		// eventual format support checking
+//		/*bool checkSupportSRV() {
+//		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
+//		}
+//		bool checkSupportRTV() {
+//		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_RENDER_TARGET);
+//		}
+//		bool checkSupportUAV() {
+//		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
+//		&& CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD)
+//		&& CheckFormatSupport(D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
+//		}
+//		bool checkSupportDSV() {
+//		return CheckFormatSupport(D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL);
+//		}*/
+//		bool hasAlpha();
+//		size_t checkBBP();
+//	};
+//	inline bool isUAVCompatFormat(DXGI_FORMAT format);
+//	inline bool isSRGBFormat(DXGI_FORMAT format);
+//	inline bool isBGRFormat(DXGI_FORMAT format);
+//	inline bool isDepthFormat(DXGI_FORMAT format);
+//
+//	inline DXGI_FORMAT getTypelessFormat(DXGI_FORMAT format);
+//	inline DXGI_FORMAT getSRGBFormat(DXGI_FORMAT format);
+//	inline DXGI_FORMAT getUAVCompatFormat(DXGI_FORMAT format);
+//}
+
 // Benchmark Function (only one per run)
 namespace GID::Util::Benchmark {
 	struct {
@@ -1687,7 +1800,7 @@ namespace GID::Util::Benchmark {
 				if (gBenchmarkData.elapsedTime.peek() >= lengthInSec) {
 					gBenchmarkData.elapsedTime.mark();
 					std::ofstream file("benchmark.txt", std::ios::out | std::ios::app);
-					file << type << " " << gBenchmarkData.total / gBenchmarkData.runs << " ms\n";
+					file << '[' << type << "] " << gBenchmarkData.total / gBenchmarkData.runs << " ms\n";
 					file.close();
 				}
 			}
@@ -1696,10 +1809,10 @@ namespace GID::Util::Benchmark {
 // Benchmark Function (singleton ver.)
 namespace GID::Util::Benchmark {
 	inline void doBenchmark(double dt, std::string type) {
-				std::ofstream file("benchmark.txt", std::ios::out | std::ios::app);
-				file << type << " " << dt * 1000.f << " ms\n";
-				file.close();
-			}
+		std::ofstream file("benchmark.txt", std::ios::out | std::ios::app);
+		file << '[' << type << "] " << dt * 1000.f << " ms\n";
+		file.close();
+	}
 }
 
 // Script IDs
@@ -2157,9 +2270,9 @@ namespace GID::DSU {
 
 					// If mouse is inside window
 					if (point.x >= 0
-						&& point.x < mWidth
+						&& point.x < (int16_t)mWidth
 						&& point.y >= 0
-						&& point.y < mHeight) {
+						&& point.y < (int16_t)mHeight) {
 						gInput.mouse.onMouseMove(point.x, point.y);
 						if (!gInput.mouse.isInsideWindow()) {
 							SetCapture(hWnd);
@@ -2215,7 +2328,7 @@ namespace GID::DSU {
 				// When the Mouse Wheel is Moved
 				case WM_MOUSEWHEEL: {
 					const POINTS point = MAKEPOINTS(lParam);
-					const int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+					const int16_t delta = GET_WHEEL_DELTA_WPARAM(wParam);
 					gInput.mouse.onWheelDelta(point.x, point.y, delta);
 					break;
 				}
@@ -2480,16 +2593,13 @@ namespace GID::DSU {
 		enum FollowMode { NO_FOLLOW, FOLLOW };
 
 		AssistMath::FAMVECTOR Y_AXIS{ 0.0f, 1.0f, 0.0f, 0.0f };
-		AssistMath::FAMVECTOR mEye{ 0.0f, 0.0f, -5.0f, 1.0f };
-		AssistMath::FAMVECTOR mFocus{ 0.0f, 0.0f, 0.0f, 0.0f };
-		AssistMath::FAMVECTOR mRotation{};
+		AssistMath::FAMVECTOR mEye{ 100.0f, 100.0f, 100.0f, 1.0f };
+		AssistMath::FAMVECTOR mFocus{};
+		AssistMath::FAMVECTOR mRotation{-30.0f, -135.0f, 0.0f, 0.0f };
 		AssistMath::FAMVECTOR mDTranslation{};
 
 		bool mbMouseControl{ false };
 		bool mbFollow{ false };
-
-		Timer moveTimer{};
-		Timer moveTimer2{};
 
 		Camera() = default;
 
@@ -2525,76 +2635,110 @@ namespace GID::DSU {
 
 			using namespace GSO::Input; using namespace AssistMath;
 
+			// If the camera is not set to follow an actor
 			if (!mbFollow) {
-					
+				
+				// Determine if shift is being pressed
 				BOOL shift = gInput.kb.isKeyPressed(VK_SHIFT);
+
+				// Increment shift (shift should now equal 2 if pressing shift, 1 if not)
 				shift++;
 
+				// Determine if control is being pressed
+				BOOL control = gInput.kb.isKeyPressed(VK_CONTROL);
+
+				// Increment control (control should now equal 2 if pressing control, 1 if not)
+				control++;
+
+				// If 'W' is pressed, move the camera forward along its facing vector (only in the X-Z plane)
 				if (gInput.kb.isKeyPressed('W')) {
+					
+					// Calculate the movement's x-component based on the facing angle
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+
+					// Calculate the movement's z-component based on the facing angle
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+
+					// Update the camera's delta-x to the x-component of the movement
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
+
+					// Update the camera's delta-z to the x-component of the movement
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
+				
+				// If 'S' is pressed, move the camera backward along its facing vector (only in the X-Z plane)
 				if (gInput.kb.isKeyPressed('S')) {
+					
+					// Calculate the movement's x-component based on the facing angle
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+					
+					// Calculate the movement's z-component based on the facing angle
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					mDTranslation.m128_f32[Translation::X] += 25.f * -xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * -zcom * shift;
 				}
+				// If 'A' is pressed, move the camera left along its facing vector (only in the X-Z plane)
 				if (gInput.kb.isKeyPressed('A')) {
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
+				// If 'D' is pressed, move the camera right along its facing vector (only in the X-Z plane)
 				if (gInput.kb.isKeyPressed('D')) {
 					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
+
+				// If the spacebar is pressed, move the camera forward along the world's Y-axis vector
 				if (gInput.kb.isKeyPressed(VK_SPACE)) mDTranslation.m128_f32[Translation::Y] += 25.f * shift;
+
+				// If tab is pressed, move the camera backward along the world's Y-axis vector
 				if (gInput.kb.isKeyPressed(VK_TAB)) mDTranslation.m128_f32[Translation::Y] -= 25.f * shift;
 
-				if (gInput.kb.isKeyPressed(VK_LEFT)) addYaw(0.25f);
-				if (gInput.kb.isKeyPressed(VK_RIGHT)) addYaw(-0.25f);
-				if (gInput.kb.isKeyPressed(VK_UP)) addPitch(0.25f);
-				if (gInput.kb.isKeyPressed(VK_DOWN)) addPitch(-0.25f);
+				// If any of the arrow keys are pressed, move the camera's facing angle accordingly
+				if (gInput.kb.isKeyPressed(VK_LEFT)) addYaw(0.25f * control);
+				if (gInput.kb.isKeyPressed(VK_RIGHT)) addYaw(-0.25f * control);
+				if (gInput.kb.isKeyPressed(VK_UP)) addPitch(0.25f * control);
+				if (gInput.kb.isKeyPressed(VK_DOWN)) addPitch(-0.25f * control);
 
-				RECT rc{ GSO::WindowNS::gWnd->getWindowInfo().rcClient };
-
-				if (mbMouseControl) {
-					BOOL control = gInput.kb.isKeyPressed(VK_CONTROL);
-					control++;
-					for (auto& e : gInput.mouseEvents) {
-						if (e.getType() == Mouse::Event::Type::Move) {
-							auto centerX = (rc.right - rc.left) / 2;
-							auto centerY = (rc.bottom - rc.top) / 2;
-							if (e.getX() != centerX || e.getY() != centerY) SetCursorPos(centerX + rc.left, centerY + rc.top);
-							auto dx = centerX - e.getX();
-							auto dy = centerY - e.getY();
-							addYaw(0.05f * dx * control);
-							addPitch(0.05f * dy * control);
+				// control the camera with the mouse (debug only -- use arrow keys instead)
+				
+				[[likely]]
+				if (true) {
+					RECT rc{ GSO::WindowNS::gWnd->getWindowInfo().rcClient };
+					if (mbMouseControl) {
+						for (auto& e : gInput.mouseEvents) {
+							if (e.getType() == Mouse::Event::Type::Move) {
+								auto centerX = (rc.right - rc.left) / 2;
+								auto centerY = (rc.bottom - rc.top) / 2;
+								if (e.getX() != centerX || e.getY() != centerY) SetCursorPos(centerX + rc.left, centerY + rc.top);
+								auto dx = centerX - e.getX();
+								auto dy = centerY - e.getY();
+								addYaw(0.05f * dx * control);
+								addPitch(0.05f * dy * control);
+							}
 						}
 					}
-				}
-
-				for (auto& e : gInput.mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress) {
-					mbMouseControl = !mbMouseControl;
-					ShowCursor(!mbMouseControl);
-					if (mbMouseControl) ClipCursor(&rc);
-					else { ClipCursor(NULL); }
-					auto centerX = (rc.right - rc.left) / 2;
-					auto centerY = (rc.bottom - rc.top) / 2;
-					SetCursorPos(centerX + rc.left, centerY + rc.top);
+					for (auto& e : gInput.mouseEvents) if (e.getType() == Mouse::Event::Type::LMBPress) {
+						mbMouseControl = !mbMouseControl;
+						ShowCursor(!mbMouseControl);
+						if (mbMouseControl) ClipCursor(&rc);
+						else { ClipCursor(NULL); }
+						auto centerX = (rc.right - rc.left) / 2;
+						auto centerY = (rc.bottom - rc.top) / 2;
+						SetCursorPos(centerX + rc.left, centerY + rc.top);
+					}
 				}
 			}
 		}
 			
 		void update() noexcept {
+			using namespace GSO::Update;
 			if (!mbFollow) {
-				AssistMath::FAMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(GSO::Update::gTicks));
+				AssistMath::FAMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(gTicks));
 				translate(vel);
 				//std::cout << "[X] " << mDTranslation.m128_f32[X] << " " << " [Y] " << mDTranslation.m128_f32[Y] << " " << " [Z] " << mDTranslation.m128_f32[Z] << '\n';
 				/*if (mDTranslation.m128_f32[Translation::X] < 0.0001f
@@ -2652,7 +2796,6 @@ namespace GID::DSU {
 		std::vector<ComPtr<IDWriteTextFormat3>> mpFormats{};
 
 		std::queue<std::wstring> mDebugQueue{};
-		std::queue<std::wstring> mDebugQueue2{};
 
 		uint8_t mFrameIndex{};
 
@@ -2666,7 +2809,7 @@ namespace GID::DSU {
 			ComPtr<ID3D11Device5> pD11Device{};
 			std::array<D3D_FEATURE_LEVEL, 1u> fl{};
 			fl.at(0) = D3D_FEATURE_LEVEL_12_1;
-			hr = D3D11On12CreateDevice(pDevice.Get(), D3D11_CREATE_DEVICE_BGRA_SUPPORT, fl.data(), fl.size(), (IUnknown**)pCommandQueue.GetAddressOf(),
+			hr = D3D11On12CreateDevice(pDevice.Get(), D3D11_CREATE_DEVICE_BGRA_SUPPORT, fl.data(), (uint32_t)fl.size(), (IUnknown**)pCommandQueue.GetAddressOf(),
 				1u, 0u, (ID3D11Device**)pD11Device.GetAddressOf(), (ID3D11DeviceContext**)mp3DDeviceContext.GetAddressOf(), nullptr);
 			hr = pD11Device.As(&mpD11on12Device);
 		}
@@ -2682,7 +2825,7 @@ namespace GID::DSU {
 			DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory7), &mpWriteFactory);
 		}
 		inline float getDPI() {
-			return GetDpiForWindow(GID::GSO::WindowNS::gWnd.get()->mhWnd);
+			return (float)GetDpiForWindow(GID::GSO::WindowNS::gWnd.get()->mhWnd);
 		}
 		inline void wrapRenderTargets(std::vector<ComPtr<ID3D12Resource2>>& pRenderTargets, float dpi) {
 			D2D1_BITMAP_PROPERTIES1 bmprop{ D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
@@ -2761,12 +2904,14 @@ namespace GID::DSU {
 				mDebugQueue.pop();
 				textRect1 = D2D1::RectF(indent, additiveSpacing, rcSize.width, rcSize.height);
 				textRect2 = D2D1::RectF(indent + offset, additiveSpacing + offset, rcSize.width, rcSize.height);
-				mp2DDeviceContext->DrawText(line.c_str(), line.size(), mpFormats.at(0).Get(), &textRect2, mpBrushes.at(1).Get());
-				mp2DDeviceContext->DrawText(line.c_str(), line.size(), mpFormats.at(0).Get(), &textRect1, mpBrushes.at(0).Get());
+				mp2DDeviceContext->DrawText(line.c_str(), (uint32_t)line.size(), mpFormats.at(0).Get(), &textRect2, mpBrushes.at(1).Get());
+				mp2DDeviceContext->DrawText(line.c_str(), (uint32_t)line.size(), mpFormats.at(0).Get(), &textRect1, mpBrushes.at(0).Get());
 				additiveSpacing += spacing;
 			}
 		}
-		void addDebugQueue(std::wstring line) { mDebugQueue.push(line); }
+		void addDebugQueue(std::wstring line) { 
+			mDebugQueue.push(line);
+		}
 	};
 }
 
@@ -2780,7 +2925,7 @@ namespace GID::DSU {
 		bool											mVSync{ false };
 		BOOL											mTearingSupport{ false };
 		bool											mFullscreen{ false };
-		uint32_t										mBackBufferCount{ 3u };
+		uint8_t											mBackBufferCount{ 3u };
 		uint32_t										mShaderDebugCompileFlags{ D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION };
 		uint32_t										mShaderReleaseCompileFlags{ 0u };
 		D3D_FEATURE_LEVEL								mFeatureLevel{ D3D_FEATURE_LEVEL_12_1 };
@@ -2797,17 +2942,28 @@ namespace GID::DSU {
 		// Adapters
 		ComPtr<IDXGIAdapter4>							mpHardwareAdapter{};
 		ComPtr<IDXGIAdapter4>							mpWARPAdapter{};
-		// Commands
-		std::vector<ComPtr<ID3D12CommandAllocator>>		mpCommandAllocator{};
-		ComPtr<ID3D12GraphicsCommandList7>				mpCommandList{};
-		ComPtr<ID3D12CommandQueue>						mpCommandQueue{};
-		// Pipeline state
-		PipelineStateStream								mPSS{};
-		ComPtr<ID3D12PipelineState>						mpPipelineState{};
-		// Root Signature
-		ComPtr<ID3D12RootSignature>						mpRootSignature{};
-		ComPtr<ID3DBlob>								mpSignatureRootBlob{};
-		ComPtr<ID3DBlob>								mpErrorBlob{};
+		// Graphics Commands
+		std::vector<ComPtr<ID3D12CommandAllocator>>		mpGraphicsCommandAllocators{};
+		ComPtr<ID3D12GraphicsCommandList7>				mpGraphicsCommandList{};
+		ComPtr<ID3D12CommandQueue>						mpGraphicsCommandQueue{};
+		// Graphics Pipeline state
+		GraphicsPipelineStateStream						mGPSS{};
+		ComPtr<ID3D12PipelineState>						mpGraphicsPipelineState{};
+		// Graphics Root Signature
+		ComPtr<ID3D12RootSignature>						mpGraphicsRootSignature{};
+		ComPtr<ID3DBlob>								mpGraphicsSignatureRootBlob{};
+		ComPtr<ID3DBlob>								mpGraphicsErrorBlob{};
+		// Compute Commands
+		std::vector<ComPtr<ID3D12CommandAllocator>>		mpComputeCommandAllocators{};
+		ComPtr<ID3D12GraphicsCommandList7>				mpComputeCommandList{};
+		ComPtr<ID3D12CommandQueue>						mpComputeCommandQueue{};
+		// Compute Pipeline State
+		ComputePipelineStateStream						mCPSS{};
+		ComPtr<ID3D12PipelineState>						mpComputePipelineState{};
+		// Compute Root Signature
+		ComPtr<ID3D12RootSignature>						mpComputeRootSignature{};
+		ComPtr<ID3DBlob>								mpComputeSignatureRootBlob{};
+		ComPtr<ID3DBlob>								mpComputeErrorBlob{};
 		// Render Target View(s)
 		std::vector<ComPtr<ID3D12Resource2>>			mpRenderTargets{};
 		ComPtr<ID3D12DescriptorHeap>					mpRTVHeap{};
@@ -2823,10 +2979,10 @@ namespace GID::DSU {
 		HANDLE											mhFenceEvent{};
 		uint8_t											mFrameIndex{};
 		uint64_t										mFenceValue{};
-		uint64_t										mCurrentFenceValue{};
 		// Shaders
 		ComPtr<ID3DBlob>								mpVSBytecode{};
 		ComPtr<ID3DBlob>								mpPSBytecode{};
+		ComPtr<ID3DBlob>								mpCSBytecode{};
 		// Projection Matrix
 		AssistMath::FAMMATRIX							mProjection{};
 		// Misc
@@ -2847,8 +3003,8 @@ namespace GID::DSU {
 			wndInfo.cbSize = sizeof WINDOWINFO;
 			GetWindowInfo(hWnd, &wndInfo);
 
-			uint16_t width = wndInfo.rcClient.right - wndInfo.rcClient.left;
-			uint16_t height = wndInfo.rcClient.bottom - wndInfo.rcClient.top;
+			uint16_t width = (uint16_t)wndInfo.rcClient.right - (uint16_t)wndInfo.rcClient.left;
+			uint16_t height = (uint16_t)wndInfo.rcClient.bottom - (uint16_t)wndInfo.rcClient.top;
 
 			#if defined(_DEBUG)
 			mDebug = true;
@@ -2870,8 +3026,11 @@ namespace GID::DSU {
 			//mViewport = { CD3DX12_VIEWPORT(0.0f, 0.0f, (FLOAT)width, (FLOAT)height) };
 			mScissorRc = { CD3DX12_RECT(0u, 0u, LONG_MAX, LONG_MAX) };
 
+			// Some multi-threaded bullshit for initializing graphics pipeline stuff that may or may not be faster than single-threaded
 			std::thread thread0([this] { createFactory(); });
+			#if _DEBUG
 			std::thread thread1([this] { createDebugLayer(); });
+			#endif
 			thread0.join();
 			std::thread thread2([this] { enumerateAdapters(); });
 			thread2.join();
@@ -2880,17 +3039,27 @@ namespace GID::DSU {
 			std::thread thread4([this] { createCommandQueue(); });
 			std::thread thread5([this] { checkTearingSupport(); });
 			std::thread thread6([this] { createFence(); });
+			#if _DEBUG
 			std::thread thread7([this] { createInfoQueue(); });
+			#endif
 			std::thread thread8([this, width, height] { createDSV(width, height); });
 			thread4.join();
 			std::thread thread9([this, hWnd, width, height] { createSwapChain(hWnd, width, height); });
 			std::thread thread10([this] { createCommandAllocatorAndList(); });
 			thread9.join();
 			std::thread thread11([this] { createRTV(); });
-			thread1.join(); thread5.join(); thread6.join(); thread7.join(); thread8.join(); thread10.join(); thread11.join();
+			#if _DEBUG
+			thread1.join(); 
+			#endif
+			thread5.join(); thread6.join(); 
+			#if _DEBUG
+			thread7.join();
+			#endif
+			thread8.join(); thread10.join(); thread11.join();
 
-			m2D = { mpDevice, mpCommandQueue, mpRenderTargets };
-			initializePipeline();
+			m2D = { mpDevice, mpGraphicsCommandQueue, mpRenderTargets };
+			initGraphicsPipeline();
+			initComputePipeline();
 			flushGPU();
 		}
 		GFX3D() = default;
@@ -2924,7 +3093,7 @@ namespace GID::DSU {
 					switch (currentData) {
 						case GFXConfigDataType::UIBackBufferCount:
 							strCurrentLine.erase(0u, 19u);
-							mBackBufferCount = std::stoi(strCurrentLine);
+							mBackBufferCount = std::min(std::max(uint8_t(2), (uint8_t)std::stoi(strCurrentLine)), uint8_t(DXGI_MAX_SWAP_CHAIN_BUFFERS));
 							break;
 						case GFXConfigDataType::BUseWARPAdapter:
 							strCurrentLine.erase(0u, 17u);
@@ -2951,22 +3120,21 @@ namespace GID::DSU {
 				}
 			}
 		}
+		#if _DEBUG
 		void createDebugLayer() noexcept {
+			
 			// Create the Debug Interface
-			#if defined(_DEBUG)
 			mHR = D3D12GetDebugInterface(__uuidof(ID3D12Debug5), (void**)&mpDebugController);
 			mpDebugController->EnableDebugLayer();
 			mpDebugController->SetEnableAutoName(TRUE);
-			#endif
 		}
 		void createInfoQueue() noexcept {
-			#if defined(_DEBUG)
 			mpDevice.As(&mpInfoQueue);
 			mpInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
 			mpInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
 			mpInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, TRUE);
-			#endif
 		}
+		#endif
 		void createFactory() noexcept {
 			// Create factory
 			CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&mpFactory));
@@ -2975,13 +3143,13 @@ namespace GID::DSU {
 			// Obtain adapter
 			if (mUseWARPAdapter) mpFactory->EnumWarpAdapter(IID_PPV_ARGS(&mpWARPAdapter)); // WARP
 			else {
-				uint64_t maxVideoMem = 0;
+				SIZE_T maxVideoMem = 0;
 				ComPtr<IDXGIAdapter1> refAdapter{};
-				for (UINT i = 0; mpFactory->EnumAdapters1(i, refAdapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; i++) {
+				for (uint32_t i = 0; mpFactory->EnumAdapters1(i, refAdapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; i++) {
 					DXGI_ADAPTER_DESC1 ad{};
 					refAdapter->GetDesc1(&ad);
-					if ((ad.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 
-						&& D3D12CreateDevice(refAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device10), nullptr)
+					if ((ad.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == (UINT)0 
+						&& (UINT)D3D12CreateDevice(refAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device10), nullptr)
 						&& ad.DedicatedVideoMemory > maxVideoMem) {
 						maxVideoMem = ad.DedicatedVideoMemory; refAdapter.As(&mpHardwareAdapter);
 					}
@@ -2992,22 +3160,33 @@ namespace GID::DSU {
 			// Create the Device
 			if (mUseWARPAdapter) D3D12CreateDevice(mpWARPAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device9), (void**)&mpDevice); // WARP
 			else D3D12CreateDevice(mpHardwareAdapter.Get(), mFeatureLevel, __uuidof(ID3D12Device9), (void**)&mpDevice); // Hardware
-			mpDevice->SetName(L"[Core] [ID3D12Device10] Member of GFX3D");
+			mpDevice->SetName(L"mpDevice");
 		}
 		void createCommandQueue() noexcept {
-			// Create the command queue
+			
+			// Create the graphics command queue
 			D3D12_COMMAND_QUEUE_DESC cqd = {}; {
 				cqd.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 				cqd.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 				cqd.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-				mpDevice->CreateCommandQueue1(&cqd, __uuidof(ID3D12Device10), IID_PPV_ARGS(&mpCommandQueue));
+				mpDevice->CreateCommandQueue1(&cqd, __uuidof(ID3D12Device10), IID_PPV_ARGS(&mpGraphicsCommandQueue));
 			}
-			mpCommandQueue->SetName(L"[Command] [ID3D12CommandQueue] Member of GFX3D");
+			mpGraphicsCommandQueue->SetName(L"mpGraphicsCommandQueue");
+
+			// Create the compute command queue
+			{
+				cqd.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+				cqd.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+				cqd.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+				mpDevice->CreateCommandQueue1(&cqd, __uuidof(ID3D12Device10), IID_PPV_ARGS(&mpComputeCommandQueue));
+			}
+			mpComputeCommandQueue->SetName(L"mpComputeCommandQueue");
 		}
 		void checkTearingSupport() noexcept {
 			mpFactory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &mTearingSupport, sizeof(mTearingSupport));
 		}
 		void createSwapChain(const HWND& hWnd, const uint16_t& width, const uint16_t& height) noexcept {
+			
 			// Get window and monitor info
 			HMONITOR hMonitor{ MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST) };
 			MONITORINFOEX monitorInfo{};
@@ -3016,7 +3195,8 @@ namespace GID::DSU {
 			DEVMODE devMode{};
 			devMode.dmSize = sizeof(DEVMODE);
 			EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
-			// Create the swap chain
+			
+			// Define swap chain descriptor
 			DXGI_SWAP_CHAIN_DESC1 scd = {}; {
 				scd.BufferCount = mBackBufferCount;
 				scd.Width = width; scd.Height = height;
@@ -3029,6 +3209,8 @@ namespace GID::DSU {
 				scd.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 				if (mTearingSupport) scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 			}
+			
+			// Define swap chain fullscreen descriptor
 			DXGI_SWAP_CHAIN_FULLSCREEN_DESC scfd = {}; {
 				scfd.RefreshRate.Numerator = devMode.dmDisplayFrequency;
 				scfd.RefreshRate.Denominator = 1u;
@@ -3036,30 +3218,51 @@ namespace GID::DSU {
 				scfd.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 			}
 			if (mFullscreen) scfd.Windowed = FALSE; else scfd.Windowed = TRUE;
-			mpFactory->CreateSwapChainForHwnd(mpCommandQueue.Get(), hWnd, &scd, &scfd, nullptr, (IDXGISwapChain1**)mpSwapChain.GetAddressOf());
-			// Manual fullscreen support
+			mpFactory->CreateSwapChainForHwnd(mpGraphicsCommandQueue.Get(), hWnd, &scd, &scfd, nullptr, (IDXGISwapChain1**)mpSwapChain.GetAddressOf());
+			
+			// Manual fullscreen support ( we use F11 around here :D )
 			mpFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER); // DXGI_MWA_VALID
 		}
 		void createRTV() noexcept {
-			// Create Render Target View (RTV) heap
+			
+			// Create a Render Target View (RTV) heap with as many descriptors as there are buffers, so there is one heap per buffer
+			// Typed as RTV and no flags
 			D3D12_DESCRIPTOR_HEAP_DESC RTVHeapDesc = {}; {
 				RTVHeapDesc.NumDescriptors = mBackBufferCount;
 				RTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 				RTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			}
+			
+			// Create the descriptor heap with the device
 			mpDevice->CreateDescriptorHeap(&RTVHeapDesc, IID_PPV_ARGS(&mpRTVHeap));
+
+			// Obtain and store the RTV Heap's incremental size 
+			// The size of each pointer/handle to each individual descriptor/heap in the total RTV heap
+			// (usually 152 bytes/pointer)
 			mRTVHeapSize = mpDevice->GetDescriptorHandleIncrementSize(RTVHeapDesc.Type);
-			mpRTVHeap->SetName(L"[RTV] [ID3D12DescriptorHeap] Member of GFX3D");
-			// Create frame resources
+			mpRTVHeap->SetName(L"mpRTVHeap");
+			
+			// Get a handle (ptr) to the start of the Render Target View heap
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart());
+			
+			// Resize the RTV resources vector to fit all back buffers
 			mpRenderTargets.resize(mBackBufferCount);
 			for (UINT i = 0u; i < mBackBufferCount; i++) {
+				
+				// Obtain the indexed buffer and store it in the RTV (resource) vector
 				mpSwapChain->GetBuffer(i, IID_PPV_ARGS(&mpRenderTargets.at(i)));
+
+				// Have the hRTV (Render Target View handle/pointer) point to the instantiated RTV resource (creating a view on CPU side)
 				mpDevice->CreateRenderTargetView(mpRenderTargets[i].Get(), nullptr, hRTV);
-				std::wstringstream woss{};
-				woss << "[RTV] [ID3D12Resource2] [Render Target View #" << i + 1 << "]";
-				mpRenderTargets[i]->SetName(woss.str().c_str());
+				
+				// Offset the Render Target View handle/pointer by the size of a singleton heap pointer (for RTVs)
+				// This essentially functions as indexing into an array of RTV descriptors
 				hRTV.Offset(1u, mRTVHeapSize);
+				
+				// Object name (not important)
+				std::wstringstream woss{};
+				woss << "mpRenderTargets[" << i << ']';
+				mpRenderTargets[i]->SetName(woss.str().c_str());
 			}
 		}
 		void createDSV(const uint16_t& width, const uint16_t& height) noexcept {
@@ -3081,86 +3284,123 @@ namespace GID::DSU {
 			DSTexHeapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 			mHR = mpDevice->CreateCommittedResource(&DSTexHeapProperties, D3D12_HEAP_FLAG_NONE, &DSTexHeapDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &dscv,
 				IID_PPV_ARGS(&mpDepthStencilTexture));
-			mpDepthStencilTexture->SetName(L"[DSV] [ID3D12Resource2] [DepthStencilTexture]");
+			mpDepthStencilTexture->SetName(L"mpDepthStencilTexture");
 		}
 		void createCommandAllocatorAndList() noexcept {
 			// Setup Graphics Commands
-			for (int i = 0; i < mBackBufferCount; i++) {
-				mpCommandAllocator.push_back(*std::make_unique<ComPtr<ID3D12CommandAllocator>>());
-				mpDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mpCommandAllocator[i]));
+			mpGraphicsCommandAllocators.resize(mBackBufferCount);
+			for (uint8_t i = 0; i < mBackBufferCount; i++) {
+				mpDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mpGraphicsCommandAllocators.at(i)));
 				std::wstringstream woss{};
-				woss << "[Command] [ID3D12CommandAllocator] [Command Allocator #" << i + 1 << "]";
-				mpCommandAllocator[i]->SetName(woss.str().c_str());
+				woss << "mpGraphicsCommandAllocators[" << i << "]";
+				mpGraphicsCommandAllocators.at(i)->SetName(woss.str().c_str());
 			}
-			mpDevice->CreateCommandList1(0u, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, __uuidof(ID3D12GraphicsCommandList6), (void**)&mpCommandList);
-			mpCommandList->SetName(L"[Command] [ID3D12GraphicsCommandList7] [Command List]");
+			mpDevice->CreateCommandList1(0u, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, __uuidof(ID3D12GraphicsCommandList6), (void**)&mpGraphicsCommandList);
+			mpGraphicsCommandList->SetName(L"mpGraphicsCommandList");
 
-			mpCommandAllocator[0]->Reset();
-			mpCommandList->Reset(mpCommandAllocator[0].Get(), nullptr);
+			mpGraphicsCommandAllocators.at(0)->Reset();
+			mpGraphicsCommandList->Reset(mpGraphicsCommandAllocators.at(0).Get(), nullptr);
+
+			// Set up Compute Commands
+			mpComputeCommandAllocators.resize(mBackBufferCount);
+			for (uint8_t i = 0; i < mBackBufferCount; i++) {
+				mpDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&mpComputeCommandAllocators.at(i)));
+				std::wstringstream woss{};
+				woss << "mpGraphicsCommandAllocators[" << i << "]";
+				mpComputeCommandAllocators.at(i)->SetName(woss.str().c_str());
+			}
+			mpDevice->CreateCommandList1(0u, D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_LIST_FLAG_NONE, __uuidof(ID3D12GraphicsCommandList6), (void**)&mpComputeCommandList);
+			mpComputeCommandList->SetName(L"mpComputeCommandList");
+
+			mpComputeCommandAllocators.front()->Reset();
+			mpComputeCommandList->Reset(mpComputeCommandAllocators.front().Get(), nullptr);
 		}
 		void createFence() noexcept {
 			// Create the Fence for synchronization
 			mpDevice->CreateFence(0u, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mpFence));
-			mpFence->SetName(L"[Sync] [ID3D12Fence1] [Fence]");
+			mpFence->SetName(L"mpFence");
 			mhFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		}
-		void initializePipeline() noexcept {
-			D3DReadFileToBlob(L"VS_IndexedWithStructuredBuffers.cso", &mpVSBytecode);
-			D3DReadFileToBlob(L"PixelShader.cso", &mpPSBytecode);
-			std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
-				ied[0] = { "POSITION", 0, DXGI_FORMAT_R32_UINT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-				ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32_UINT, 0, 4, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-				ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32_UINT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+		void initGraphicsPipeline() noexcept {
+			CD3DX12_DESCRIPTOR_RANGE1 texturePS{};
+			texturePS.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1u, 0u, 0u, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+			std::array<CD3DX12_ROOT_PARAMETER1, 6u> rp{}; {
+				
+				// ---Vertex Shader---
+
+				// Constant Buffer (Matrices)
+				rp.at(0).InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE, D3D12_SHADER_VISIBILITY_VERTEX);
+
+				// Shader Resource (Positions)
+				rp.at(1).InitAsShaderResourceView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE, D3D12_SHADER_VISIBILITY_VERTEX);
+				
+				// Shader Resource (Texture Coordinates)
+				rp.at(2).InitAsShaderResourceView(1u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE, D3D12_SHADER_VISIBILITY_VERTEX);
+				
+				// Shader Resource (Normals)
+				rp.at(3).InitAsShaderResourceView(2u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE, D3D12_SHADER_VISIBILITY_VERTEX);
+				
+				// ---Pixel Shader---
+
+				// Constant Buffer (Material & Light Data)
+				rp.at(4).InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE, D3D12_SHADER_VISIBILITY_PIXEL);
+				
+				
+				rp.at(5).InitAsDescriptorTable(1u, &texturePS, D3D12_SHADER_VISIBILITY_PIXEL);
 			}
+			std::array<CD3DX12_STATIC_SAMPLER_DESC, 1u> ssd{}; {
+				ssd[0].Init(0u);
+				ssd[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+			}
+			D3D12_ROOT_SIGNATURE_FLAGS rsFlags{
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
+				| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS
+			};
 			D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData{}; {
 				featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
 			}
-			D3D12_ROOT_SIGNATURE_FLAGS rsFlags = {
-				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-				| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS };
-			std::array<CD3DX12_ROOT_PARAMETER1, 5u> rp{}; {
-				rp[0].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-				rp[1].InitAsShaderResourceView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-				rp[2].InitAsShaderResourceView(1u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-				rp[3].InitAsShaderResourceView(2u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
-				
-				rp[4].InitAsConstantBufferView(0u, 0u, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
-			}
 			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
-				rsd.Init_1_1(rp.size(), rp.data(), 0u, nullptr, rsFlags);
-				D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpSignatureRootBlob, &mpErrorBlob);
-				mpDevice->CreateRootSignature(0u, mpSignatureRootBlob->GetBufferPointer(), mpSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpRootSignature));
-				mpRootSignature->SetName(L"[Shaders] [Root Signature]");
+				rsd.Init_1_1((uint32_t)rp.size(), rp.data(), (uint32_t)ssd.size(), ssd.data(), rsFlags);
+				mHR = D3DX12SerializeVersionedRootSignature(&rsd, featureData.HighestVersion, &mpGraphicsSignatureRootBlob, &mpGraphicsErrorBlob);
+				mHR = mpDevice->CreateRootSignature(0u, mpGraphicsSignatureRootBlob->GetBufferPointer(), mpGraphicsSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpGraphicsRootSignature));
+				mpGraphicsRootSignature->SetName(L"mpGraphicsRootSignature");
 			}
-			D3D12_RT_FORMAT_ARRAY RTVfarr{}; {
-				RTVfarr.NumRenderTargets = 1u;
-				RTVfarr.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+			std::array<D3D12_INPUT_ELEMENT_DESC, 3u> ied{}; {
+				ied[0] = { "POSITION", 0, DXGI_FORMAT_R32_UINT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+				ied[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32_UINT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+				ied[2] = { "NORMAL", 0, DXGI_FORMAT_R32_UINT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+			}
+			mHR = D3DReadFileToBlob(L"VS_IndexedWithStructuredBuffers.cso", &mpVSBytecode);
+			mHR = D3DReadFileToBlob(L"PixelShader.cso", &mpPSBytecode);
+			D3D12_RT_FORMAT_ARRAY RTVFormatArray{}; {
+				RTVFormatArray.NumRenderTargets = 1u;
+				RTVFormatArray.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 			}
 			D3D12_PIPELINE_STATE_STREAM_DESC pssd{}; {
-				mPSS.pRootSignature = mpRootSignature.Get();
-				mPSS.InputLayout = { ied.data(), (UINT)ied.size() };
-				mPSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-				mPSS.VS = CD3DX12_SHADER_BYTECODE(mpVSBytecode.Get());
-				mPSS.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
-				mPSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-				mPSS.RTVFormats = RTVfarr;
+				mGPSS.pRootSignature = mpGraphicsRootSignature.Get();
+				mGPSS.InputLayout = { ied.data(), (UINT)ied.size() };
+				mGPSS.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+				mGPSS.VS = CD3DX12_SHADER_BYTECODE(mpVSBytecode.Get());
+				mGPSS.PS = CD3DX12_SHADER_BYTECODE(mpPSBytecode.Get());
+				mGPSS.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+				mGPSS.RTVFormats = RTVFormatArray;
 				if (mDebug) {
 					if (mWireframe) {
-						mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+						mGPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
 							D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 					} else {
-						mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+						mGPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
 							D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 					}
 				} else if (mWireframe) {
-					mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
+					mGPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, FALSE, 0u, 0.0f, 0.0f, TRUE, FALSE, FALSE, 0u,
 						D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-				} else mPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-				pssd.pPipelineStateSubobjectStream = &mPSS;
-				pssd.SizeInBytes = sizeof GID::DSU::PipelineStateStream;
-				mHR = mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpPipelineState));
-				mpPipelineState->SetName(L"[Pipeline State]");
-			}
+				} else mGPSS.RS = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+				pssd.pPipelineStateSubobjectStream = &mGPSS;
+				pssd.SizeInBytes = sizeof GID::DSU::GraphicsPipelineStateStream;
+				mHR = mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpGraphicsPipelineState));
+				mpGraphicsPipelineState->SetName(L"Graphics Pipeline State");
+			} 
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; {
 				dsv.Format = DXGI_FORMAT_D32_FLOAT;
 				dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -3170,55 +3410,121 @@ namespace GID::DSU {
 				mpDevice->CreateDepthStencilView(mpDepthStencilTexture.Get(), &dsv, hDSV);
 			}
 		}
+		void initComputePipeline() noexcept {
+			CD3DX12_DESCRIPTOR_RANGE1 srcMip{};
+			CD3DX12_DESCRIPTOR_RANGE1 dstMip{};
+			srcMip.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1u, 0u, 0u, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+			dstMip.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 4u, 0u, 0u, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE);
+			std::array<CD3DX12_ROOT_PARAMETER1, 3u> rp{}; {
+				// ---Compute Shader---
 
-		// Frame sync
+				// Constant Buffer (Texture Metadata)
+				rp.at(0).InitAsConstants(8u, 0u, 0u);
+
+				// 2D Texture (Source Texture)
+				rp.at(1).InitAsDescriptorTable(1u, &srcMip);
+
+				// 2D Texture (Mipped Texture(s))
+				rp.at(2).InitAsDescriptorTable(1u, &dstMip);
+			}
+			std::array<CD3DX12_STATIC_SAMPLER_DESC, 1u> ssd{}; {
+				ssd[0].Init(0u);
+			}
+			D3D12_ROOT_SIGNATURE_FLAGS rsFlags{
+				D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS 
+				| D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS 
+				| D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS 
+				| D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS
+			};
+			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rsd{}; {
+				rsd.Init_1_1((uint32_t)rp.size(), rp.data(), (uint32_t)ssd.size(), ssd.data(), rsFlags);
+				mHR = D3DX12SerializeVersionedRootSignature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1_1, &mpComputeSignatureRootBlob, &mpComputeErrorBlob);
+				mHR = mpDevice->CreateRootSignature(0u, mpComputeSignatureRootBlob->GetBufferPointer(), mpComputeSignatureRootBlob->GetBufferSize(), IID_PPV_ARGS(&mpComputeRootSignature));
+				mpComputeRootSignature->SetName(L"[Shaders] [Compute Root Signature]");
+			}
+			mHR = D3DReadFileToBlob(L"MipmapComputeShader.cso", &mpCSBytecode);
+			D3D12_PIPELINE_STATE_STREAM_DESC pssd{}; {
+				mCPSS.pRootSignature = mpComputeRootSignature.Get();
+				mCPSS.CS = CD3DX12_SHADER_BYTECODE(mpCSBytecode.Get());
+				pssd.pPipelineStateSubobjectStream = &mCPSS;
+				pssd.SizeInBytes = sizeof GID::DSU::ComputePipelineStateStream;
+				mHR = mpDevice->CreatePipelineState(&pssd, IID_PPV_ARGS(&mpComputePipelineState));
+				mpComputePipelineState->SetName(L"Compute Pipeline State");
+			}
+
+		}
+
+		// Frame sync -- How this works:
+		// 1. Place an 'increment the fence value' command at the end of the command queue, which will trigger when all of the GPU's work is finished and resources can be written to.
+		// 2. Increment the independently-tracked, CPU-side fence value (mFenceValue).
+		// 3. Check and see if the fence value of the fence (mpFence) has been incremented to the value it should be when the queue will increment it (mFenceValue).
+		// 4. If the fence value is still less than its intended value, then the GPU still isn't done executing the command list. Set a fence event to trigger when it is.
+		// 5. Wait for event to trigger.
 		void signalFence() noexcept {
-			//Signal the fence
-			mHR = mpCommandQueue->Signal(mpFence.Get(), ++mFenceValue);
+			
+			// Signal the fence
+			mHR = mpGraphicsCommandQueue->Signal(mpFence.Get(), ++mFenceValue);
 		}
 		int waitFence() noexcept {
+
 			// Wait for the fence
-			if (mpFence->GetCompletedValue() < mFenceValue) {
+			if (mpFence->GetCompletedValue() != mFenceValue) {
+
+				// Set an internal event to return the completed fence value when complete
 				mpFence->SetEventOnCompletion(mFenceValue, mhFenceEvent);
+
+				// Wait for the internal event to complete
 				WaitForSingleObject(mhFenceEvent, (DWORD)INFINITE);
 			}
 			return 0;
 		}
 		int flushGPU() noexcept {
-			mpCommandList->Close();
-			ID3D12CommandList* ppCommandLists[] = { mpCommandList.Get() };
-			mpCommandQueue->ExecuteCommandLists(1u, ppCommandLists);
+
+			// Close the command list
+			mpGraphicsCommandList->Close();
+
+			// Demote the command list into a single-element array of command list pointers
+			ID3D12CommandList* ppCommandLists[] = { mpGraphicsCommandList.Get() };
+
+			// Place the command list on the command queue and submit the command list's work to the GPU
+			mpGraphicsCommandQueue->ExecuteCommandLists(1u, ppCommandLists);
+
+			// Frame sync
 			signalFence();
 			waitFence();
-			mpCommandAllocator.at(mFrameIndex)->Reset();
-			mpCommandList->Reset(mpCommandAllocator.at(mFrameIndex).Get(), nullptr);
+			
+			// Reset the current frame's command allocator (for use when the frame loop rolls back around to this index)
+			mpGraphicsCommandAllocators.at(mFrameIndex)->Reset();
+
+			// Reset the command list
+			mpGraphicsCommandList->Reset(mpGraphicsCommandAllocators.at(mFrameIndex).Get(), nullptr);
 			return 0;
 		}
 
 		// Prepare
 		void transitionRTVToWrite() noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpRenderTargets[mFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-			mpCommandList->ResourceBarrier(1u, &barrier);
+			mpGraphicsCommandList->ResourceBarrier(1u, &barrier);
 		}
 		void transitionRTVToRead() noexcept {
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(mpRenderTargets[mFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-			mpCommandList->ResourceBarrier(1u, &barrier);
+			mpGraphicsCommandList->ResourceBarrier(1u, &barrier);
 		}
 		void clearRTV() noexcept {
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
 			//auto color = std::make_unique<float[]>(4); color[0] = 0.5294f; color[1] = 0.8078f; color[2] = 0.9216f; color[3] = 1.f;
 			//auto color = std::make_unique<float[]>(4); color[0] = 0.0f; color[1] = 0.0f; color[2] = 0.0f; color[3] = 1.f;
-			auto color = std::make_unique<float[]>(4); color[0] = 0.1f; color[1] = 0.1f; color[2] = 0.1f; color[3] = 1.f;
-			mpCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
+			auto color = std::make_unique<float[]>(4); color[0] = 0.2f; color[1] = 0.2f; color[2] = 0.2f; color[3] = 1.f;
+			mpGraphicsCommandList->ClearRenderTargetView(hRTV, color.get(), 0u, nullptr);
 		}
 		void clearDSV() noexcept {
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hDSV(mpDSVHeap->GetCPUDescriptorHandleForHeapStart());
-			mpCommandList->ClearDepthStencilView(hDSV, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0u, 0u, nullptr);
+			mpGraphicsCommandList->ClearDepthStencilView(hDSV, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0u, 0u, nullptr);
 		}
 		void setRenderTarget() noexcept {
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hRTV(mpRTVHeap->GetCPUDescriptorHandleForHeapStart(), mFrameIndex, mRTVHeapSize);
 			CD3DX12_CPU_DESCRIPTOR_HANDLE hDSV(mpDSVHeap->GetCPUDescriptorHandleForHeapStart());
-			mpCommandList->OMSetRenderTargets(1u, &hRTV, FALSE, &hDSV);
+			mpGraphicsCommandList->OMSetRenderTargets(1u, &hRTV, FALSE, &hDSV);
 		}
 
 		// Render
@@ -3229,10 +3535,10 @@ namespace GID::DSU {
 			clearRTV();
 			clearDSV();
 			setRenderTarget();
-			mpCommandList->SetGraphicsRootSignature(mpRootSignature.Get());
-			mpCommandList->SetPipelineState(mpPipelineState.Get());
-			mpCommandList->RSSetViewports(mViewport.size(), mViewport.data());
-			mpCommandList->RSSetScissorRects(1u, &mScissorRc);
+			mpGraphicsCommandList->SetGraphicsRootSignature(mpGraphicsRootSignature.Get());
+			mpGraphicsCommandList->SetPipelineState(mpGraphicsPipelineState.Get());
+			mpGraphicsCommandList->RSSetViewports((uint32_t)mViewport.size(), mViewport.data());
+			mpGraphicsCommandList->RSSetScissorRects(1u, &mScissorRc);
 		}
 		void doFrame() noexcept {
 			//const std::array<DSU::PositionData, 8u> vertices{
@@ -3289,7 +3595,7 @@ namespace GID::DSU {
 			//UINT syncInterval = mVSync ? 1u : 0u;
 			//UINT presentFlags = mTearingSupport && !mVSync ? DXGI_PRESENT_ALLOW_TEARING : 0u;
 			mpSwapChain->Present1((mVSync) ? 1u : 0u, (mTearingSupport && !mVSync) ? DXGI_PRESENT_ALLOW_TEARING : 0u, &pp);
-			mFrameIndex = mpSwapChain->GetCurrentBackBufferIndex();
+			mFrameIndex = (uint8_t)mpSwapChain->GetCurrentBackBufferIndex();
 			m2D.mFrameIndex = mFrameIndex;
 		}
 
@@ -3375,7 +3681,7 @@ namespace GID::DSU {
 
 		void setProjection(const AssistMath::FAMMATRIX& projection) noexcept { mProjection = projection; }
 		AssistMath::FAMMATRIX& getProjection() noexcept { return mProjection; }
-		ComPtr<ID3D12GraphicsCommandList7>& getCommandList() noexcept { return mpCommandList; }
+		ComPtr<ID3D12GraphicsCommandList7>& getCommandList() noexcept { return mpGraphicsCommandList; }
 		ComPtr<ID3D12Device10>& getDevice() noexcept { return mpDevice; }
 
 		void doDebug(HRESULT& hr, const char* type, const char* element, const char* verb) {
@@ -3419,7 +3725,7 @@ namespace GID::DSU {
 namespace GID::GSO::Render {
 	inline GID::DSU::GFX3D gGFX{};
 	inline void initGFX(GID::DSU::GFX_DESC desc) { gGFX = { GID::GSO::WindowNS::gWnd.get()->mhWnd, desc }; }
-	inline void setGFXProjection(GID::DSU::WindowType wndType, GID::DSU::AssistMath::FAMMATRIX& projection) { gGFX.setProjection(projection); }
+	inline void setGFXProjection(GID::DSU::AssistMath::FAMMATRIX& projection) { gGFX.setProjection(projection); }
 }
 
 // Vertex Buffer Structure
@@ -3456,7 +3762,7 @@ namespace GID::DSU {
 			}
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
 			mVBView.BufferLocation = mpDestRes->GetGPUVirtualAddress();
-			mVBView.SizeInBytes = sizeof VSInputData * size;
+			mVBView.SizeInBytes = (uint32_t)(sizeof VSInputData * size);
 			mVBView.StrideInBytes = sizeof VSInputData;
 		}
 
@@ -3524,7 +3830,7 @@ namespace GID::DSU {
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-				bsrv.NumElements = data.size();
+				bsrv.NumElements = (uint32_t)data.size();
 				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
@@ -3554,7 +3860,7 @@ namespace GID::DSU {
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-				bsrv.NumElements = data.size();
+				bsrv.NumElements = (uint32_t)data.size();
 				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
@@ -3611,7 +3917,7 @@ namespace GID::DSU {
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-				bsrv.NumElements = data.size();
+				bsrv.NumElements = (uint32_t)data.size();
 				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT2;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
@@ -3641,7 +3947,7 @@ namespace GID::DSU {
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-				bsrv.NumElements = data.size();
+				bsrv.NumElements = (uint32_t)data.size();
 				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT2;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
@@ -3698,7 +4004,7 @@ namespace GID::DSU {
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-				bsrv.NumElements = data.size();
+				bsrv.NumElements = (uint32_t)data.size();
 				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
@@ -3728,7 +4034,7 @@ namespace GID::DSU {
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-				bsrv.NumElements = data.size();
+				bsrv.NumElements = (uint32_t)data.size();
 				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
@@ -3749,7 +4055,7 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>			mpDestRes{};
 		ComPtr<ID3D12Resource2>			mpIntermedRes{};
 		ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
-		uint16_t						mpCBVHeapSize{};
+		uint8_t							mpCBVHeapSize{};
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VertexConstantBuffer() = default;
@@ -3776,7 +4082,7 @@ namespace GID::DSU {
 			cbvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 			cbvhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
-			mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
+			mpCBVHeapSize = (uint8_t)pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 		}
 		void createConstantBufferView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const GID::DSU::VertexConstantBufferData& data) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
@@ -3828,7 +4134,7 @@ namespace GID::DSU {
 		ComPtr<ID3D12Resource2>			mpDestRes{};
 		ComPtr<ID3D12Resource2>			mpIntermedRes{};
 		ComPtr<ID3D12DescriptorHeap>	mpCBVHeap{};
-		uint16_t						mpCBVHeapSize{};
+		uint8_t							mpCBVHeapSize{};
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		PixelConstantBuffer() = default;
@@ -3854,7 +4160,7 @@ namespace GID::DSU {
 			cbvhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 			cbvhd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			pDevice->CreateDescriptorHeap(&cbvhd, IID_PPV_ARGS(&mpCBVHeap));
-			mpCBVHeapSize = pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
+			mpCBVHeapSize = (uint8_t)pDevice->GetDescriptorHandleIncrementSize(cbvhd.Type);
 		}
 		void createConstantBufferView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const PixelConstantBufferData& data) noexcept {
 			mSRD.pData = &data;
@@ -3940,6 +4246,11 @@ namespace GID::DSU {
 	};
 }
 
+inline ComPtr<ID3D12Resource2> gTexture0{};
+inline ComPtr<ID3D12Resource2> gTexture1{};
+inline ComPtr<ID3D12DescriptorHeap> gTexture2{};
+inline std::vector<D3D12_SUBRESOURCE_DATA> gTexture3{};
+
 // Model File Parsing Functions
 namespace GID::Util::FileParsing {
 	inline GID::DSU::ActorData parse(std::string dir) {
@@ -3948,6 +4259,9 @@ namespace GID::Util::FileParsing {
 		using FLOAT2 = GID::DSU::AssistMath::AMFLOAT2;
 		using UINT3X3 = GID::DSU::AssistMath::AMUINT3X3;
 		using namespace GID::DSU;
+		using namespace GID::GSO::Render;
+
+		HRESULT hr{};
 
 		ActorData data{};
 		std::ifstream file("res\\actor\\" + dir + ".bin", std::ios::binary); uint32_t _size{}; std::string _str{};
@@ -4065,6 +4379,78 @@ namespace GID::Util::FileParsing {
 				}
 			}
 		}
+
+		// Get texture file
+		TexMetadata metadata{}; ScratchImage scratchImage{};
+		if (LoadFromWICFile(L"Textures\\Dragon_Bump_Col2.jpg", WIC_FLAGS_FORCE_RGB, &metadata, scratchImage) != S_OK) throw std::exception("Cannot load texture file.");
+		ScratchImage mipChain{};
+
+		uint32_t _0 = 1;
+		uint32_t h{ (uint32_t)metadata.height };
+		uint32_t w{ (uint32_t)metadata.width };
+		while (h > 1 || w > 1) {
+			if (h > 1) h >>= 1;
+			if (w > 1) w >>= 1;
+			++_0;
+		}
+
+		GenerateMipMaps(scratchImage.GetImages(), scratchImage.GetImageCount(), metadata, TEX_FILTER_LINEAR, (size_t)_0, mipChain);
+
+		D3D12_RESOURCE_DESC _1{}; {
+			DXGI_FORMAT format{ mipChain.GetMetadata().format };
+			uint64_t x{ (uint64_t)mipChain.GetMetadata().width };
+			uint32_t y{ (uint32_t)mipChain.GetMetadata().height };
+			switch (metadata.dimension) {
+				case TEX_DIMENSION_TEXTURE1D: _1 = CD3DX12_RESOURCE_DESC::Tex1D(format, x, (uint16_t)mipChain.GetMetadata().arraySize, (uint16_t)mipChain.GetMetadata().mipLevels); break;
+				case TEX_DIMENSION_TEXTURE2D: _1 = CD3DX12_RESOURCE_DESC::Tex2D(format, x, y, (uint16_t)mipChain.GetMetadata().arraySize, (uint16_t)mipChain.GetMetadata().mipLevels); break;
+				case TEX_DIMENSION_TEXTURE3D: _1 = CD3DX12_RESOURCE_DESC::Tex3D(format, x, y, (uint16_t)mipChain.GetMetadata().depth, (uint16_t)mipChain.GetMetadata().mipLevels); break;
+				default: throw std::exception("Invalid texture dimension."); break;
+			}
+		}
+		{
+			CD3DX12_HEAP_PROPERTIES x{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)};
+			D3D12_HEAP_FLAGS y{ D3D12_HEAP_FLAG_NONE };
+			D3D12_RESOURCE_STATES z{ D3D12_RESOURCE_STATE_COPY_DEST };
+			gGFX.mpDevice->CreateCommittedResource(&x, y, &_1, z, nullptr, IID_PPV_ARGS(&gTexture0));
+		}
+		{
+			gTexture3.resize(mipChain.GetImageCount());
+			const Image* ptr = mipChain.GetImages();
+			for (uint32_t i = 0; i < mipChain.GetImageCount(); i++) {
+				auto& sr = gTexture3[i];
+				sr.RowPitch = ptr[i].rowPitch;
+				sr.SlicePitch = ptr[i].slicePitch;
+				sr.pData = ptr[i].pixels;
+			}
+		}
+		{
+			uint64_t sz = GetRequiredIntermediateSize(gTexture0.Get(), 0u, (uint32_t)gTexture3.size());
+			CD3DX12_HEAP_PROPERTIES x{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD)};
+			D3D12_HEAP_FLAGS y{ D3D12_HEAP_FLAG_NONE };
+			CD3DX12_RESOURCE_DESC z = CD3DX12_RESOURCE_DESC::Buffer(sz);
+			D3D12_RESOURCE_STATES w{ D3D12_RESOURCE_STATE_GENERIC_READ };
+			gGFX.mpDevice->CreateCommittedResource(&x, y, &z, w, nullptr, IID_PPV_ARGS(&gTexture1));
+			UpdateSubresources(gGFX.mpGraphicsCommandList.Get(), gTexture0.Get(), gTexture1.Get(), 0, 0, (uint32_t)gTexture3.size(), gTexture3.data());
+		}
+		auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(gTexture0.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) };
+		gGFX.mpGraphicsCommandList->ResourceBarrier(1u, &barrier);
+		gGFX.flushGPU();
+		{
+			D3D12_DESCRIPTOR_HEAP_DESC x{}; {
+				x.NumDescriptors = 1u;
+				x.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+				x.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			}
+			gGFX.mpDevice->CreateDescriptorHeap(&x, IID_PPV_ARGS(&gTexture2));
+		}
+		D3D12_SHADER_RESOURCE_VIEW_DESC _6{}; {
+			_6.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			_6.Format = mipChain.GetMetadata().format;
+			_6.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			_6.Texture2D.MipLevels = (uint32_t)mipChain.GetMetadata().mipLevels;
+			gGFX.mpDevice->CreateShaderResourceView(gTexture0.Get(), &_6, gTexture2->GetCPUDescriptorHandleForHeapStart());
+		}
+		
 		return data;
 	}
 }
@@ -4105,18 +4491,24 @@ namespace GID::DSU {
 			using namespace AssistMath;
 
 			// Process data
-			ObjectFileData mObjectFileData = data;
-			std::vector<DSU::VSInputData> idx{};
-			std::vector<AssistMath::AMFLOAT3> pos{};
-			std::vector<AssistMath::AMFLOAT2> tex{};
-			std::vector<AssistMath::AMFLOAT3> norm{};
-			for (auto& p : mObjectFileData.pos) pos.push_back(p);
-			for (auto& t : mObjectFileData.tex) tex.push_back(t);
-			for (auto& n : mObjectFileData.norm) norm.push_back(n);
+			std::vector<DSU::VSInputData> ind{}; ind.resize(data.ind.size() * 3u);
+			std::vector<AssistMath::AMFLOAT3> pos{}; pos.resize(data.pos.size());
+			std::vector<AssistMath::AMFLOAT2> tex{}; tex.resize(data.tex.size());
+			std::vector<AssistMath::AMFLOAT3> norm{}; norm.resize(data.norm.size());
+			uint32_t iter{ 0 };
+			for (auto& p : data.pos) { pos.at(iter) = p; iter++; }
+			iter = 0;
+			for (auto& t : data.tex) { tex.at(iter) = t; iter++; }
+			iter = 0;
+			for (auto& n : data.norm) { norm.at(iter) = n; iter++; }
+			iter = 0;
 			for (auto& i : data.ind) {
-				idx.push_back({ i.d[0], i.d[1], i.d[2] });
-				idx.push_back({ i.d[3], i.d[4], i.d[5] });
-				idx.push_back({ i.d[6], i.d[7], i.d[8] });
+				ind.at(iter) = { i.d[0], i.d[1], i.d[2] };
+				iter++;
+				ind.at(iter) = { i.d[3], i.d[4], i.d[5] };
+				iter++;
+				ind.at(iter) = { i.d[6], i.d[7], i.d[8] };
+				iter++;
 			}
 
 			// Material Data
@@ -4159,7 +4551,7 @@ namespace GID::DSU {
 			mVSPosSB = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), pos };
 			mVSTexSB = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), tex };
 			mVSNormSB = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), norm };
-			mVertexBuffer = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), idx.data(), idx.size() };
+			mVertexBuffer = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), ind.data(), ind.size() };
 
 			using namespace GSO::Render;
 			AssistMath::FAMMATRIX transformM{ getTransformMx() };
@@ -4221,11 +4613,14 @@ namespace GID::DSU {
 		}
 		void doCommandList() noexcept {
 			using namespace GSO::Render;
+			
 			gGFX.getCommandList()->SetGraphicsRootConstantBufferView(0u, mVCB.getDestRes()->GetGPUVirtualAddress());
 			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(1u, mVSPosSB.getDestRes()->GetGPUVirtualAddress());
 			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(2u, mVSTexSB.getDestRes()->GetGPUVirtualAddress());
 			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(3u, mVSNormSB.getDestRes()->GetGPUVirtualAddress());
 			gGFX.getCommandList()->SetGraphicsRootConstantBufferView(4u, mPCB.getDestRes()->GetGPUVirtualAddress());
+			gGFX.getCommandList()->SetDescriptorHeaps(1u, gTexture2.GetAddressOf());
+			gGFX.getCommandList()->SetGraphicsRootDescriptorTable(5u, gTexture2->GetGPUDescriptorHandleForHeapStart());
 			gGFX.getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			gGFX.getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
 			gGFX.getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
@@ -4289,9 +4684,12 @@ namespace GID::DSU {
 
 		Model() = default;
 		Model(GID::DSU::ModelFileData& mfd) {
+			mObjects.resize(mfd.ofd.size());
+			uint32_t iter = 0;
 			ModelFileData mModelFileData = mfd;
 			for (auto& objectdata : mModelFileData.ofd) {
-				mObjects.push_back({ objectdata });
+				mObjects.at(iter) = { objectdata };
+				iter++;
 			}
 		}
 
@@ -4350,17 +4748,19 @@ namespace GID::DSU {
 		ActorGroundState mGroundState{ ActorGroundState::GROUND };
 
 		Actor() = default;
-		Actor(GFX3D& gfx, std::string& objPath) {
+		Actor(std::string& objPath) {
 			using namespace GSO::Render;
-			std::vector<std::vector<VSInputData>> mIndices{};
+			//std::vector<std::vector<VSInputData>> mIndices{};
 			
 			mActorID.first = objPath;
 			mActorID.second = GID::GSO::Collections::ActorID::add(objPath);
 			//mActorData = GID::GSO::Collections::ActorData::quickSearchAndAdd(objPath);
 			ActorData mActorData = GID::Util::FileParsing::parse(objPath);
-
+			
 			mAnimationPackage.mAnimations.resize(mActorData.ad.size());
+			
 			mAnimationPackage.mAnimationID = mActorData.name;
+			
 			for (uint16_t iter{}; iter < mActorData.ad.at(0).apd.size(); iter++) {
 				mAnimationPackage.mAnimations.at(0).mFrames.push_back({ mActorData.ad.at(0).apd.at(iter) });
 			}
@@ -4379,18 +4779,13 @@ namespace GID::DSU {
 			using namespace GSO::Render;
 			uint32_t currFrameIndex{ (uint32_t)std::truncf(mInitTimer.peek() * 30.f * GSO::General::gCfgGen.gSpeedMultiplier) };
 			currFrameIndex %= mAnimationPackage.mAnimations.at(0).mFrames.size();
-			currFrameIndex = 0;
-			uint32_t objectidx{};
+			//currFrameIndex = 0;
 			for (auto& o : mAnimationPackage.mAnimations.at(0).mFrames.at(currFrameIndex).getObjects()) {
 				o.updateResources();
 				o.transitionResourcesToRead();
 				o.doCommandList();
 				o.transitionResourcesToWrite();
-				objectidx++;
 			}
-		}
-		auto& getGroundState() noexcept {
-			return mGroundState;
 		}
 	};
 }
@@ -4399,7 +4794,7 @@ namespace GID::DSU {
 namespace GID::GSO::Scene {
 	inline std::vector<GID::DSU::Actor> gActors{};
 	inline void addActor(std::string actorName) {
-		gActors.push_back({ Render::gGFX, actorName });
+		gActors.push_back({ actorName });
 	}
 }
 
@@ -4436,7 +4831,7 @@ namespace GID::GSO::Input {
 namespace GID::GSO::Input {
 	inline int doInput() {
 		using namespace DSU;
-		auto ind = (uint8_t)WindowType::MAINWINDOW;
+		//auto ind = (uint8_t)WindowType::MAINWINDOW;
 		bool inputDebug{ false };
 
 		while (!gInput.kb.isKeyQueueEmpty()) {
@@ -4512,7 +4907,7 @@ namespace GID::GSO::Scripts::Update {
 	//}
 }
 
-// Realistic intersection-reaction collision script (will probably be replaced, but its code is useful)
+// Realistic intersection-reaction collision script (will probably be replaced, but its code has useful physics math)
 namespace GID::GSO::Scripts::Update {
 	//inline void doBasicCollision(GID::DSU::Actor& actor, std::vector<GID::DSU::Actor>& actors) {
 	//	using namespace DSU::AssistMath;
@@ -4864,14 +5259,16 @@ namespace GID::GSO::Scripts::Update {
 	//}
 }
 
-namespace GID::GSO::Scripts::GlobalVariables {
-	inline uint16_t gCameraActorFollowIndex{};
-}
+// Advanced Camera Following Script
+namespace GID::GSO::Scripts {
+	namespace GlobalVariables {
+		inline uint16_t gCameraActorFollowIndex{};
+	}
+	namespace Update {
+		inline void doAdvancedCameraFollow() {
+			if (Render::gGFX.getCamera().mbFollow) {
 
-namespace GID::GSO::Scripts::Update {
-	inline void doAdvancedCameraFollow() {
-		if (Render::gGFX.getCamera().mbFollow) {
-
+			}
 		}
 	}
 }

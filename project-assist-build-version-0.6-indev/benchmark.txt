@@ -49,3 +49,4 @@
 [Actor Parse and Add Time] 3839.85 ms
 [Actor Parse and Add Time] 3920.91 ms
 [Actor Parse Time: 500 Files] 16737.2 ms
+[Actor Parse Time: 500 Files] 1417.97 ms

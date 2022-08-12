@@ -52,6 +52,8 @@ VS_OUTPUT main(VS_INPUT input) {
 
 	// normalize the object's normals to fix the world transform skew
 	output.normWS = mul(normVert, (float3x3)m.inversetranspose);
+
+	// texture
 	output.tex = texVert;
 
 	return output;
