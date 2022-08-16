@@ -7,21 +7,17 @@
 //                                            //
 ////////////////////////////////////////////////
 
-- Resource struct (2d)
-
-- Texture struct (2d)
-
-~ 08/16/22
-
-- Shadows (volumetric lighting with rays?) (1w)
-
-- Reflection and refraction with more rays? (2w)
-
 - Memory format changes (1w)
 	- Vertex position indices
 	- Vertex texture indices
 	- Vertex normal indices
 	- Face index indices
+
+~ 08/19/22
+
+- Shadows (volumetric lighting with rays?) (1w)
+
+- Reflection and refraction with more rays? (2w)
 
 - Geometry abstraction (3d)
 	- Collision = mesh
@@ -35,6 +31,8 @@
 		- Cutscene trigger
 		- Plane trigger
 		- Flag trigger
+		- Loading trigger
+		- Geo. property trigger
 		- Misc. trigger
 
 - Actor overlays (5d)

@@ -99,29 +99,46 @@ Application::~Application() {}
 Application::Application() {
 	using namespace GID;
 	using namespace GSO;
-	using namespace DSU::AssistMath;
+	using namespace DSU;
+	using namespace Light;
 	
 	GSO::Util::initQuickStart();
 
-	FAMMATRIX projectionTemp{ 
-		FAMMatrixPerspectiveFovLH(
-			AMConvertToRadians(General::gCfgGen.gCameraAngle), WindowNS::gWnd.get()->getAspectRatio(), 0.25f, 1000.0f
+	XMMATRIX projectionTemp{ 
+		XMMatrixPerspectiveFovLH(
+			XMConvertToRadians(General::gCfgGen.gCameraAngle), WindowNS::gWnd.get()->getAspectRatio(), 0.25f, 1000.0f
 		) 
 	};
 	Render::setGFXProjection(projectionTemp);
 
-	DSU::LightData light0{}; {
-		light0.type = (int32_t)DSU::LightConst::POINT_LIGHT;
+	LightData light0{}; {
+		light0.type = (uint32_t)POINT_LIGHT;
 		//light0.direction = { 1.0f, -1.0f, -1.0f, 0.0f };
-		light0.pos = { 0.0f, 20.0f, 60.0f, 1.0f };
-		light0.isEnabled = true;
+		light0.pos = { 60.0f, 30.0f, 60.0f, 1.0f };
+		light0.constAtten = 0.75f;
+		light0.linAtten = 0.0f;
+		light0.quadAtten = 0.0f;
+		light0.isEnabled = TRUE;
+	}
+	LightData light1{}; {
+		light1.type = (uint32_t)POINT_LIGHT;
+		//light0.direction = { 1.0f, -1.0f, -1.0f, 0.0f };
+		light1.pos = { -60.0f, 30.0f, -60.0f, 1.0f };
+		light1.constAtten = 0.75f;
+		light1.linAtten = 0.0f;
+		light1.quadAtten = 0.0f;
+		light1.isEnabled = TRUE;
 	}
 	Scene::addLight(light0);
+	Scene::addLight(light1);
 
-	Render::gGFX.getCamera().addScript(GID::DSU::ScriptID::AdvancedCameraFollow);
+	Render::gGFX.getCamera().addScript(SCRIPT_ID_CAMERA_UPDATE_ADVANCED_FOLLOW);
 
 	Scene::addActor({ "dragon" });
 	//Scene::addActor({ "testCube" });
+
+	gTexture0 = { L"textures\\Floor_C.jpg" };
+	gTexture1 = { L"textures\\Dragon_Bump_Col2.jpg" };
 
 	General::gGlobalTimer.mark();
 	Update::gTickTimer.mark();

@@ -1,18 +1,19 @@
 Memory Layout for .bin files for models.
 Notes:
 Even though .size() returns a size_t (8 or 16 bytes long) it will be truncated to a smaller unit (b/c an unsigned long long will never be filled by these sizes).
-Also, the basic idea here is, instead of storing each frame's full vertex data, we store the frame's delta data (what changed from last frame to this frame).
+Also, the basic idea here is, instead of storing each frame's full vertex data, we store all of the unique data across all frames and index them that way.
 
 ---------
 
-1. A 1-byte unsigned integer denoting the size of the string that follows.
+> A 1-byte unsigned integer denoting the size of the string that follows.
 
 Ex.
 00001000 -> Raw: 8. There will be 8 characters in the actor's name string.
 
 ---------
 
-2. The name of the actor is written, with a byte denoting an individual character in the name string.
+> The name of the actor is written, with a byte denoting an individual character in the name 
+string.
 
 Ex.
 01100001 01100011 01110100 01101111 01110010 -> "actor"
@@ -20,21 +21,21 @@ Ex.
 
 ---------
 
-3. A 1-byte unsigned integer denoting the amount of animations for the actor.
+> A 1-byte unsigned integer denoting the amount of animations for the actor.
 
 Ex.
 00000011 -> Raw: 3. There will be 3 animations for this actor.
 
 ---------
 
-4. A 1-byte unsigned integer denoting the length of the animation's name string.
+> A 1-byte unsigned integer denoting the length of the animation's name string.
 
 Ex.
 01000001 -> Raw: 65. There will be 65 characters in the animation's name string.
 
 ---------
 
-5. A variable-size (see above) chain of 1-byte characters for the animation's name.
+> A variable-size (see above) chain of 1-byte characters for the animation's name.
 
 Ex. 
 01101001 01100100 01101100 01100101 -> "idle"
@@ -42,27 +43,52 @@ Ex.
 
 ---------
 
-6. A 1-byte unsigned integer denoting the amount of objects for which there are indices for.
-
-Ex. 
-00000110 -> Raw: 6. There are 6 objects and 6 arrays of indices.
-
-Note: There is always one array of indices per object.
-Note: These indices represent vertex positions, texture coordinates, and normals of each object contained in the first frame of the animation.
-
----------
-
-7. A variable-size (see above) chain of 6-byte groupings of 3 unsigned shorts denoting an index into a table of a vertex's position, texture coordinates, and normals.
+> A 32-bit unsigned integer denoting the amount of vertex x-position-indices.
 
 Ex.
-01001011 11110110 -> Raw: 19,446. This vertex's position is index #19,446 in the table of vertex positions.
-01001110 11110100 -> Raw: 20,212. This vertex's texture coordinates is index #20,212 in the table of vertex texture coordinates.
-01001000 11000001 -> Raw: 18,625. This vertex's normal is index #18,625 in the table of vertex normals.
-
-Note: These unsigned shorts (2 bytes) will need to be promoted to unsigned integers (4 bytes) before bound to the vertex shader's structured buffers.
+00000000 00000001 01111101 00011111 -> Raw: 97,567. There are 97,567 unique vertex x-positions.
 
 ---------
 
-5. A 2-byte unsigned integer denoting the amount of frames in the nth animation.
+> A variable-size chain of 32-bit single-precision floating point values.
 
-00000001 11110100 -> Raw: 500. There are 500 frames in this animation.
+Ex.
+01000000 00100000 00000000 00000000 -> Raw: 2.5f. This vertex's x-position is 2.5.
+
+---------
+
+(y-pos-values, z-pos-values, u-tex-values, v-tex-values, x-norm-values, y-norm-values, and 
+z-norm-values follow the same layout as above)
+
+---------
+
+> A 32-bit unsigned integer denoting the amount of 3(p/p/p/t/t/n/n/n) indices.
+
+Ex.
+00000000 00000000 00000000 10000000 -> Raw: 255. There are 255 triangles.
+
+Note: Since every triangle will have three sets of indices, it would be better to store the amount 
+of triangles, with a byte stride of 96 bytes (3*8*4).
+
+---------
+
+> Each vertex now requires 8 different indices for data. 3 of these vertices (24ct, 32-bit unsigned 
+int values) and a triangle is made. The layout, if it were a .obj file, would look like this: 
+
+p/p/p/t/t/n/n/n p/p/p/t/t/n/n/n p/p/p/t/t/n/n/n
+
+Ex.
+
+00000000 00000000 00000000 00000100 -> Raw: 4. posxval x-value = 4th element in vertposxval table.
+00000000 00000000 00000000 00000010 -> Raw: 2. posyval = 2nd element in vertposyval table.
+00000000 00000000 00000000 00010000 -> Raw: 32. poszval = 32nd element in vertposzval table.
+
+00000000 00000000 00000000 00000001 -> Raw: 1. texuval = 1st element in verttexuval table.
+00000000 00000000 00000000 00000011 -> Raw: 3. texvval v-value = 3rd element in verttexvval table.
+
+00000000 00000000 00000000 00010000 -> Raw: 32. nrmxval = 32nd element in vertnrmxval table.
+00000000 00000000 00000000 00000010 -> Raw: 2. nrmyval = 2nd element in vertnrmyval table.
+00000000 00000000 00000000 00000100 -> Raw: 4. nrmzval = 4th element in vertnrmzval table.
+
+---------
+

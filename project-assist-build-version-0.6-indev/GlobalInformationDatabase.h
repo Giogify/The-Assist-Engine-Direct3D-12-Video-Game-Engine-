@@ -24,6 +24,8 @@
 #include <future>
 #include <regex>
 
+#include <DirectXMath.h>
+
 #include <d3dcompiler.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -75,16 +77,16 @@ using namespace DirectX;
 // The Global Information Database. Contains data structures to be instantiated by the Global State Object, which is also contained herein.
 // The Global State Object contains instances of data to track the current application state / game state.
 
-// Entire AssistMath lib.
+// Entire AssistMath lib. Used for supplementing the DirectXMath lib. 
 namespace GID::DSU::AssistMath {
-	constexpr float AM_PI = 3.1415926535897932384626433832795f;
-	constexpr float AM_2PI = 6.283185307179586476925286766559f;
-	constexpr float AM_1DIVPI = 3.1415926535897932384626433832795f;
-	constexpr float AM_1DIV2PI = 0.15915494309189533576888376337251f;
-	constexpr float AM_PIDIV2 = 1.5707963267948966192313216916398f;
-	constexpr float AM_PIDIV4 = 0.78539816339744830961566084581988f;
-	
-	constexpr float AM_SQRT2DIV2 = 0.70710678118654752440084436210485f;
+	constexpr double AM_PI = 3.1415926535897932384626433832795;
+	constexpr double AM_2PI = 6.283185307179586476925286766559;
+	constexpr double AM_1DIVPI = 3.1415926535897932384626433832795;
+	constexpr double AM_1DIV2PI = 0.15915494309189533576888376337251;
+	constexpr double AM_PIDIV2 = 1.5707963267948966192313216916398;
+	constexpr double AM_PIDIV4 = 0.78539816339744830961566084581988;
+
+	constexpr double AM_SQRT2DIV2 = 0.70710678118654752440084436210485;
 
 	constexpr uint32_t AM_SELECT_0 = 0x00000000;
 	constexpr uint32_t AM_SELECT_1 = 0xFFFFFFFF;
@@ -110,13 +112,10 @@ namespace GID::DSU::AssistMath {
 
 	// Unit conversion
 	inline double AMConvertToRadians(double deg) noexcept { return deg * (AM_PI / 180.0); }
-	inline float AMConvertToRadians(float deg) noexcept { return deg * ((float)AM_PI / 180.0f); }
 	inline double AMConvertToDegrees(double rad) noexcept { return rad * (180.0 / AM_PI); }
-	inline float AMConvertToDegrees(float rad) noexcept { return rad * (180.0f / (float)AM_PI); }
 
 	// Types
 	using AMVECTOR = __m256d;
-	using FAMVECTOR = __m128;
 	struct AMMATRIX {
 		AMVECTOR m[4]{};
 
@@ -146,242 +145,6 @@ namespace GID::DSU::AssistMath {
 			return res;
 		}
 	};
-	struct FAMMATRIX {
-		FAMVECTOR m[4]{};
-
-		FAMMATRIX operator*(const FAMMATRIX& m2) {
-			FAMMATRIX res{};
-
-			FAMMATRIX m2rot{
-				m2.m[0].m128_f32[0], m2.m[1].m128_f32[0], m2.m[2].m128_f32[0], m2.m[3].m128_f32[0],
-				m2.m[0].m128_f32[1], m2.m[1].m128_f32[1], m2.m[2].m128_f32[1], m2.m[3].m128_f32[1],
-				m2.m[0].m128_f32[2], m2.m[1].m128_f32[2], m2.m[2].m128_f32[2], m2.m[3].m128_f32[2],
-				m2.m[0].m128_f32[3], m2.m[1].m128_f32[3], m2.m[2].m128_f32[3], m2.m[3].m128_f32[3]
-			};
-
-			std::array<FAMVECTOR, 4u> a{ m[0], m[1], m[2], m[3] };
-			std::array<FAMVECTOR, 4u> b{ m2rot.m[0], m2rot.m[1], m2rot.m[2], m2rot.m[3] };
-
-			FAMVECTOR mulRes{};
-
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; j < 4; j++) {
-					mulRes = _mm_mul_ps(a[i], b[j]);
-					for (int k = 0; k < 4; k++) {
-						res.m[i].m128_f32[j] += mulRes.m128_f32[k];
-					}
-				}
-			}
-			return res;
-		}
-	};
-
-	struct AMFLOAT2 {
-		float x{};
-		float y{};
-
-		AMFLOAT2() = default;
-
-		AMFLOAT2(const AMFLOAT2&) = default;
-		AMFLOAT2& operator=(const AMFLOAT2&) = default;
-
-		AMFLOAT2(AMFLOAT2&&) = default;
-		AMFLOAT2& operator=(AMFLOAT2&&) = default;
-
-		constexpr AMFLOAT2(float _x, float _y) noexcept : x(_x), y(_y) {}
-		explicit AMFLOAT2(_In_reads_(2) const float* pArray)  noexcept : x(pArray[0]), y(pArray[1]) {}
-	};
-	struct AMFLOAT3 {
-		float x{};
-		float y{};
-		float z{};
-
-		AMFLOAT3() = default;
-
-		AMFLOAT3(const AMFLOAT3&) = default;
-		AMFLOAT3& operator=(const AMFLOAT3&) = default;
-
-		AMFLOAT3(AMFLOAT3&&) = default;
-		AMFLOAT3& operator=(AMFLOAT3&&) = default;
-
-		constexpr AMFLOAT3(float _x, float _y, float _z) noexcept : x(_x), y(_y), z(_z) {}
-		explicit AMFLOAT3(_In_reads_(3) const float* pArray) noexcept : x(pArray[0]), y(pArray[1]), z(pArray[2]) {}
-	};
-	struct AMFLOAT4 {
-		float x{};
-		float y{};
-		float z{};
-		float w{};
-
-		AMFLOAT4() = default;
-
-		AMFLOAT4(const AMFLOAT4&) = default;
-		AMFLOAT4& operator=(const AMFLOAT4&) = default;
-
-		AMFLOAT4(AMFLOAT4&&) = default;
-		AMFLOAT4& operator=(AMFLOAT4&&) = default;
-
-		constexpr AMFLOAT4(float _x, float _y, float _z, float _w) noexcept : x(_x), y(_y), z(_z), w(_w) {}
-		explicit AMFLOAT4(_In_reads_(4) const float* pArray) noexcept : x(pArray[0]), y(pArray[1]), z(pArray[2]), w(pArray[3]) {}
-
-		bool operator==(const AMFLOAT4&) const = default;
-		auto operator<=>(const AMFLOAT4&) const = default;
-	};
-	struct AMFLOAT3X3 {
-
-		union {
-			struct {
-				float _11, _12, _13;
-				float _21, _22, _23;
-				float _31, _32, _33;
-			};
-			float m[3][3];
-			float f[9];
-		};
-
-		AMFLOAT3X3() = default;
-
-		AMFLOAT3X3(const AMFLOAT3X3&) = default;
-		AMFLOAT3X3& operator=(const AMFLOAT3X3&) = default;
-
-		AMFLOAT3X3(AMFLOAT3X3&&) = default;
-		AMFLOAT3X3& operator=(AMFLOAT3X3&&) = default;
-
-		constexpr AMFLOAT3X3(
-			float m00, float m01, float m02,
-			float m10, float m11, float m12,
-			float m20, float m21, float m22) noexcept :
-			_11(m00), _12(m01), _13(m02),
-			_21(m10), _22(m11), _23(m12),
-			_31(m20), _32(m21), _33(m22) {}
-		explicit AMFLOAT3X3(_In_reads_(9) const float* pArray) noexcept :
-			_11(pArray[0]), _12(pArray[1]), _13(pArray[2]),
-			_21(pArray[3]), _22(pArray[4]), _23(pArray[5]),
-			_31(pArray[6]), _32(pArray[7]), _33(pArray[8]) {}
-
-		float operator() (size_t Row, size_t Column) const noexcept { return m[Row][Column]; }
-		float& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
-		bool operator==(const AMFLOAT3X3&) const = default;
-		auto operator<=>(const AMFLOAT3X3&) const = default;
-
-	};
-	struct AMFLOAT4X3 {
-
-		union {
-			struct {
-				float _11, _12, _13;
-				float _21, _22, _23;
-				float _31, _32, _33;
-				float _41, _42, _43;
-			};
-			float m[4][3];
-			float f[12];
-		};
-
-		AMFLOAT4X3() = default;
-
-		AMFLOAT4X3(const AMFLOAT4X3&) = default;
-		AMFLOAT4X3& operator=(const AMFLOAT4X3&) = default;
-
-		AMFLOAT4X3(AMFLOAT4X3&&) = default;
-		AMFLOAT4X3& operator=(AMFLOAT4X3&&) = default;
-
-		constexpr AMFLOAT4X3(
-			float m00, float m01, float m02,
-			float m10, float m11, float m12,
-			float m20, float m21, float m22,
-			float m30, float m31, float m32) noexcept :
-			_11(m00), _12(m01), _13(m02),
-			_21(m10), _22(m11), _23(m12),
-			_31(m20), _32(m21), _33(m22),
-			_41(m30), _42(m31), _43(m32) {}
-		explicit AMFLOAT4X3(_In_reads_(12) const float* pArray) noexcept :
-			_11(pArray[0]), _12(pArray[1]), _13(pArray[2]),
-			_21(pArray[3]), _22(pArray[4]), _23(pArray[5]),
-			_31(pArray[6]), _32(pArray[7]), _33(pArray[8]),
-			_41(pArray[9]), _42(pArray[10]), _43(pArray[11]) {}
-
-		float  operator() (size_t Row, size_t Column) const noexcept { return m[Row][Column]; }
-		float& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
-
-	};
-	struct AMFLOAT3X4 {
-
-		union {
-			struct {
-				float _11, _12, _13, _14;
-				float _21, _22, _23, _24;
-				float _31, _32, _33, _34;
-			};
-			float m[3][4];
-			float d[12];
-		};
-
-		AMFLOAT3X4() = default;
-
-		AMFLOAT3X4(const AMFLOAT3X4&) = default;
-		AMFLOAT3X4& operator=(const AMFLOAT3X4&) = default;
-
-		AMFLOAT3X4(AMFLOAT3X4&&) = default;
-		AMFLOAT3X4& operator=(AMFLOAT3X4&&) = default;
-
-		constexpr AMFLOAT3X4(
-			float m00, float m01, float m02, float m03,
-			float m10, float m11, float m12, float m13,
-			float m20, float m21, float m22, float m23) noexcept :
-			_11(m00), _12(m01), _13(m02), _14(m03),
-			_21(m10), _22(m11), _23(m12), _24(m13),
-			_31(m20), _32(m21), _33(m22), _34(m23) {}
-		explicit AMFLOAT3X4(_In_reads_(12) const float* pArray) noexcept :
-			_11(pArray[0]), _12(pArray[1]), _13(pArray[2]), _14(pArray[3]),
-			_21(pArray[4]), _22(pArray[5]), _23(pArray[6]), _24(pArray[7]),
-			_31(pArray[8]), _32(pArray[9]), _33(pArray[10]), _34(pArray[11]) {}
-
-		float  operator() (size_t Row, size_t Column) const  noexcept { return m[Row][Column]; }
-		float& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
-
-	};
-	struct AMFLOAT4X4 {
-
-		union {
-			struct {
-				float _11, _12, _13, _14;
-				float _21, _22, _23, _24;
-				float _31, _32, _33, _34;
-				float _41, _42, _43, _44;
-			};
-			float m[4][4];
-			float d[16];
-		};
-
-		AMFLOAT4X4() = default;
-
-		AMFLOAT4X4(const AMFLOAT4X4&) = default;
-		AMFLOAT4X4& operator=(const AMFLOAT4X4&) = default;
-
-		AMFLOAT4X4(AMFLOAT4X4&&) = default;
-		AMFLOAT4X4& operator=(AMFLOAT4X4&&) = default;
-
-		constexpr AMFLOAT4X4(
-			float m00, float m01, float m02, float m03,
-			float m10, float m11, float m12, float m13,
-			float m20, float m21, float m22, float m23,
-			float m30, float m31, float m32, float m33) noexcept :
-			_11(m00), _12(m01), _13(m02), _14(m03),
-			_21(m10), _22(m11), _23(m12), _24(m13),
-			_31(m20), _32(m21), _33(m22), _34(m23),
-			_41(m30), _42(m31), _43(m32), _44(m33) {}
-		explicit AMFLOAT4X4(_In_reads_(16) const float* pArray) noexcept :
-			_11(pArray[0]), _12(pArray[1]), _13(pArray[2]), _14(pArray[3]),
-			_21(pArray[4]), _22(pArray[5]), _23(pArray[6]), _24(pArray[7]),
-			_31(pArray[8]), _32(pArray[9]), _33(pArray[10]), _34(pArray[11]),
-			_41(pArray[12]), _42(pArray[13]), _43(pArray[14]), _44(pArray[15]) {}
-
-		float  operator() (size_t Row, size_t Column) const  noexcept { return m[Row][Column]; }
-		float& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
-
-	};
-
 	struct AMDOUBLE2 {
 		double x{};
 		double y{};
@@ -587,7 +350,6 @@ namespace GID::DSU::AssistMath {
 		double& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
 
 	};
-
 	struct AMUSHORT3X3 {
 
 		union {
@@ -624,22 +386,6 @@ namespace GID::DSU::AssistMath {
 		uint16_t& operator() (size_t Row, size_t Column) noexcept { return m[Row][Column]; }
 		bool operator==(const AMUSHORT3X3&) const = default;
 		auto operator<=>(const AMUSHORT3X3&) const = default;
-	};
-	struct AMUINT3 {
-		uint32_t x{};
-		uint32_t y{};
-		uint32_t z{};
-
-		AMUINT3() = default;
-
-		AMUINT3(const AMUINT3&) = default;
-		AMUINT3& operator=(const AMUINT3&) = default;
-
-		AMUINT3(AMUINT3&&) = default;
-		AMUINT3& operator=(AMUINT3&&) = default;
-
-		constexpr AMUINT3(uint32_t _x, uint32_t _y, uint32_t _z) noexcept : x(_x), y(_y), z(_z) {}
-		explicit AMUINT3(_In_reads_(3) const uint32_t* pArray) noexcept : x(pArray[0]), y(pArray[1]), z(pArray[2]) {}
 	};
 	struct AMUINT3X3 {
 
@@ -678,941 +424,40 @@ namespace GID::DSU::AssistMath {
 		bool operator==(const AMUINT3X3&) const = default;
 		auto operator<=>(const AMUINT3X3&) const = default;
 	};
-
-	// Load
-	inline AMVECTOR AMLoadDouble2(const AMDOUBLE2& src) noexcept {
-		return { _mm256_set_pd(src.x, src.y, 0.0, 0.0) };
-	}
-	inline AMVECTOR AMLoadDouble3(const AMDOUBLE3& src) noexcept {
-		return { _mm256_set_pd(0.0, src.z, src.y, src.x) };
-	}
-	inline AMVECTOR AMLoadDouble4(const AMDOUBLE4& src) noexcept {
-		return { _mm256_set_pd(src.x, src.y, src.z, src.w) };
-	}
-	inline AMMATRIX AMLoadDouble3x3(const AMDOUBLE3X3& src) noexcept {
-		return {
-			_mm256_set_pd(src._11, src._12, src._13, 0.0),
-			_mm256_set_pd(src._21, src._22, src._23, 0.0),
-			_mm256_set_pd(src._31, src._32, src._33, 0.0),
-			_mm256_set_pd(0.0,     0.0,     0.0,     0.0)
-		};
-	}
-	inline AMMATRIX AMLoadDouble4x3(const AMDOUBLE4X3& src) noexcept {
-		return {
-			_mm256_set_pd(src._11, src._12, src._13, 0.0),
-			_mm256_set_pd(src._21, src._22, src._23, 0.0),
-			_mm256_set_pd(src._31, src._32, src._33, 0.0),
-			_mm256_set_pd(src._41, src._41, src._41, 0.0)
-		};
-	}
-	inline AMMATRIX AMLoadDouble3x4(const AMDOUBLE3X4& src) noexcept {
-		return {
-			_mm256_set_pd(src._11, src._12, src._13, src._14),
-			_mm256_set_pd(src._21, src._22, src._23, src._24),
-			_mm256_set_pd(src._31, src._32, src._33, src._34),
-			_mm256_set_pd(0.0,     0.0,     0.0,     0.0)
-		};
-	}
-	inline AMMATRIX AMLoadDouble4x4(const AMDOUBLE4X4& src) noexcept {
-		return {
-			_mm256_set_pd(src._14, src._13, src._12, src._11),
-			_mm256_set_pd(src._24, src._23, src._22, src._21),
-			_mm256_set_pd(src._34, src._33, src._32, src._31),
-			_mm256_set_pd(src._44, src._43, src._42, src._41)
-		};
-	}
-
-	inline FAMVECTOR AMLoadFloat2(const AMFLOAT2& src) noexcept {
-		return { _mm_set_ps(0.0f, 0.0f, src.y, src.x) };
-	}
-	inline FAMVECTOR AMLoadFloat3(const AMFLOAT3& src) noexcept {
-		return { _mm_set_ps(0.0f, src.z, src.y, src.x) };
-	}
-	inline FAMVECTOR AMLoadFloat4(const AMFLOAT4& src) noexcept {
-		return { _mm_set_ps(src.w, src.z, src.y, src.x) };
-	}
-	inline FAMMATRIX AMLoadFloat3x3(const AMFLOAT3X3& src) noexcept {
-		return {
-			_mm_set_ps(src._13,	src._12,	src._11,	0.0f),
-			_mm_set_ps(src._23,	src._22,	src._21,	0.0f),
-			_mm_set_ps(src._33,	src._32,	src._31,	0.0f),
-			_mm_set_ps(0.0f,	0.0f,     0.0f,			0.0f)
-		};
-	}
-	inline FAMMATRIX AMLoadFloat4x3(const AMFLOAT4X3& src) noexcept {
-		return {
-			_mm_set_ps(src._13,	src._12,	src._11,	0.0f),
-			_mm_set_ps(src._23,	src._22,	src._21,	0.0f),
-			_mm_set_ps(src._33,	src._32,	src._31,	0.0f),
-			_mm_set_ps(src._43,	src._42,	src._41,	0.0f)
-		};
-	}
-	inline FAMMATRIX AMLoadFloat3x4(const AMFLOAT3X4& src) noexcept {
-		return {
-			_mm_set_ps(src._14,	src._13,	src._12,	src._11),
-			_mm_set_ps(src._24,	src._23,	src._22,	src._21),
-			_mm_set_ps(src._34,	src._33,	src._32,	src._31),
-			_mm_set_ps(0.0f,	0.0f,		0.0f,		0.0f)
-		};
-	}
-	inline FAMMATRIX AMLoadFloat4x4(const AMFLOAT4X4& src) noexcept {
-		return {
-			_mm_set_ps(src._14,	src._13,	src._12,	src._11),
-			_mm_set_ps(src._24,	src._23,	src._22,	src._21),
-			_mm_set_ps(src._34,	src._33,	src._32,	src._31),
-			_mm_set_ps(src._44,	src._43,	src._42,	src._41)
-		};
-	}
-
-	// Store (ref)
-	inline void AMStoreDouble2(AMDOUBLE2& dst, AMVECTOR& V) noexcept {
-		dst.x = V.m256d_f64[0];
-		dst.y = V.m256d_f64[1];
-	}
-	inline void AMStoreDouble3(AMDOUBLE3& dst, AMVECTOR& V) noexcept {
-		dst.x = V.m256d_f64[0];
-		dst.y = V.m256d_f64[1];
-		dst.z = V.m256d_f64[2];
-	}
-	inline void AMStoreDouble4(AMDOUBLE4& dst, AMVECTOR& V) noexcept {
-		/*dst.x = V.m256d_f64[0];
-		dst.y = V.m256d_f64[1];
-		dst.z = V.m256d_f64[2];
-		dst.w = V.m256d_f64[3];*/
-		_mm256_store_pd((double*)&dst, V);
-	}
-	inline void AMStoreDouble3x3(AMDOUBLE3X3& dst, AMMATRIX& M) noexcept {
-		for (uint8_t i = 0; i < 3; i++)
-			for (uint8_t j = 0; j < 3; j++)
-				dst.m[i][j] = M.m[i].m256d_f64[j];
-	}
-	inline void AMStoreDouble4x3(AMDOUBLE4X3& dst, AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		for (uint8_t i = 0; i < 4; i++)
-			for (uint8_t j = 0; j < 3; j++)
-				dst.m[i][j] = m[i][j];
-	}
-	inline void AMStoreDouble3x4(AMDOUBLE3X4& dst, AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		for (uint8_t i = 0; i < 3; i++)
-			for (uint8_t j = 0; j < 4; j++)
-				dst.m[i][j] = m[i][j];
-	}
-	inline void AMStoreDouble4x4(AMDOUBLE4X4& dst, AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		for (uint8_t i = 0; i < 4; i++)
-			for (uint8_t j = 0; j < 4; j++)
-				dst.m[i][j] = m[i][j];
-	}
-
-	inline void AMStoreFloat2(AMFLOAT2& dst, FAMVECTOR& V) noexcept {
-		dst.x = V.m128_f32[0];
-		dst.y = V.m128_f32[1];
-	}
-	inline void AMStoreFloat3(AMFLOAT3& dst, FAMVECTOR& V) noexcept {
-		dst.x = V.m128_f32[0];
-		dst.y = V.m128_f32[1];
-		dst.z = V.m128_f32[2];
-	}
-	inline void AMStoreFloat4(AMFLOAT4& dst, FAMVECTOR& V) noexcept {
-		dst.x = V.m128_f32[0];
-		dst.y = V.m128_f32[1];
-		dst.z = V.m128_f32[2];
-		dst.w = V.m128_f32[3];
-	}
-	inline void AMStoreFloat3x3(AMFLOAT3X3& dst, FAMMATRIX& M) noexcept {
-		for (uint8_t i = 0; i < 3; i++)
-			for (uint8_t j = 0; j < 3; j++)
-				dst.m[i][j] = M.m[i].m128_f32[j];
-	}
-	inline void AMStoreFloat4x3(AMFLOAT4X3& dst, FAMMATRIX& M) noexcept {
-		for (uint8_t i = 0; i < 4; i++)
-			for (uint8_t j = 0; j < 3; j++)
-				dst.m[i][j] = M.m[i].m128_f32[j];
-	}
-	inline void AMStoreFloat3x4(AMFLOAT3X4& dst, FAMMATRIX& M) noexcept {
-		for (uint8_t i = 0; i < 3; i++)
-			for (uint8_t j = 0; j < 4; j++)
-				dst.m[i][j] = M.m[i].m128_f32[j];
-	}
-	inline void AMStoreFloat4x4(AMFLOAT4X4& dst, FAMMATRIX& M) noexcept {
-		for (uint8_t i = 0; i < 4; i++)
-			for (uint8_t j = 0; j < 4; j++)
-				dst.m[i][j] = M.m[i].m128_f32[j];
-	}
-
-	// Store (new)
-	inline AMDOUBLE2 AMStoreDouble2(AMVECTOR& V) noexcept {
-		return { V.m256d_f64[0], V.m256d_f64[1] };
-	}
-	inline AMDOUBLE3 AMStoreDouble3(AMVECTOR& V) noexcept {
-		return { V.m256d_f64[0], V.m256d_f64[1], V.m256d_f64[2] };
-	}
-	inline AMDOUBLE4 AMStoreDouble4(AMVECTOR& V) noexcept {
-		return { V.m256d_f64[0], V.m256d_f64[1], V.m256d_f64[2], V.m256d_f64[3] };
-	}
-	inline AMDOUBLE3X3 AMStoreDouble3x3(AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		return {
-			m[0][0], m[0][1], m[0][2],
-			m[1][0], m[1][1], m[1][2],
-			m[2][0], m[2][1], m[2][2]
-		};
-	}
-	inline AMDOUBLE4X3 AMStoreDouble4x3(AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		return {
-			m[0][0], m[0][1], m[0][2],
-			m[1][0], m[1][1], m[1][2],
-			m[2][0], m[2][1], m[2][2],
-			m[3][0], m[3][1], m[3][2]
-		};
-	}
-	inline AMDOUBLE3X4 AMStoreDouble3x4(AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		return {
-			m[0][0], m[0][1], m[0][2], m[0][3],
-			m[1][0], m[1][1], m[1][2], m[1][3],
-			m[2][0], m[2][1], m[2][2], m[2][3]
-		};
-	}
-	inline AMDOUBLE4X4 AMStoreDouble4x4(AMMATRIX& M) noexcept {
-		double m[4][4]{};
-		_mm256_store_pd(m[0], M.m[0]);
-		return {
-			m[0][0], m[0][1], m[0][2], m[0][3],
-			m[1][0], m[1][1], m[1][2], m[1][3],
-			m[2][0], m[2][1], m[2][2], m[2][3],
-			m[3][0], m[3][1], m[3][2], m[3][3]
-		};
-	}
-
-	// Forward decs
-	inline FAMVECTOR FAMVector4Normalize(const FAMVECTOR& vec);
-	inline FAMVECTOR FAMVector4DotProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1);
-	inline FAMVECTOR FAMVector4CrossProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1);
-	inline float FAMVector4SumVector(const FAMVECTOR& vec);
-	inline float FAMVector4Magnitude(const FAMVECTOR& vec);
-	inline FAMVECTOR FAMVector4Negate(const FAMVECTOR& vec);
-
-	inline FAMMATRIX FAMMatrixIdentity() {
-		return {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
-	}
-	inline FAMMATRIX FAMMatrixRotationRollPitchYaw(FAMVECTOR& vec) {
-		FAMVECTOR cosvec{};
-		FAMVECTOR sinvec{ _mm_sincos_ps(&cosvec, vec) };
-
-		FAMMATRIX yRot{
-			cosvec.m128_f32[1],    0.0,    sinvec.m128_f32[1],    0.0,
-			0.0,                    1.0,    0.0,                    0.0,
-			-sinvec.m128_f32[1],   0.0,    cosvec.m128_f32[1],    0.0,
-			0.0,                    0.0,    0.0,                    1.0
-		};
-		FAMMATRIX xRot{
-			1.0,	0.0,					0.0,                    0.0,
-			0.0,	cosvec.m128_f32[0],    -sinvec.m128_f32[0],	0.0,
-			0.0,	sinvec.m128_f32[0],	cosvec.m128_f32[0],	0.0,
-			0.0,	0.0,					0.0,					1.0
-		};
-		FAMMATRIX zRot{
-			cosvec.m128_f32[2],	-sinvec.m128_f32[2],	0.0,	0.0,
-			sinvec.m128_f32[2],	cosvec.m128_f32[2],	0.0,	0.0,
-			0.0,					0.0,					1.0,    0.0,
-			0.0,					0.0,					0.0,	1.0
-		};
-
-		return { yRot * xRot * zRot };
-	}
-	inline FAMMATRIX FAMMatrixTranslation(FAMVECTOR& vec) {
-		return {
-			1.0, 0.0, 0.0, 0.0,
-			0.0, 1.0, 0.0, 0.0,
-			0.0, 0.0, 1.0, 0.0,
-			vec.m128_f32[0], vec.m128_f32[1], vec.m128_f32[2], 1.0
-		};
-	}
-	inline FAMVECTOR FAMMatrixDeterminant(FAMMATRIX& mx) {
-		/*double a{ mx.m[0].m256d_f64[0] }; double b{ mx.m[0].m256d_f64[1] }; double c{ mx.m[0].m256d_f64[2] }; double d{ mx.m[0].m256d_f64[3] };
-		double e{ mx.m[1].m256d_f64[0] }; double f{ mx.m[1].m256d_f64[1] }; double g{ mx.m[1].m256d_f64[2] }; double h{ mx.m[1].m256d_f64[3] };
-		double i{ mx.m[2].m256d_f64[0] }; double j{ mx.m[2].m256d_f64[1] }; double k{ mx.m[2].m256d_f64[2] }; double l{ mx.m[2].m256d_f64[3] };
-		double m{ mx.m[3].m256d_f64[0] }; double n{ mx.m[3].m256d_f64[1] }; double o{ mx.m[3].m256d_f64[2] }; double p{ mx.m[3].m256d_f64[3] };*/
-		/*double _0 = a / a;
-		double _1 = b / a;
-		double _2 = c / a;
-		double _3 = d / a;
-
-		double _4 = _0 * (e / _0);
-		double _5 = _1 * (e / _0);
-		double _6 = _2 * (e / _0);
-		double _7 = _3 * (e / _0);
-
-		double _8 = e - _4;
-		double _9 = f - _5;
-		double _10 = g - _6;
-		double _11 = h - _7;
-
-		double _12 = a * (i / a);
-		double _13 = b * (i / a);
-		double _14 = c * (i / a);
-		double _15 = d * (i / a);
-
-		double _16 = i - _12;
-		double _17 = j - _13;
-		double _18 = k - _14;
-		double _19 = l - _15;
-
-		double _20 = a * (m / a);
-		double _21 = b * (m / a);
-		double _22 = c * (m / a);
-		double _23 = d * (m / a);
-
-		double _24 = m - _20;
-		double _25 = n - _21;
-		double _26 = o - _22;
-		double _27 = p - _23;
-
-		double _28 = _8 / _9;
-		double _29 = _9 / _9;
-		double _30 = _10 / _9;
-		double _31 = _11 / _9;
-
-		double _32 = _28 * _17;
-		double _33 = _29 * _17;
-		double _34 = _30 * _17;
-		double _35 = _31 * _17;
-
-		double _36 = _16 - _32;
-		double _37 = _17 - _33;
-		double _38 = _18 - _34;
-		double _39 = _19 - _35;
-
-		double _40 = _28 * _25;
-		double _41 = _29 * _25;
-		double _42 = _30 * _25;
-		double _43 = _31 * _25;
-
-		double _44 = _24 - _40;
-		double _45 = _25 - _41;
-		double _46 = _26 - _42;
-		double _47 = _27 - _43;
-
-		double _48 = _36 / _38;
-		double _49 = _37 / _38;
-		double _50 = _38 / _38;
-		double _51 = _39 / _38;
-
-		double _52 = _48 * _46;
-		double _53 = _49 * _46;
-		double _54 = _50 * _46;
-		double _55 = _51 * _46;
-
-		double _56 = _44 - _52;
-		double _57 = _45 - _53;
-		double _58 = _46 - _54;
-		double _59 = _47 - _55;
-
-		return {AMLoadDouble4({a, _9, _38, _59})};*/
-		FAMVECTOR _0{ _mm_div_ps(mx.m[0], _mm_set_ps1(mx.m[0].m128_f32[0])) };
-		FAMVECTOR _1{ _mm_mul_ps(_0, _mm_set_ps1(mx.m[1].m128_f32[0] / _0.m128_f32[0])) };
-		FAMVECTOR _2{ _mm_sub_ps(mx.m[1], _1) };
-		FAMVECTOR _3{ _mm_mul_ps(mx.m[0], _mm_set_ps1(mx.m[2].m128_f32[0] / mx.m[0].m128_f32[0])) };
-		FAMVECTOR _4{ _mm_sub_ps(mx.m[2], _3) };
-		FAMVECTOR _5{ _mm_mul_ps(mx.m[0], _mm_set_ps1(mx.m[3].m128_f32[0] / mx.m[0].m128_f32[0])) };
-		FAMVECTOR _6{ _mm_sub_ps(mx.m[3], _5) };
-		FAMVECTOR _7{ _mm_div_ps(_2, _mm_set_ps1(_2.m128_f32[1])) };
-		FAMVECTOR _8{ _mm_mul_ps(_7, _mm_set_ps1(_4.m128_f32[1])) };
-		FAMVECTOR _9{ _mm_sub_ps(_4, _8) };
-		FAMVECTOR _10{ _mm_mul_ps(_7, _mm_set_ps1(_6.m128_f32[1])) };
-		FAMVECTOR _11{ _mm_sub_ps(_6, _10) };
-		FAMVECTOR _12{ _mm_div_ps(_9, _mm_set_ps1(_9.m128_f32[2])) };
-		FAMVECTOR _13{ _mm_mul_ps(_12, _mm_set_ps1(_11.m128_f32[2])) };
-		FAMVECTOR _14{ _mm_sub_ps(_11, _13) };
-		FAMVECTOR result = AMLoadFloat4({ mx.m[0].m128_f32[0], _2.m128_f32[1], _9.m128_f32[2], _14.m128_f32[3] });
-		return { AMLoadFloat4({mx.m[0].m128_f32[0], _2.m128_f32[1], _9.m128_f32[2], _14.m128_f32[3]}) };
-
-		/*f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n);
-		e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m);
-		e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m);
-		e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m);*/
-		/*auto _a = a * (f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n));
-		auto _b = b * (e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m));
-		auto _c = c * (e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m));
-		auto _d = d * (e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m));
-
-		return AMLoadDouble4({ _a, _b, _c, _d });*/
-		/*AMVECTOR _0{ AMLoadDouble4({a, b, c, d}) };
-
-		AMVECTOR _1{ AMLoadDouble4({f, e, e, e}) };
-		AMVECTOR _2{ AMLoadDouble4({g, g, f, f}) };
-		AMVECTOR _3{ AMLoadDouble4({h, h, h, g}) };
-
-		AMVECTOR _4{ AMLoadDouble4({k, k, j, j}) };
-		AMVECTOR _5{ AMLoadDouble4({p, p, p, o}) };
-		AMVECTOR _6{ AMLoadDouble4({l, l, l, k}) };
-		AMVECTOR _7{ AMLoadDouble4({o, o, n, n}) };
-		AMVECTOR _8{ AMLoadDouble4({j, i, i, i}) };
-		AMVECTOR _9{ AMLoadDouble4({n, m, m, m}) };
-
-		AMVECTOR op1 = _mm256_mul_pd(_4, _5);
-		AMVECTOR op2 = _mm256_mul_pd(_6, _7);
-		AMVECTOR op3 = _mm256_mul_pd(_8, _5);
-		AMVECTOR op4 = _mm256_mul_pd(_6, _9);
-		AMVECTOR op5 = _mm256_mul_pd(_8, _7);
-		AMVECTOR op6 = _mm256_mul_pd(_4, _9);
-
-		AMVECTOR op7 = _mm256_sub_pd(op1, op2);
-		AMVECTOR op8 = _mm256_sub_pd(op3, op4);
-		AMVECTOR op9 = _mm256_sub_pd(op5, op6);
-
-		AMVECTOR op10 = _mm256_mul_pd(_1, op7);
-		AMVECTOR op11 = _mm256_mul_pd(_2, op8);
-		AMVECTOR op12 = _mm256_mul_pd(_3, op9);
-
-		AMVECTOR op13 = _mm256_sub_pd(op10, op11);
-		AMVECTOR op14 = _mm256_add_pd(op13, op12);
-
-		return _mm256_mul_pd(_0, op14);*/
-		/*return _mm256_mul_pd(AMLoadDouble4({ mx.m[0].m256d_f64[0], mx.m[0].m256d_f64[1], mx.m[0].m256d_f64[2], mx.m[0].m256d_f64[3] }),
-			_mm256_add_pd(_mm256_sub_pd(
-				_mm256_mul_pd(AMLoadDouble4({ mx.m[1].m256d_f64[1], mx.m[1].m256d_f64[0], mx.m[1].m256d_f64[0], mx.m[1].m256d_f64[0] }),
-				_mm256_sub_pd(
-					_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[2], mx.m[2].m256d_f64[2], mx.m[2].m256d_f64[1], mx.m[2].m256d_f64[1] }),
-						AMLoadDouble4({ mx.m[3].m256d_f64[3], mx.m[3].m256d_f64[3], mx.m[3].m256d_f64[3], mx.m[3].m256d_f64[2] })),
-				_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[3], mx.m[2].m256d_f64[3], mx.m[2].m256d_f64[3], mx.m[2].m256d_f64[2] }),
-					AMLoadDouble4({ mx.m[3].m256d_f64[2], mx.m[3].m256d_f64[2], mx.m[3].m256d_f64[1], mx.m[3].m256d_f64[1] })))),
-				_mm256_mul_pd(AMLoadDouble4({ mx.m[1].m256d_f64[2], mx.m[1].m256d_f64[2], mx.m[1].m256d_f64[1], mx.m[1].m256d_f64[1] }),
-					_mm256_sub_pd(_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[1], mx.m[2].m256d_f64[0], mx.m[2].m256d_f64[0], mx.m[2].m256d_f64[0] }),
-						AMLoadDouble4({ mx.m[3].m256d_f64[3], mx.m[3].m256d_f64[3], mx.m[3].m256d_f64[3], mx.m[3].m256d_f64[2] })),
-						_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[3], mx.m[2].m256d_f64[3], mx.m[2].m256d_f64[3], mx.m[2].m256d_f64[2] }),
-							AMLoadDouble4({ mx.m[3].m256d_f64[1], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0] }))))),
-				_mm256_mul_pd(AMLoadDouble4({ mx.m[1].m256d_f64[3], mx.m[1].m256d_f64[3], mx.m[1].m256d_f64[3], mx.m[1].m256d_f64[2] }),
-					_mm256_sub_pd(_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[1], mx.m[2].m256d_f64[0], mx.m[2].m256d_f64[0], mx.m[2].m256d_f64[0] }),
-						AMLoadDouble4({ mx.m[3].m256d_f64[2], mx.m[3].m256d_f64[2], mx.m[3].m256d_f64[1], mx.m[3].m256d_f64[1] })),
-						_mm256_mul_pd(AMLoadDouble4({ mx.m[2].m256d_f64[2], mx.m[2].m256d_f64[2], mx.m[2].m256d_f64[1], mx.m[2].m256d_f64[1] }),
-							AMLoadDouble4({ mx.m[3].m256d_f64[1], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0], mx.m[3].m256d_f64[0] }))))));*/
-	}
-	inline FAMMATRIX FAMMatrixPerspectiveFovLH(float fov, float ar, float n, float f) {
-		float ySc = 1.f / std::tan(fov / 2.f);
-		float dz = f - n;
-		return {
-			ySc / ar,		0.0,		0.0,		0.0,
-			0.0,		ySc,		0.0,		0.0,
-			0.0,		0.0,		f / dz,		1.0,
-			0.0,		0.0,		-n * (f / dz),	0.0
-		};
-	}
-	inline FAMMATRIX FAMMatrixLookAtLH(FAMVECTOR& eye, FAMVECTOR& focus, FAMVECTOR upDirection) {
-		return { FAMMatrixIdentity() }; // implement this later
-	}
-	inline FAMMATRIX FAMMatrixLookToLH(FAMVECTOR& eye, FAMVECTOR& direction, FAMVECTOR upDirection) {
-		FAMVECTOR F = direction;
-		FAMVECTOR R = FAMVector4Normalize(FAMVector4CrossProduct(upDirection, F));
-		FAMVECTOR U = FAMVector4CrossProduct(F, R);
-
-		F = FAMVector4Normalize(F);
-		R = FAMVector4Normalize(R);
-		U = FAMVector4Normalize(U);
-
-		float x{ -FAMVector4SumVector(FAMVector4DotProduct(R, eye)) };
-		float y{ -FAMVector4SumVector(FAMVector4DotProduct(U, eye)) };
-		float z{ -FAMVector4SumVector(FAMVector4DotProduct(F, eye)) };
-
-		return {
-			R.m128_f32[0],	U.m128_f32[0],	F.m128_f32[0],	0.0f,
-			R.m128_f32[1],	U.m128_f32[1],	F.m128_f32[1],	0.0f,
-			R.m128_f32[2],	U.m128_f32[2],	F.m128_f32[2],	0.0f,
-			x,				y,				z,				1.0f,
-		};
-	}
-	inline FAMVECTOR FAMVector4Transform(FAMVECTOR& vec, FAMMATRIX& mx) {
-		FAMVECTOR res{};
-
-		FAMMATRIX m2rot{
-			mx.m[0].m128_f32[0], mx.m[1].m128_f32[0], mx.m[2].m128_f32[0], mx.m[3].m128_f32[0],
-			mx.m[0].m128_f32[1], mx.m[1].m128_f32[1], mx.m[2].m128_f32[1], mx.m[3].m128_f32[1],
-			mx.m[0].m128_f32[2], mx.m[1].m128_f32[2], mx.m[2].m128_f32[2], mx.m[3].m128_f32[2],
-			mx.m[0].m128_f32[3], mx.m[1].m128_f32[3], mx.m[2].m128_f32[3], mx.m[3].m128_f32[3]
-		};
-
-		std::array<FAMVECTOR, 4u> a{ m2rot.m[0], m2rot.m[1], m2rot.m[2], m2rot.m[3] };
-
-		FAMVECTOR mulRes{};
-
-		for (int i = 0; i < 4; i++) {
-			mulRes = _mm_mul_ps(vec, a[i]);
-			for (int j = 0; j < 4; j++) {
-				res.m128_f32[i] += mulRes.m128_f32[j];
-			}
-		}
-		return res;
-	}
-	inline FAMMATRIX FAMMatrixTranspose(FAMMATRIX& mx) {
-		return {
-			mx.m[0].m128_f32[0], mx.m[1].m128_f32[0], mx.m[2].m128_f32[0], mx.m[3].m128_f32[0],
-			mx.m[0].m128_f32[1], mx.m[1].m128_f32[1], mx.m[2].m128_f32[1], mx.m[3].m128_f32[1],
-			mx.m[0].m128_f32[2], mx.m[1].m128_f32[2], mx.m[2].m128_f32[2], mx.m[3].m128_f32[2],
-			mx.m[0].m128_f32[3], mx.m[1].m128_f32[3], mx.m[2].m128_f32[3], mx.m[3].m128_f32[3]
-		};
-	}
-	inline FAMMATRIX FAMMatrixInverse(FAMVECTOR& det, FAMMATRIX& mx) {
-		FAMMATRIX mxI{ FAMMatrixIdentity() };
-		if (det.m128_f32[0] * det.m128_f32[1] * det.m128_f32[2] * det.m128_f32[3] == 0.0f)
-			return mxI;
-		//double a1{ mx.m[0].m256d_f64[0] }; double b1{ mx.m[0].m256d_f64[1] }; double c1{ mx.m[0].m256d_f64[2] }; double d1{ mx.m[0].m256d_f64[3] };
-		//double e1{ mx.m[1].m256d_f64[0] }; double f1{ mx.m[1].m256d_f64[1] }; double g1{ mx.m[1].m256d_f64[2] }; double h1{ mx.m[1].m256d_f64[3] };
-		//double i1{ mx.m[2].m256d_f64[0] }; double j1{ mx.m[2].m256d_f64[1] }; double k1{ mx.m[2].m256d_f64[2] }; double l1{ mx.m[2].m256d_f64[3] };
-		//double m1{ mx.m[3].m256d_f64[0] }; double n1{ mx.m[3].m256d_f64[1] }; double o1{ mx.m[3].m256d_f64[2] }; double p1{ mx.m[3].m256d_f64[3] };
-		FAMVECTOR _0{ _mm_div_ps(mx.m[0], _mm_set_ps1(mx.m[0].m128_f32[0])) };
-		FAMVECTOR _1{ _mm_div_ps(mxI.m[0], _mm_set_ps1(mx.m[0].m128_f32[0])) };
-		FAMVECTOR _2{ _mm_mul_ps(_0, _mm_set_ps1(mx.m[1].m128_f32[0])) };
-		FAMVECTOR _3{ _mm_mul_ps(_1, _mm_set_ps1(mx.m[1].m128_f32[0])) };
-		FAMVECTOR _4{ _mm_sub_ps(mx.m[1], _2) };
-		FAMVECTOR _5{ _mm_sub_ps(mxI.m[1], _3) };
-		FAMVECTOR _6{ _mm_mul_ps(_0, _mm_set_ps1(mx.m[2].m128_f32[0])) };
-		FAMVECTOR _7{ _mm_mul_ps(_1, _mm_set_ps1(mx.m[2].m128_f32[0])) };
-		FAMVECTOR _8{ _mm_sub_ps(mx.m[2], _6) };
-		FAMVECTOR _9{ _mm_sub_ps(mxI.m[2], _7) };
-		FAMVECTOR _10{ _mm_mul_ps(_0, _mm_set_ps1(mx.m[3].m128_f32[0])) };
-		FAMVECTOR _11{ _mm_mul_ps(_1, _mm_set_ps1(mx.m[3].m128_f32[0])) };
-		FAMVECTOR _12{ _mm_sub_ps(mx.m[3], _10) };
-		FAMVECTOR _13{ _mm_sub_ps(mxI.m[3], _11) };
-		FAMVECTOR _14{ _mm_div_ps(_4, _mm_set_ps1(_4.m128_f32[1])) };
-		FAMVECTOR _15{ _mm_div_ps(_5, _mm_set_ps1(_4.m128_f32[1])) };
-		FAMVECTOR _16{ _mm_mul_ps(_14, _mm_set_ps1(_0.m128_f32[1])) };
-		FAMVECTOR _17{ _mm_mul_ps(_15, _mm_set_ps1(_0.m128_f32[1])) };
-		FAMVECTOR _18{ _mm_sub_ps(_0, _16) };
-		FAMVECTOR _19{ _mm_sub_ps(_1, _17) };
-		FAMVECTOR _20{ _mm_mul_ps(_14, _mm_set_ps1(_8.m128_f32[1])) };
-		FAMVECTOR _21{ _mm_mul_ps(_15, _mm_set_ps1(_8.m128_f32[1])) };
-		FAMVECTOR _22{ _mm_sub_ps(_8, _20) };
-		FAMVECTOR _23{ _mm_sub_ps(_9, _21) };
-		FAMVECTOR _24{ _mm_mul_ps(_14, _mm_set_ps1(_12.m128_f32[1])) };
-		FAMVECTOR _25{ _mm_mul_ps(_15, _mm_set_ps1(_12.m128_f32[1])) };
-		FAMVECTOR _26{ _mm_sub_ps(_12, _24) };
-		FAMVECTOR _27{ _mm_sub_ps(_13, _25) };
-		FAMVECTOR _28{ _mm_div_ps(_22, _mm_set_ps1(_22.m128_f32[2])) };
-		FAMVECTOR _29{ _mm_div_ps(_23, _mm_set_ps1(_22.m128_f32[2])) };
-		FAMVECTOR _30{ _mm_mul_ps(_28, _mm_set_ps1(_18.m128_f32[2])) };
-		FAMVECTOR _31{ _mm_mul_ps(_29, _mm_set_ps1(_18.m128_f32[2])) };
-		FAMVECTOR _32{ _mm_sub_ps(_18, _30) };
-		FAMVECTOR _33{ _mm_sub_ps(_19, _31) };
-		FAMVECTOR _34{ _mm_mul_ps(_28, _mm_set_ps1(_14.m128_f32[2])) };
-		FAMVECTOR _35{ _mm_mul_ps(_29, _mm_set_ps1(_14.m128_f32[2])) };
-		FAMVECTOR _36{ _mm_sub_ps(_14, _34) };
-		FAMVECTOR _37{ _mm_sub_ps(_15, _35) };
-		FAMVECTOR _38{ _mm_mul_ps(_28, _mm_set_ps1(_26.m128_f32[2])) };
-		FAMVECTOR _39{ _mm_mul_ps(_29, _mm_set_ps1(_26.m128_f32[2])) };
-		FAMVECTOR _40{ _mm_sub_ps(_26, _38) };
-		FAMVECTOR _41{ _mm_sub_ps(_27, _39) };
-		FAMVECTOR _42{ _mm_div_ps(_40, _mm_set_ps1(_40.m128_f32[3])) };
-		FAMVECTOR _43{ _mm_div_ps(_41, _mm_set_ps1(_40.m128_f32[3])) };
-		FAMVECTOR _44{ _mm_mul_ps(_42, _mm_set_ps1(_32.m128_f32[3])) };
-		FAMVECTOR _45{ _mm_mul_ps(_43, _mm_set_ps1(_32.m128_f32[3])) };
-		FAMVECTOR _46{ _mm_sub_ps(_32, _44) };
-		FAMVECTOR _47{ _mm_sub_ps(_33, _45) };
-		FAMVECTOR _48{ _mm_mul_ps(_42, _mm_set_ps1(_36.m128_f32[3])) };
-		FAMVECTOR _49{ _mm_mul_ps(_43, _mm_set_ps1(_36.m128_f32[3])) };
-		FAMVECTOR _50{ _mm_sub_ps(_36, _48) };
-		FAMVECTOR _51{ _mm_sub_ps(_37, _49) };
-		FAMVECTOR _52{ _mm_mul_ps(_42, _mm_set_ps1(_28.m128_f32[3])) };
-		FAMVECTOR _53{ _mm_mul_ps(_43, _mm_set_ps1(_28.m128_f32[3])) };
-		FAMVECTOR _54{ _mm_sub_ps(_28, _52) };
-		FAMVECTOR _55{ _mm_sub_ps(_29, _53) };
-
-		return { _47, _51, _55, _43 };
-		/*
-		double _0 = a1 / a1;
-		double _1 = b1 / a1;
-		double _2 = c1 / a1;
-		double _3 = d1 / a1;
-
-		double _4 = 1.0 / a1;
-		double _5 = 0.0 / a1;
-		double _6 = 0.0 / a1;
-		double _7 = 0.0 / a1;
-
-		double _8 = _0 * e1;
-		double _9 = _1 * e1;
-		double _10 = _2 * e1;
-		double _11 = _3 * e1;
-
-		double _12 = _4 * e1;
-		double _13 = _5 * e1;
-		double _14 = _6 * e1;
-		double _15 = _7 * e1;
-
-		double _16 = e1 - _8;
-		double _17 = f1 - _9;
-		double _18 = g1 - _10;
-		double _19 = h1 - _11;
-
-		double _20 = 0.0 - _12;
-		double _21 = 1.0 - _13;
-		double _22 = 0.0 - _14;
-		double _23 = 0.0 - _15;
-
-		double _24 = _0 * i1;
-		double _25 = _1 * i1;
-		double _26 = _2 * i1;
-		double _27 = _3 * i1;
-
-		double _28 = _4 * i1;
-		double _29 = _5 * i1;
-		double _30 = _6 * i1;
-		double _31 = _7 * i1;
-
-		double _32 = i1 - _24;
-		double _33 = j1 - _25;
-		double _34 = k1 - _26;
-		double _35 = l1 - _27;
-
-		double _36 = 0.0 - _28;
-		double _37 = 0.0 - _29;
-		double _38 = 1.0 - _30;
-		double _39 = 0.0 - _31;
-
-		double _40 = _0 * m1;
-		double _41 = _1 * m1;
-		double _42 = _2 * m1;
-		double _43 = _3 * m1;
-
-		double _44 = _4 * m1;
-		double _45 = _5 * m1;
-		double _46 = _6 * m1;
-		double _47 = _7 * m1;
-
-		double _48 = m1 - _40;
-		double _49 = n1 - _41;
-		double _50 = o1 - _42;
-		double _51 = p1 - _43;
-
-		double _52 = 0.0 - _44;
-		double _53 = 0.0 - _45;
-		double _54 = 0.0 - _46;
-		double _55 = 1.0 - _47;
-
-		double _56 = _16 / _17;
-		double _57 = _17 / _17;
-		double _58 = _18 / _17;
-		double _59 = _19 / _17;
-
-		double _60 = _20 / _17;
-		double _61 = _21 / _17;
-		double _62 = _22 / _17;
-		double _63 = _23 / _17;
-
-		double _64 = _56 * _1;
-		double _65 = _57 * _1;
-		double _66 = _58 * _1;
-		double _67 = _59 * _1;
-
-		double _68 = _60 * _1;
-		double _69 = _61 * _1;
-		double _70 = _62 * _1;
-		double _71 = _63 * _1;
-
-		double _72 = _0 - _64;
-		double _73 = _1 - _65;
-		double _74 = _2 - _66;
-		double _75 = _3 - _67;
-
-		double _76 = _4 - _68;
-		double _77 = _5 - _69;
-		double _78 = _6 - _70;
-		double _79 = _7 - _71;
-
-		double _80 = _56 * _33;
-		double _81 = _57 * _33;
-		double _82 = _58 * _33;
-		double _83 = _59 * _33;
-
-		double _84 = _60 * _33;
-		double _85 = _61 * _33;
-		double _86 = _62 * _33;
-		double _87 = _63 * _33;
-
-		double _88 = _32 - _80;
-		double _89 = _33 - _81;
-		double _90 = _34 - _82;
-		double _91 = _35 - _83;
-
-		double _92 = _36 - _84;
-		double _93 = _37 - _85;
-		double _94 = _38 - _86;
-		double _95 = _39 - _87;
-
-		double _96 = _56 * _49;
-		double _97 = _57 * _49;
-		double _98 = _58 * _49;
-		double _99 = _59 * _49;
-
-		double _100 = _60 * _49;
-		double _101 = _61 * _49;
-		double _102 = _62 * _49;
-		double _103 = _63 * _49;
-
-		double _104 = _48 - _96;
-		double _105 = _49 - _97;
-		double _106 = _50 - _98;
-		double _107 = _51 - _99;
-
-		double _108 = _52 - _100;
-		double _109 = _53 - _101;
-		double _110 = _54 - _102;
-		double _111 = _55 - _103;
-
-		double _112 = _88 / _90;
-		double _113 = _89 / _90;
-		double _114 = _90 / _90;
-		double _115 = _91 / _90;
-
-		double _116 = _92 / _90;
-		double _117 = _93 / _90;
-		double _118 = _94 / _90;
-		double _119 = _95 / _90;
-
-		double _120 = _112 * _74;
-		double _121 = _113 * _74;
-		double _122 = _114 * _74;
-		double _123 = _115 * _74;
-
-		double _124 = _116 * _74;
-		double _125 = _117 * _74;
-		double _126 = _118 * _74;
-		double _127 = _119 * _74;
-
-		double _128 = _72 - _120;
-		double _129 = _73 - _121;
-		double _130 = _74 - _122;
-		double _131 = _75 - _123;
-
-		double _132 = _76 - _124;
-		double _133 = _77 - _125;
-		double _134 = _78 - _126;
-		double _135 = _79 - _127;
-
-		double _136 = _112 * _58;
-		double _137 = _113 * _58;
-		double _138 = _114 * _58;
-		double _139 = _115 * _58;
-
-		double _140 = _116 * _58;
-		double _141 = _117 * _58;
-		double _142 = _118 * _58;
-		double _143 = _119 * _58;
-
-		double _144 = _56 - _136;
-		double _145 = _57 - _137;
-		double _146 = _58 - _138;
-		double _147 = _59 - _139;
-
-		double _148 = _60 - _140;
-		double _149 = _61 - _141;
-		double _150 = _62 - _142;
-		double _151 = _63 - _143;
-
-		double _152 = _112 * _106;
-		double _153 = _113 * _106;
-		double _154 = _114 * _106;
-		double _155 = _115 * _106;
-
-		double _156 = _116 * _106;
-		double _157 = _117 * _106;
-		double _158 = _118 * _106;
-		double _159 = _119 * _106;
-
-		double _160 = _104 - _152;
-		double _161 = _105 - _153;
-		double _162 = _106 - _154;
-		double _163 = _107 - _155;
-
-		double _164 = _108 - _156;
-		double _165 = _109 - _157;
-		double _166 = _110 - _158;
-		double _167 = _111 - _159;
-
-		double _168 = _160 / _163;
-		double _169 = _161 / _163;
-		double _170 = _162 / _163;
-		double _171 = _163 / _163;
-
-		double _172 = _164 / _163;
-		double _173 = _165 / _163;
-		double _174 = _166 / _163;
-		double _175 = _167 / _163;
-
-		double _176 = _168 * _131;
-		double _177 = _169 * _131;
-		double _178 = _170 * _131;
-		double _179 = _171 * _131;
-
-		double _180 = _172 * _131;
-		double _181 = _173 * _131;
-		double _182 = _174 * _131;
-		double _183 = _175 * _131;
-
-		double _184 = _128 - _176;
-		double _185 = _129 - _177;
-		double _186 = _130 - _178;
-		double _187 = _131 - _179;
-
-		double _188 = _132 - _180;
-		double _189 = _133 - _181;
-		double _190 = _134 - _182;
-		double _191 = _135 - _183;
-
-		double _192 = _168 * _147;
-		double _193 = _169 * _147;
-		double _194 = _170 * _147;
-		double _195 = _171 * _147;
-
-		double _196 = _172 * _147;
-		double _197 = _173 * _147;
-		double _198 = _174 * _147;
-		double _199 = _175 * _147;
-
-		double _200 = _144 - _192;
-		double _201 = _145 - _193;
-		double _202 = _146 - _194;
-		double _203 = _147 - _195;
-
-		double _204 = _148 - _196;
-		double _205 = _149 - _197;
-		double _206 = _150 - _198;
-		double _207 = _151 - _199;
-
-		double _208 = _168 * _115;
-		double _209 = _169 * _115;
-		double _210 = _170 * _115;
-		double _211 = _171 * _115;
-
-		double _212 = _172 * _115;
-		double _213 = _173 * _115;
-		double _214 = _174 * _115;
-		double _215 = _175 * _115;
-
-		double _216 = _112 - _208;
-		double _217 = _113 - _209;
-		double _218 = _114 - _210;
-		double _219 = _115 - _211;
-
-		double _220 = _116 - _212;
-		double _221 = _117 - _213;
-		double _222 = _118 - _214;
-		double _223 = _119 - _215;
-
-		return {
-			_188, _189, _190, _191,
-			_204, _205, _206, _207,
-			_220, _221, _222, _223,
-			_172, _173, _174, _175
-		};*/
-	}
-	inline FAMVECTOR FAMVector4Normalize(const FAMVECTOR& vec) {
-		FAMVECTOR vecsqrd{ _mm_mul_ps(vec, vec) };
-		float vecsqrt{ std::sqrtf(vecsqrd.m128_f32[0] + vecsqrd.m128_f32[1] + vecsqrd.m128_f32[2]) };
-		return { _mm_div_ps(vec, _mm_set_ps1(vecsqrt)) };
-	}
-	inline FAMVECTOR FAMVector4DotProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1) {
-		return { _mm_mul_ps(vec0, vec1) };
-	}
-	inline FAMVECTOR FAMVector4CrossProduct(const FAMVECTOR& vec0, const FAMVECTOR& vec1) {
-		return { 
-			_mm_sub_ps(
-				_mm_mul_ps(AMLoadFloat3({ vec0.m128_f32[1], vec0.m128_f32[2], vec0.m128_f32[0] }),
-					AMLoadFloat3({ vec1.m128_f32[2], vec1.m128_f32[0], vec1.m128_f32[1] })),
-				_mm_mul_ps(AMLoadFloat3({ vec0.m128_f32[2], vec0.m128_f32[0], vec0.m128_f32[1] }),
-					AMLoadFloat3({ vec1.m128_f32[1], vec1.m128_f32[2], vec1.m128_f32[0] }))
-			)
-		};
-	}
-	inline float FAMVector4SumVector(const FAMVECTOR& vec) {
-		return { vec.m128_f32[0] + vec.m128_f32[1] + vec.m128_f32[2] + vec.m128_f32[3] };
-	}
-	inline float FAMVector4Magnitude(const FAMVECTOR& vec) {
-		return { std::sqrtf(FAMVector4SumVector(_mm_mul_ps(vec, vec))) };
-	}
-	inline FAMVECTOR FAMVector4Negate(const FAMVECTOR& vec) {
-		return { AMLoadFloat4({ -vec.m128_f32[0], -vec.m128_f32[1], -vec.m128_f32[2], -vec.m128_f32[3] }) };
-	}
-
-	/*AMMATRIX AMMatrixIdentity();
-	AMMATRIX AMMatrixRotationRollPitchYaw(AMVECTOR& vec);
-	AMMATRIX AMMatrixTranslation(AMVECTOR& vec);
-	AMVECTOR AMMatrixDeterminant(AMMATRIX& mx);
-	AMMATRIX AMMatrixPerspectiveFovLH(double fov, double ar, double n, double f);
-	AMMATRIX AMMatrixLookAtLH(AMVECTOR& eye, AMVECTOR& focus, AMVECTOR upDirection);
-	AMMATRIX AMMatrixLookToLH(AMVECTOR& eye, AMVECTOR& direction, AMVECTOR upDirection);
-	AMVECTOR AMVector4Transform(AMVECTOR& vec, AMMATRIX& mx);
-	AMMATRIX AMMatrixTranspose(AMMATRIX& mx);
-	AMMATRIX AMMatrixInverse(AMVECTOR& det, AMMATRIX& mx);
-	AMVECTOR AMVector4Normalize(const AMVECTOR& vec);
-	AMVECTOR AMVector4DotProduct(const AMVECTOR& vec0, const AMVECTOR& vec1);
-	AMVECTOR AMVector4CrossProduct(const AMVECTOR& vec0, const AMVECTOR& vec1);
-	double AMVector4SumVector(const AMVECTOR& vec);*/
 }
 
-// Compute Shader CB struct
-namespace GID::DSU {
-	struct alignas(16) ComputeShaderTextureMetadataCB {
-		uint32_t SrcMipLevel;
-		uint32_t NumMipLevels;
-		uint32_t SrcDimension;
-		uint32_t isSRGB;
-		AssistMath::AMFLOAT2 TexelSize;
-	};
+namespace GID::Util::Exception {
+	inline std::exception throwStdExcept(std::string _file, uint16_t _line, std::string _exc) {
+		return std::exception(std::string(_file + std::to_string(_line) + ":" + _exc).c_str());
+	}
 }
 
 // Some basic DSU structs and enums (that don't depend on user-defined types)
 namespace GID::DSU {
-	enum class LightConst {
-		MAX_LIGHTS = 8,
-		DIRECTIONAL_LIGHT = 0,
-		POINT_LIGHT = 1,
-		SPOT_LIGHT = 2,
-	};
-	struct LightData {
+	namespace Light {
+		constexpr uint8_t MAX_LIGHTS = 8;
+		constexpr uint8_t DIRECTIONAL_LIGHT = 0;
+		constexpr uint8_t POINT_LIGHT = 1;
+		constexpr uint8_t SPOT_LIGHT = 2;
+		struct LightData {
+			XMFLOAT4 pos{ .0f, .0f, .0f, 1.f };
 			
-		struct {
-			float x{ 0.0f };
-			float y{ 0.0f };
-			float z{ 0.0f };
-			float w{ 1.0f };
-		} pos;
-		struct {
-			float x{ 1.0f };
-			float y{ 1.0f };
-			float z{ 1.0f };
-			float w{ 1.0f };
-		} direction;
-		struct {
-			float r{ 1.0f };
-			float g{ 1.0f };
-			float b{ 1.0f };
-			float a{ 1.0f };
-		} color;
+			XMFLOAT4 direction{ .0f, .0f, .0f, .0f };
+			
+			XMFLOAT4 color{ 1.f, 1.f, 1.f, 1.f };
 
-		float spotAngle{ 15.0f };
-		float constAtten{ 0.4f };
-		float linAtten{ 0.08f };
-		float quadAtten{ 0.0f };
+			float spotAngle{ 15.0f };
+			float constAtten{ 0.4f };
+			float linAtten{ 0.08f };
+			float quadAtten{ 0.0f };
 
-		int32_t type{ (uint8_t)LightConst::POINT_LIGHT };
-		int32_t isEnabled{ false };
-		int32_t padding0{};
-		int32_t padding1{};
-	};
+			int32_t type{ (int32_t)POINT_LIGHT };
+			int32_t isEnabled{ false };
+			int32_t padding0{};
+			int32_t padding1{};
+		};
+	}
+	
 	struct VSInputData {
 		uint32_t pos{};
 		uint32_t tex{};
@@ -1625,38 +470,38 @@ namespace GID::DSU {
 			float b{};
 			float a{};
 		} colorEmissive, colorAmbient, colorDiffuse, colorSpecular;
-
+		
 		float specularPower{};
 		int32_t isTextured{ false };
 		int32_t padding0{};
 		int32_t padding1{};
 	};
 	struct VertexConstantBufferData {
-		AssistMath::FAMMATRIX transform{};
-		AssistMath::FAMMATRIX camera{};
-		AssistMath::FAMMATRIX projection{};
-		AssistMath::FAMMATRIX invtpose{};
+		XMMATRIX transform{};
+		XMMATRIX camera{};
+		XMMATRIX projection{};
+		XMMATRIX invtpose{};
 	};
 	struct PixelConstantBufferData {
 		MaterialData mtl{};
-		AssistMath::AMFLOAT4 eyePos{};
-		AssistMath::AMFLOAT4 globalAmbient{};
-		std::array<LightData, (uint8_t)LightConst::MAX_LIGHTS> lights{};
+		XMFLOAT4 eyePos{};
+		XMFLOAT4 globalAmbient{};
+		std::array<Light::LightData, (uint8_t)Light::MAX_LIGHTS> lights{};
 	};
 	struct Position {
-		AssistMath::FAMVECTOR translation{};
-		AssistMath::FAMVECTOR rotation{};
-		AssistMath::FAMVECTOR center{};
+		XMVECTOR translation{};
+		XMVECTOR rotation{};
+		XMVECTOR center{};
 	};
 	struct Speed {
-		AssistMath::FAMVECTOR deltaTranslation{};
-		AssistMath::FAMVECTOR deltaRotation{};
+		XMVECTOR deltaTranslation{};
+		XMVECTOR deltaRotation{};
 	};
-	enum class WindowType {
-		MAINWINDOW,
-		SUBWINDOW0,
-		SUBWINDOW1,
-		INVALID
+	enum WINDOW_TYPE {
+		WINDOW_TYPE_MAIN_WINDOW,
+		WINDOW_TYPE_SUB_WINDOW_0,
+		WINDOW_TYPE_SUB_WINDOW_1,
+		WINDOW_TYPE_INVALID
 	};
 	struct GraphicsPipelineStateStream {
 		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
@@ -1673,18 +518,18 @@ namespace GID::DSU {
 		CD3DX12_PIPELINE_STATE_STREAM_CS CS;
 	};
 	struct ObjectDrawStaticMatrices {
-		AssistMath::FAMMATRIX camera;
-		AssistMath::FAMMATRIX projection;
+		XMMATRIX camera;
+		XMMATRIX projection;
 	};
 	struct SphereCollisionCheckData {
-		AssistMath::FAMVECTOR center{};
+		XMVECTOR center{};
 		float radius{};
 	};
-	enum class ActorGroundState {
-		GROUND,
-		AIR,
-		WATER,
-		INVALID
+	enum ACTOR_GROUND_STATE {
+		ACTOR_GROUND_STATE_GROUND,
+		ACTOR_GROUND_STATE_AIR,
+		ACTOR_GROUND_STATE_WATER,
+		ACTOR_GROUND_STATE_INVALID
 	};
 	struct Timer {
 		std::chrono::high_resolution_clock::time_point previous;
@@ -1817,34 +662,34 @@ namespace GID::Util::Benchmark {
 
 // Script IDs
 namespace GID::DSU {
-	enum class ScriptID {
+	enum SCRIPT_ID {
 		// Input Scripts
-		BasicActorMove,
+		SCRIPT_ID_ACTOR_UPDATE_BASIC_MOVE,
 
 		// Update Scripts
-		BasicCameraFollow,
-		AdvancedCameraFollow,
+		SCRIPT_ID_CAMERA_UPDATE_BASIC_FOLLOW,
+		SCRIPT_ID_CAMERA_UPDATE_ADVANCED_FOLLOW,
 
 		// Physics Scripts
-		BasicGravity,
-		BasicCollision,
+		SCRIPT_ID_ACTOR_UPDATE_BASIC_GRAVITY,
+		SCRIPT_ID_ACTOR_UPDATE_BASIC_COLLISION,
 
-		INVALID,
+		SCRIPT_ID_INVALID,
 	};
 }
 
 // Scriptable Interface
 namespace GID::DSU {
 	struct Scriptable {
-		std::vector<ScriptID> mScripts{};
-		void addScript(ScriptID name) noexcept {
-			std::vector<ScriptID>::iterator newend;
+		std::vector<SCRIPT_ID> mScripts{};
+		void addScript(SCRIPT_ID name) noexcept {
+			std::vector<SCRIPT_ID>::iterator newend;
 			newend = std::remove(mScripts.begin(), mScripts.end(), name);
 			mScripts.push_back(name);
 		}
-		std::vector<ScriptID>& getScripts() noexcept { return mScripts; }
-		void removeScript(ScriptID name) noexcept {
-			std::vector<ScriptID>::iterator newend;
+		std::vector<SCRIPT_ID>& getScripts() noexcept { return mScripts; }
+		void removeScript(SCRIPT_ID name) noexcept {
+			std::vector<SCRIPT_ID>::iterator newend;
 			newend = std::remove(mScripts.begin(), mScripts.end(), name);
 		}
 		void clearScripts() noexcept { mScripts.clear(); }
@@ -2439,12 +1284,12 @@ namespace GID::GSO::WindowNS {
 
 // Viewport Preset Enum
 namespace GID::DSU {
-	enum class ViewportPreset {
-		VP1_DEFAULT,
-		VP2_HORIZONTAL,
-		VP2_VERTICAL,
-		VP4_CORNER,
-		INVALID
+	enum VIEWPORT_TYPE {
+		VIEWPORT_TYPE_1_DEFAULT,
+		VIEWPORT_TYPE_2_HORIZONTAL,
+		VIEWPORT_TYPE_2_VERTICAL,
+		VIEWPORT_TYPE_4_CORNER,
+		VIEWPORT_TYPE_INVALID
 	};
 }
 
@@ -2592,30 +1437,29 @@ namespace GID::DSU {
 		enum Translation { X, Y, Z };
 		enum FollowMode { NO_FOLLOW, FOLLOW };
 
-		AssistMath::FAMVECTOR Y_AXIS{ 0.0f, 1.0f, 0.0f, 0.0f };
-		AssistMath::FAMVECTOR mEye{ 100.0f, 100.0f, 100.0f, 1.0f };
-		AssistMath::FAMVECTOR mFocus{};
-		AssistMath::FAMVECTOR mRotation{-30.0f, -135.0f, 0.0f, 0.0f };
-		AssistMath::FAMVECTOR mDTranslation{};
+		XMVECTOR Y_AXIS{ 0.0f, 1.0f, 0.0f, 0.0f };
+		XMVECTOR mEye{ 100.0f, 100.0f, 100.0f, 1.0f };
+		XMVECTOR mFocus{};
+		XMVECTOR mRotation{-30.0f, -135.0f, 0.0f, 0.0f };
+		XMVECTOR mDTranslation{};
 
 		bool mbMouseControl{ false };
 		bool mbFollow{ false };
 
 		Camera() = default;
 
-		AssistMath::FAMMATRIX getMatrix() noexcept {
-			using namespace AssistMath;
+		XMMATRIX getMatrix() noexcept {
 			//AMVECTOR focus = DX::XMVectorSet(mFocus.x, mFocus.y, mFocus.z, 1.0f);
-			FAMVECTOR rotationRad{ _mm_mul_ps(mRotation, _mm_set_ps1((float)AM_PI / 180.0f)) };
-			FAMVECTOR cosvec{};
-			FAMVECTOR sinvec{ _mm_sincos_ps(&cosvec, rotationRad) };
-			FAMVECTOR look{
+			XMVECTOR rotationRad{ _mm_mul_ps(mRotation, _mm_set_ps1((float)XM_PI / 180.0f)) };
+			XMVECTOR cosvec{};
+			XMVECTOR sinvec{ _mm_sincos_ps(&cosvec, rotationRad) };
+			XMVECTOR look{
 				sinvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
 				sinvec.m128_f32[Rotation::Pitch],
 				cosvec.m128_f32[Rotation::Yaw] * cosvec.m128_f32[Rotation::Pitch],
 				0.0f
 			};
-			return { FAMMatrixLookToLH(mEye, look, Y_AXIS) };
+			return { XMMatrixLookToLH(mEye, look, Y_AXIS) };
 		}
 		void addPitch(float delta) noexcept {
 			mRotation.m128_f32[Rotation::Pitch] += delta;
@@ -2627,13 +1471,13 @@ namespace GID::DSU {
 			while (mRotation.m128_f32[Rotation::Yaw] > 360) mRotation.m128_f32[Rotation::Yaw] -= 360;
 			while (mRotation.m128_f32[Rotation::Yaw] < -360) mRotation.m128_f32[Rotation::Yaw] += 360;
 		}
-		void translate(AssistMath::FAMVECTOR& translation) noexcept {
+		void translate(XMVECTOR& translation) noexcept {
 			mEye = _mm_add_ps(mEye, translation);
 			mFocus = _mm_add_ps(mFocus, translation);
 		}
 		void input() noexcept override {
 
-			using namespace GSO::Input; using namespace AssistMath;
+			using namespace GSO::Input;
 
 			// If the camera is not set to follow an actor
 			if (!mbFollow) {
@@ -2654,10 +1498,10 @@ namespace GID::DSU {
 				if (gInput.kb.isKeyPressed('W')) {
 					
 					// Calculate the movement's x-component based on the facing angle
-					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+					float xcom = std::sin(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 
 					// Calculate the movement's z-component based on the facing angle
-					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+					float zcom = std::cos(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 
 					// Update the camera's delta-x to the x-component of the movement
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
@@ -2670,24 +1514,24 @@ namespace GID::DSU {
 				if (gInput.kb.isKeyPressed('S')) {
 					
 					// Calculate the movement's x-component based on the facing angle
-					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+					float xcom = std::sin(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					
 					// Calculate the movement's z-component based on the facing angle
-					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
+					float zcom = std::cos(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw]));
 					mDTranslation.m128_f32[Translation::X] += 25.f * -xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * -zcom * shift;
 				}
 				// If 'A' is pressed, move the camera left along its facing vector (only in the X-Z plane)
 				if (gInput.kb.isKeyPressed('A')) {
-					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
-					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
+					float xcom = std::sin(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
+					float zcom = std::cos(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] - 90.0f));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
 				// If 'D' is pressed, move the camera right along its facing vector (only in the X-Z plane)
 				if (gInput.kb.isKeyPressed('D')) {
-					float xcom = std::sin(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
-					float zcom = std::cos(AMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
+					float xcom = std::sin(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
+					float zcom = std::cos(XMConvertToRadians(mRotation.m128_f32[Rotation::Yaw] + 90.0f));
 					mDTranslation.m128_f32[Translation::X] += 25.f * xcom * shift;
 					mDTranslation.m128_f32[Translation::Z] += 25.f * zcom * shift;
 				}
@@ -2738,7 +1582,7 @@ namespace GID::DSU {
 		void update() noexcept {
 			using namespace GSO::Update;
 			if (!mbFollow) {
-				AssistMath::FAMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(gTicks));
+				XMVECTOR vel = _mm_mul_ps(mDTranslation, _mm_set_ps1(gTicks));
 				translate(vel);
 				//std::cout << "[X] " << mDTranslation.m128_f32[X] << " " << " [Y] " << mDTranslation.m128_f32[Y] << " " << " [Z] " << mDTranslation.m128_f32[Z] << '\n';
 				/*if (mDTranslation.m128_f32[Translation::X] < 0.0001f
@@ -2984,7 +1828,7 @@ namespace GID::DSU {
 		ComPtr<ID3DBlob>								mpPSBytecode{};
 		ComPtr<ID3DBlob>								mpCSBytecode{};
 		// Projection Matrix
-		AssistMath::FAMMATRIX							mProjection{};
+		XMMATRIX							mProjection{};
 		// Misc
 		RECT											mWindowRc{};
 		HRESULT											mHR{};
@@ -3068,13 +1912,13 @@ namespace GID::DSU {
 		//~GFX3D() = default;
 
 		void parseGraphicsConfig() noexcept {
-			enum class GFXConfigDataType {
-				UIBackBufferCount,
-				BUseWARPAdapter,
-				BVSync,
-				BFullScreenOnStartup,
-				BEnableWireframe,
-				Invalid
+			enum DATA_TYPE {
+				DATA_TYPE_BACK_BUFFER_COUNT,
+				DATA_TYPE_IS_WARP_ADAPTER,
+				DATA_TYPE_IS_VSYNC,
+				DATA_TYPE_IS_FULLSCREEN_ON_START,
+				DATA_TYPE_IS_WIREFRAME,
+				DATA_TYPE_INVALID
 			};
 			if (mDebug) std::cout << "[CONFIG] Parsing Graphics Configuration File...\n";
 			std::string strCurrentLine{}; std::ifstream file{};
@@ -3083,35 +1927,35 @@ namespace GID::DSU {
 				while (file) {
 					std::getline(file, strCurrentLine);
 					if (strCurrentLine.empty()) continue;
-					GFXConfigDataType currentData;
-					if (strCurrentLine.starts_with("UIBackBufferCount")) currentData = GFXConfigDataType::UIBackBufferCount;
-					else if (strCurrentLine.starts_with("BUseWARPAdapter")) currentData = GFXConfigDataType::BUseWARPAdapter;
-					else if (strCurrentLine.starts_with("BVSync")) currentData = GFXConfigDataType::BVSync;
-					else if (strCurrentLine.starts_with("BFullScreenOnStartup")) currentData = GFXConfigDataType::BFullScreenOnStartup;
-					else if (strCurrentLine.starts_with("BEnableWireframe")) currentData = GFXConfigDataType::BEnableWireframe;
-					else currentData = GFXConfigDataType::Invalid;
+					DATA_TYPE currentData;
+					if (strCurrentLine.starts_with("UIBackBufferCount")) currentData = DATA_TYPE_BACK_BUFFER_COUNT;
+					else if (strCurrentLine.starts_with("BUseWARPAdapter")) currentData = DATA_TYPE_IS_WARP_ADAPTER;
+					else if (strCurrentLine.starts_with("BVSync")) currentData = DATA_TYPE_IS_VSYNC;
+					else if (strCurrentLine.starts_with("BFullScreenOnStartup")) currentData = DATA_TYPE_IS_FULLSCREEN_ON_START;
+					else if (strCurrentLine.starts_with("BEnableWireframe")) currentData = DATA_TYPE_IS_WIREFRAME;
+					else currentData = DATA_TYPE_INVALID;
 					switch (currentData) {
-						case GFXConfigDataType::UIBackBufferCount:
+						case DATA_TYPE_BACK_BUFFER_COUNT:
 							strCurrentLine.erase(0u, 19u);
 							mBackBufferCount = std::min(std::max(uint8_t(2), (uint8_t)std::stoi(strCurrentLine)), uint8_t(DXGI_MAX_SWAP_CHAIN_BUFFERS));
 							break;
-						case GFXConfigDataType::BUseWARPAdapter:
+						case DATA_TYPE_IS_WARP_ADAPTER:
 							strCurrentLine.erase(0u, 17u);
 							if (strCurrentLine == "TRUE") mUseWARPAdapter = true;
 							break;
-						case GFXConfigDataType::BVSync:
+						case DATA_TYPE_IS_VSYNC:
 							strCurrentLine.erase(0u, 8u);
 							if (strCurrentLine == "TRUE") mVSync = true;
 							break;
-						case GFXConfigDataType::BFullScreenOnStartup:
+						case DATA_TYPE_IS_FULLSCREEN_ON_START:
 							strCurrentLine.erase(0u, 22u);
 							if (strCurrentLine == "TRUE") mFullscreen = true;
 							break;
-						case GFXConfigDataType::BEnableWireframe:
+						case DATA_TYPE_IS_WIREFRAME:
 							strCurrentLine.erase(0u, 18u);
 							if (strCurrentLine == "TRUE") mWireframe = true;
 							break;
-						case GFXConfigDataType::Invalid:
+						case DATA_TYPE_INVALID:
 							if (mDebug) std::cout << "[WARNING] Invalid line parsed from \"gfx_config.txt\"\n"
 								<< "[LINE] " << strCurrentLine;
 							break;
@@ -3679,8 +2523,8 @@ namespace GID::DSU {
 		}
 		Camera& getCamera() noexcept { return mCamera; }
 
-		void setProjection(const AssistMath::FAMMATRIX& projection) noexcept { mProjection = projection; }
-		AssistMath::FAMMATRIX& getProjection() noexcept { return mProjection; }
+		void setProjection(const XMMATRIX& projection) noexcept { mProjection = projection; }
+		XMMATRIX& getProjection() noexcept { return mProjection; }
 		ComPtr<ID3D12GraphicsCommandList7>& getCommandList() noexcept { return mpGraphicsCommandList; }
 		ComPtr<ID3D12Device10>& getDevice() noexcept { return mpDevice; }
 
@@ -3725,7 +2569,106 @@ namespace GID::DSU {
 namespace GID::GSO::Render {
 	inline GID::DSU::GFX3D gGFX{};
 	inline void initGFX(GID::DSU::GFX_DESC desc) { gGFX = { GID::GSO::WindowNS::gWnd.get()->mhWnd, desc }; }
-	inline void setGFXProjection(GID::DSU::AssistMath::FAMMATRIX& projection) { gGFX.setProjection(projection); }
+	inline void setGFXProjection(XMMATRIX& projection) { gGFX.setProjection(projection); }
+}
+
+namespace GID::DSU {
+	enum RESOURCE_PRESET_TYPE {
+		RESOURCE_PRESET_TYPE_DESTINATION_RESOURCE,
+		RESOURCE_PRESET_TYPE_INTERMEDIATE_RESOURCE,
+		RESOURCE_PRESET_TYPE_INVALID
+	};
+	struct Resource {
+		ComPtr<ID3D12Resource2> mpResource{};
+		Resource(CD3DX12_RESOURCE_DESC _desc, RESOURCE_PRESET_TYPE _preset) {
+			switch (_preset) {
+				case RESOURCE_PRESET_TYPE_DESTINATION_RESOURCE: {
+					CD3DX12_HEAP_PROPERTIES _h{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT) };
+					GID::GSO::Render::gGFX.mpDevice->CreateCommittedResource(&_h, D3D12_HEAP_FLAG_NONE, &_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpResource));
+					break;
+				}
+				case RESOURCE_PRESET_TYPE_INTERMEDIATE_RESOURCE: {
+					CD3DX12_HEAP_PROPERTIES _h{ CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD) };
+					GID::GSO::Render::gGFX.mpDevice->CreateCommittedResource(&_h, D3D12_HEAP_FLAG_NONE, &_desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpResource));
+					break;
+				}
+				case RESOURCE_PRESET_TYPE_INVALID: {
+					std::string e(__FILE__ + std::string("(") + std::to_string(__LINE__) + std::string(")"));
+					throw GID::Util::Exception::throwStdExcept(std::string(__FILE__), __LINE__, std::string("Resource preset type is invalid."));
+				}
+			}
+		}
+		Resource(ComPtr<ID3D12Device10>& pDevice, D3D12_HEAP_TYPE _type, D3D12_HEAP_FLAGS _flag, D3D12_RESOURCE_DESC& _desc, D3D12_RESOURCE_STATES _state) {
+			CD3DX12_HEAP_PROPERTIES _h{ CD3DX12_HEAP_PROPERTIES(_type) };
+			GID::GSO::Render::gGFX.mpDevice->CreateCommittedResource(&_h, _flag, &_desc, _state, nullptr, IID_PPV_ARGS(&mpResource));
+		}
+		Resource() = default;
+	};
+	enum COMMITTED_RESOURCE_PRESET_TYPE {
+		COMMITTED_RESOURCE_PRESET_TYPE_DEFAULT,
+		COMMITTED_RESOURCE_PRESET_TYPE_INVALID
+	};
+	struct CommittedResource {
+		Resource dst{};
+		Resource idm{};
+		CommittedResource(CD3DX12_RESOURCE_DESC _dstdesc, ScratchImage& _mip, COMMITTED_RESOURCE_PRESET_TYPE _preset) {
+			dst = { _dstdesc, RESOURCE_PRESET_TYPE_DESTINATION_RESOURCE };
+			std::vector<D3D12_SUBRESOURCE_DATA> vsr(_mip.GetImageCount());
+			const Image* ptr = _mip.GetImages();
+			for (uint32_t i = 0; i < vsr.size(); i++) {
+				auto& sr = vsr.at(i);
+				sr.RowPitch = ptr[i].rowPitch;
+				sr.SlicePitch = ptr[i].slicePitch;
+				sr.pData = ptr[i].pixels;
+			}
+			idm = { CD3DX12_RESOURCE_DESC::Buffer(GetRequiredIntermediateSize(dst.mpResource.Get(), 0u, (uint32_t)vsr.size())), RESOURCE_PRESET_TYPE_INTERMEDIATE_RESOURCE };
+			UpdateSubresources(GID::GSO::Render::gGFX.mpGraphicsCommandList.Get(), dst.mpResource.Get(), idm.mpResource.Get(), 0, 0, (uint32_t)vsr.size(), vsr.data());
+			auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(dst.mpResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) };
+			GID::GSO::Render::gGFX.mpGraphicsCommandList->ResourceBarrier(1u, &barrier);
+			GID::GSO::Render::gGFX.flushGPU();
+		}
+		CommittedResource() = default;
+	};
+	struct Texture {
+		CommittedResource res{};
+		ScratchImage mip{};
+		ComPtr<ID3D12DescriptorHeap> ptr{};
+		Texture(std::wstring _name) {
+			ScratchImage img{};
+			LoadFromWICFile(_name.c_str(), WIC_FLAGS_FORCE_RGB, nullptr, img);
+			GenerateMipMaps(img.GetImages(), img.GetImageCount(), img.GetMetadata(), TEX_FILTER_LINEAR, (size_t)CountMips(img.GetMetadata().height, img.GetMetadata().width), mip);
+			TexMetadata md = mip.GetMetadata();
+			switch (md.dimension) {
+				case TEX_DIMENSION_TEXTURE1D: res = { CD3DX12_RESOURCE_DESC::Tex1D(md.format, md.height, md.arraySize, md.mipLevels), mip, COMMITTED_RESOURCE_PRESET_TYPE_DEFAULT }; break;
+				case TEX_DIMENSION_TEXTURE2D: res = { CD3DX12_RESOURCE_DESC::Tex2D(md.format, md.height, md.width, md.arraySize, md.mipLevels), mip, COMMITTED_RESOURCE_PRESET_TYPE_DEFAULT }; break;
+				case TEX_DIMENSION_TEXTURE3D: res = { CD3DX12_RESOURCE_DESC::Tex3D(md.format, md.height, md.width, md.depth, md.mipLevels), mip, COMMITTED_RESOURCE_PRESET_TYPE_DEFAULT }; break;
+				default: throw std::exception("Invalid texture dimension."); break;
+			}
+			D3D12_DESCRIPTOR_HEAP_DESC hd{}; {
+				hd.NumDescriptors = 1u;
+				hd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+				hd.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			}
+			GID::GSO::Render::gGFX.mpDevice->CreateDescriptorHeap(&hd, IID_PPV_ARGS(&ptr));
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
+				srvd.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+				srvd.Format = md.format;
+				srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+				srvd.Texture2D.MipLevels = (uint32_t)md.mipLevels;
+				GID::GSO::Render::gGFX.mpDevice->CreateShaderResourceView(res.dst.mpResource.Get(), &srvd, ptr->GetCPUDescriptorHandleForHeapStart());
+			}
+		}
+		Texture() = default;
+		inline size_t CountMips(size_t _h, size_t _w) noexcept {
+			size_t ct{ 1 };
+			while (_h > 1 || _w > 1) {
+				if (_h > 1) _h >>= 1;
+				if (_w > 1) _w >>= 1;
+				++ct;
+			}
+			return ct;
+		}
+	};
 }
 
 // Vertex Buffer Structure
@@ -3796,20 +2739,20 @@ namespace GID::DSU {
 		D3D12_SUBRESOURCE_DATA			mSRD{};
 
 		VSSRVPosSBData() = default;
-		VSSRVPosSBData(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
+		VSSRVPosSBData(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<XMFLOAT3>& data) {
 			createDestinationResource(pDevice, data);
 			createIntermediateResource(pDevice, data);
 			createDescriptorHeap(pDevice);
 			createShaderResourceView(pDevice, pCommandList, data);
 		}
-		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+		void createDestinationResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<XMFLOAT3>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_DEFAULT);
-			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(AssistMath::AMFLOAT3) * data.size()) };
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(XMFLOAT3) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&mpDestRes));
 		}
-		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+		void createIntermediateResource(ComPtr<ID3D12Device10>& pDevice, const std::vector<XMFLOAT3>& data) noexcept {
 			CD3DX12_HEAP_PROPERTIES hp(D3D12_HEAP_TYPE_UPLOAD);
-			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(AssistMath::AMFLOAT3) * data.size()) };
+			CD3DX12_RESOURCE_DESC rd{ CD3DX12_RESOURCE_DESC::Buffer(sizeof(XMFLOAT3) * data.size()) };
 			pDevice->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mpIntermedRes));
 		}
 		void createDescriptorHeap(ComPtr<ID3D12Device10>& pDevice) noexcept {
@@ -3820,10 +2763,10 @@ namespace GID::DSU {
 			pDevice->CreateDescriptorHeap(&srvhd, IID_PPV_ARGS(&mpHeap));
 			mpHeapSize = pDevice->GetDescriptorHandleIncrementSize(srvhd.Type);
 		}
-		void createShaderResourceView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) noexcept {
+		void createShaderResourceView(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<XMFLOAT3>& data) noexcept {
 			D3D12_SUBRESOURCE_DATA srd{}; {
 				srd.pData = data.data();
-				srd.RowPitch = (sizeof(AssistMath::AMFLOAT3) * data.size());
+				srd.RowPitch = (sizeof(XMFLOAT3) * data.size());
 				srd.SlicePitch = srd.RowPitch;
 			}
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &srd);
@@ -3831,7 +2774,7 @@ namespace GID::DSU {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 				bsrv.NumElements = (uint32_t)data.size();
-				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+				bsrv.StructureByteStride = sizeof XMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
 				srvd.Format = DXGI_FORMAT_UNKNOWN;
@@ -3854,14 +2797,14 @@ namespace GID::DSU {
 				D3D12_RESOURCE_STATE_COPY_DEST);
 			pCommandList->ResourceBarrier(1u, &barrier);
 		}
-		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<AssistMath::AMFLOAT3>& data) {
+		void updateResource(ComPtr<ID3D12Device10>& pDevice, ComPtr<ID3D12GraphicsCommandList7>& pCommandList, const std::vector<XMFLOAT3>& data) {
 			mSRD.pData = data.data();
 			UpdateSubresources(pCommandList.Get(), mpDestRes.Get(), mpIntermedRes.Get(), 0u, 0u, 1u, &mSRD);
 			D3D12_BUFFER_SRV bsrv{}; {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 				bsrv.NumElements = (uint32_t)data.size();
-				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+				bsrv.StructureByteStride = sizeof XMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
 				srvd.Format = DXGI_FORMAT_UNKNOWN;
@@ -3874,7 +2817,7 @@ namespace GID::DSU {
 	};
 	struct VSSRVTexSBData {
 
-		using FLOAT2 = AssistMath::AMFLOAT2;
+		using FLOAT2 = XMFLOAT2;
 
 		ComPtr<ID3D12Resource2>			mpDestRes{};
 		ComPtr<ID3D12Resource2>			mpIntermedRes{};
@@ -3918,7 +2861,7 @@ namespace GID::DSU {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 				bsrv.NumElements = (uint32_t)data.size();
-				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT2;
+				bsrv.StructureByteStride = sizeof XMFLOAT2;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
 				srvd.Format = DXGI_FORMAT_UNKNOWN;
@@ -3948,7 +2891,7 @@ namespace GID::DSU {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 				bsrv.NumElements = (uint32_t)data.size();
-				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT2;
+				bsrv.StructureByteStride = sizeof XMFLOAT2;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
 				srvd.Format = DXGI_FORMAT_UNKNOWN;
@@ -3961,7 +2904,7 @@ namespace GID::DSU {
 	};
 	struct VSSRVNormSBData {
 
-		using FLOAT3 = AssistMath::AMFLOAT3;
+		using FLOAT3 = XMFLOAT3;
 
 		ComPtr<ID3D12Resource2>			mpDestRes{};
 		ComPtr<ID3D12Resource2>			mpIntermedRes{};
@@ -4005,7 +2948,7 @@ namespace GID::DSU {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 				bsrv.NumElements = (uint32_t)data.size();
-				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+				bsrv.StructureByteStride = sizeof XMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
 				srvd.Format = DXGI_FORMAT_UNKNOWN;
@@ -4035,7 +2978,7 @@ namespace GID::DSU {
 				bsrv.FirstElement = 0;
 				bsrv.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 				bsrv.NumElements = (uint32_t)data.size();
-				bsrv.StructureByteStride = sizeof AssistMath::AMFLOAT3;
+				bsrv.StructureByteStride = sizeof XMFLOAT3;
 			}
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{}; {
 				srvd.Format = DXGI_FORMAT_UNKNOWN;
@@ -4204,22 +3147,11 @@ namespace GID::DSU {
 
 // Model File Data Structures
 namespace GID::DSU {
-	enum class MaterialFileDataType {
-		NEWMTL,
-		KA, KD, KS, TF,
-		IF, D, NS, SHARP, NI,
-		INVALID
-	};
-	enum class ObjectFileDataType {
-		USEMTL,
-		O, V, VT, VN, F,
-		INVALID
-	};
 	struct MaterialFileData {
 		std::string name{};
 		struct {
 			bool isRGB{ false }, isSpectral{ false }, isSpectralFactor{ false }, isXYZ{ false };
-			AssistMath::AMFLOAT3 RGB{ 0.0f, 0.0f, 0.0f }, XYZ{ 0.0f, 0.0f, 0.0f };
+			XMFLOAT3 RGB{ 0.0f, 0.0f, 0.0f }, XYZ{ 0.0f, 0.0f, 0.0f };
 			std::string file{}; float factor{};
 		} KA, KD, KS, TF;
 		std::array<bool, 11u> IF{ false, false, false, false, false, false, false, false, false, false, false };
@@ -4229,8 +3161,8 @@ namespace GID::DSU {
 	};
 	struct ObjectFileData {
 		std::string name{};
-		std::vector<AssistMath::AMFLOAT2> tex{};
-		std::vector<AssistMath::AMFLOAT3> pos{}, norm{};
+		std::vector<XMFLOAT2> tex{};
+		std::vector<XMFLOAT3> pos{}, norm{};
 		std::vector<AssistMath::AMUINT3X3> ind{};
 		MaterialFileData mtl{};
 	};
@@ -4246,17 +3178,17 @@ namespace GID::DSU {
 	};
 }
 
-inline ComPtr<ID3D12Resource2> gTexture0{};
-inline ComPtr<ID3D12Resource2> gTexture1{};
-inline ComPtr<ID3D12DescriptorHeap> gTexture2{};
-inline std::vector<D3D12_SUBRESOURCE_DATA> gTexture3{};
+//inline ComPtr<ID3D12Resource2> gTexture0{};
+//inline ComPtr<ID3D12Resource2> gTexture1{};
+//inline ComPtr<ID3D12DescriptorHeap> gTexture2{};
+//inline std::vector<D3D12_SUBRESOURCE_DATA> gTexture3{};
 
 // Model File Parsing Functions
 namespace GID::Util::FileParsing {
 	inline GID::DSU::ActorData parse(std::string dir) {
 
-		using FLOAT3 = GID::DSU::AssistMath::AMFLOAT3;
-		using FLOAT2 = GID::DSU::AssistMath::AMFLOAT2;
+		using FLOAT3 = XMFLOAT3;
+		using FLOAT2 = XMFLOAT2;
 		using UINT3X3 = GID::DSU::AssistMath::AMUINT3X3;
 		using namespace GID::DSU;
 		using namespace GID::GSO::Render;
@@ -4379,77 +3311,80 @@ namespace GID::Util::FileParsing {
 				}
 			}
 		}
-
+		
+		//std::wstring ws(L"Textures\\Dragon_Bump_Col2.jpg");
+		//GID::DSU::Texture test{ ws };
+		
 		// Get texture file
-		TexMetadata metadata{}; ScratchImage scratchImage{};
-		if (LoadFromWICFile(L"Textures\\Dragon_Bump_Col2.jpg", WIC_FLAGS_FORCE_RGB, &metadata, scratchImage) != S_OK) throw std::exception("Cannot load texture file.");
-		ScratchImage mipChain{};
+		//TexMetadata metadata{}; ScratchImage scratchImage{};
+		//if (LoadFromWICFile(L"Textures\\Dragon_Bump_Col2.jpg", WIC_FLAGS_FORCE_RGB, &metadata, scratchImage) != S_OK) throw std::exception("Cannot load texture file.");
+		//ScratchImage mipChain{};
 
-		uint32_t _0 = 1;
-		uint32_t h{ (uint32_t)metadata.height };
-		uint32_t w{ (uint32_t)metadata.width };
-		while (h > 1 || w > 1) {
-			if (h > 1) h >>= 1;
-			if (w > 1) w >>= 1;
-			++_0;
-		}
+		//uint32_t _0 = 1;
+		//uint32_t h{ (uint32_t)metadata.height };
+		//uint32_t w{ (uint32_t)metadata.width };
+		//while (h > 1 || w > 1) {
+		//	if (h > 1) h >>= 1;
+		//	if (w > 1) w >>= 1;
+		//	++_0;
+		//}
 
-		GenerateMipMaps(scratchImage.GetImages(), scratchImage.GetImageCount(), metadata, TEX_FILTER_LINEAR, (size_t)_0, mipChain);
+		//GenerateMipMaps(scratchImage.GetImages(), scratchImage.GetImageCount(), metadata, TEX_FILTER_LINEAR, (size_t)_0, mipChain);
 
-		D3D12_RESOURCE_DESC _1{}; {
-			DXGI_FORMAT format{ mipChain.GetMetadata().format };
-			uint64_t x{ (uint64_t)mipChain.GetMetadata().width };
-			uint32_t y{ (uint32_t)mipChain.GetMetadata().height };
-			switch (metadata.dimension) {
-				case TEX_DIMENSION_TEXTURE1D: _1 = CD3DX12_RESOURCE_DESC::Tex1D(format, x, (uint16_t)mipChain.GetMetadata().arraySize, (uint16_t)mipChain.GetMetadata().mipLevels); break;
-				case TEX_DIMENSION_TEXTURE2D: _1 = CD3DX12_RESOURCE_DESC::Tex2D(format, x, y, (uint16_t)mipChain.GetMetadata().arraySize, (uint16_t)mipChain.GetMetadata().mipLevels); break;
-				case TEX_DIMENSION_TEXTURE3D: _1 = CD3DX12_RESOURCE_DESC::Tex3D(format, x, y, (uint16_t)mipChain.GetMetadata().depth, (uint16_t)mipChain.GetMetadata().mipLevels); break;
-				default: throw std::exception("Invalid texture dimension."); break;
-			}
-		}
-		{
-			CD3DX12_HEAP_PROPERTIES x{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)};
-			D3D12_HEAP_FLAGS y{ D3D12_HEAP_FLAG_NONE };
-			D3D12_RESOURCE_STATES z{ D3D12_RESOURCE_STATE_COPY_DEST };
-			gGFX.mpDevice->CreateCommittedResource(&x, y, &_1, z, nullptr, IID_PPV_ARGS(&gTexture0));
-		}
-		{
-			gTexture3.resize(mipChain.GetImageCount());
-			const Image* ptr = mipChain.GetImages();
-			for (uint32_t i = 0; i < mipChain.GetImageCount(); i++) {
-				auto& sr = gTexture3[i];
-				sr.RowPitch = ptr[i].rowPitch;
-				sr.SlicePitch = ptr[i].slicePitch;
-				sr.pData = ptr[i].pixels;
-			}
-		}
-		{
-			uint64_t sz = GetRequiredIntermediateSize(gTexture0.Get(), 0u, (uint32_t)gTexture3.size());
-			CD3DX12_HEAP_PROPERTIES x{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD)};
-			D3D12_HEAP_FLAGS y{ D3D12_HEAP_FLAG_NONE };
-			CD3DX12_RESOURCE_DESC z = CD3DX12_RESOURCE_DESC::Buffer(sz);
-			D3D12_RESOURCE_STATES w{ D3D12_RESOURCE_STATE_GENERIC_READ };
-			gGFX.mpDevice->CreateCommittedResource(&x, y, &z, w, nullptr, IID_PPV_ARGS(&gTexture1));
-			UpdateSubresources(gGFX.mpGraphicsCommandList.Get(), gTexture0.Get(), gTexture1.Get(), 0, 0, (uint32_t)gTexture3.size(), gTexture3.data());
-		}
-		auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(gTexture0.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) };
-		gGFX.mpGraphicsCommandList->ResourceBarrier(1u, &barrier);
-		gGFX.flushGPU();
-		{
-			D3D12_DESCRIPTOR_HEAP_DESC x{}; {
-				x.NumDescriptors = 1u;
-				x.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-				x.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-			}
-			gGFX.mpDevice->CreateDescriptorHeap(&x, IID_PPV_ARGS(&gTexture2));
-		}
-		D3D12_SHADER_RESOURCE_VIEW_DESC _6{}; {
-			_6.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			_6.Format = mipChain.GetMetadata().format;
-			_6.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			_6.Texture2D.MipLevels = (uint32_t)mipChain.GetMetadata().mipLevels;
-			gGFX.mpDevice->CreateShaderResourceView(gTexture0.Get(), &_6, gTexture2->GetCPUDescriptorHandleForHeapStart());
-		}
+		//D3D12_RESOURCE_DESC _1{}; {
+		//	DXGI_FORMAT format{ mipChain.GetMetadata().format };
+		//	uint64_t x{ (uint64_t)mipChain.GetMetadata().width };
+		//	uint32_t y{ (uint32_t)mipChain.GetMetadata().height };
+		//	switch (metadata.dimension) {
+		//		case TEX_DIMENSION_TEXTURE1D: _1 = CD3DX12_RESOURCE_DESC::Tex1D(format, x, (uint16_t)mipChain.GetMetadata().arraySize, (uint16_t)mipChain.GetMetadata().mipLevels); break;
+		//		case TEX_DIMENSION_TEXTURE2D: _1 = CD3DX12_RESOURCE_DESC::Tex2D(format, x, y, (uint16_t)mipChain.GetMetadata().arraySize, (uint16_t)mipChain.GetMetadata().mipLevels); break;
+		//		case TEX_DIMENSION_TEXTURE3D: _1 = CD3DX12_RESOURCE_DESC::Tex3D(format, x, y, (uint16_t)mipChain.GetMetadata().depth, (uint16_t)mipChain.GetMetadata().mipLevels); break;
+		//		default: throw std::exception("Invalid texture dimension."); break;
+		//	}
+		//}
+		//{
+		//	CD3DX12_HEAP_PROPERTIES x{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)};
+		//	D3D12_HEAP_FLAGS y{ D3D12_HEAP_FLAG_NONE };
+		//	D3D12_RESOURCE_STATES z{ D3D12_RESOURCE_STATE_COPY_DEST };
+		//	gGFX.mpDevice->CreateCommittedResource(&x, y, &_1, z, nullptr, IID_PPV_ARGS(&gTexture0));
+		//}
+		//{
+		//	gTexture3.resize(mipChain.GetImageCount());
+		//	const Image* ptr = mipChain.GetImages();
+		//	for (uint32_t i = 0; i < mipChain.GetImageCount(); i++) {
+		//		auto& sr = gTexture3[i];
+		//		sr.RowPitch = ptr[i].rowPitch;
+		//		sr.SlicePitch = ptr[i].slicePitch;
+		//		sr.pData = ptr[i].pixels;
+		//	}
+		//}
+		//{
+		//	uint64_t sz = GetRequiredIntermediateSize(gTexture0.Get(), 0u, (uint32_t)gTexture3.size());
+		//	CD3DX12_HEAP_PROPERTIES x{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD)};
+		//	D3D12_HEAP_FLAGS y{ D3D12_HEAP_FLAG_NONE };
+		//	CD3DX12_RESOURCE_DESC z = CD3DX12_RESOURCE_DESC::Buffer(sz);
+		//	D3D12_RESOURCE_STATES w{ D3D12_RESOURCE_STATE_GENERIC_READ };
+		//	gGFX.mpDevice->CreateCommittedResource(&x, y, &z, w, nullptr, IID_PPV_ARGS(&gTexture1));
+		//	UpdateSubresources(gGFX.mpGraphicsCommandList.Get(), gTexture0.Get(), gTexture1.Get(), 0, 0, (uint32_t)gTexture3.size(), gTexture3.data());
+		//}
+		//auto barrier{ CD3DX12_RESOURCE_BARRIER::Transition(gTexture0.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) };
+		//gGFX.mpGraphicsCommandList->ResourceBarrier(1u, &barrier);
+		//gGFX.flushGPU();
+		//{
+		//	D3D12_DESCRIPTOR_HEAP_DESC x{}; {
+		//		x.NumDescriptors = 1u;
+		//		x.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		//		x.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		//	}
+		//	gGFX.mpDevice->CreateDescriptorHeap(&x, IID_PPV_ARGS(&gTexture2));
+		//}
+		//D3D12_SHADER_RESOURCE_VIEW_DESC _6{}; {
+		//	_6.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		//	_6.Format = mipChain.GetMetadata().format;
+		//	_6.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		//	_6.Texture2D.MipLevels = (uint32_t)mipChain.GetMetadata().mipLevels;
+		//	gGFX.mpDevice->CreateShaderResourceView(gTexture0.Get(), &_6, gTexture2->GetCPUDescriptorHandleForHeapStart());
+		//}
 		
 		return data;
 	}
@@ -4457,11 +3392,15 @@ namespace GID::Util::FileParsing {
 
 // Scene Data - Lights
 namespace GID::GSO::Scene {
-		inline std::vector<GID::DSU::LightData> gLights{};
-		inline void addLight(GID::DSU::LightData& light) {
+		inline std::vector<GID::DSU::Light::LightData> gLights{};
+		inline void addLight(GID::DSU::Light::LightData& light) {
 			gLights.push_back(light);
 		}
 }
+
+inline uint8_t objectidx{};
+inline GID::DSU::Texture gTexture0{};
+inline GID::DSU::Texture gTexture1{};
 
 // Object Structure
 namespace GID::DSU {
@@ -4487,14 +3426,12 @@ namespace GID::DSU {
 
 		Object() = default;
 		Object(ObjectFileData& data) {
-			
-			using namespace AssistMath;
 
 			// Process data
 			std::vector<DSU::VSInputData> ind{}; ind.resize(data.ind.size() * 3u);
-			std::vector<AssistMath::AMFLOAT3> pos{}; pos.resize(data.pos.size());
-			std::vector<AssistMath::AMFLOAT2> tex{}; tex.resize(data.tex.size());
-			std::vector<AssistMath::AMFLOAT3> norm{}; norm.resize(data.norm.size());
+			std::vector<XMFLOAT3> pos{}; pos.resize(data.pos.size());
+			std::vector<XMFLOAT2> tex{}; tex.resize(data.tex.size());
+			std::vector<XMFLOAT3> norm{}; norm.resize(data.norm.size());
 			uint32_t iter{ 0 };
 			for (auto& p : data.pos) { pos.at(iter) = p; iter++; }
 			iter = 0;
@@ -4554,15 +3491,16 @@ namespace GID::DSU {
 			mVertexBuffer = { GSO::Render::gGFX.getDevice(), GSO::Render::gGFX.getCommandList(), ind.data(), ind.size() };
 
 			using namespace GSO::Render;
-			AssistMath::FAMMATRIX transformM{ getTransformMx() };
-			AssistMath::FAMVECTOR det{ FAMMatrixDeterminant(transformM) };
-			AssistMath::FAMMATRIX tpose{ FAMMatrixTranspose(transformM) };
-			VertexConstantBufferData matrices{ transformM, gGFX.getCamera().getMatrix(), gGFX.getProjection(), FAMMatrixInverse(det, tpose) };
+			XMMATRIX transformM{ getTransformMx() };
+			XMVECTOR det{ XMMatrixDeterminant(transformM) };
+			XMMATRIX tpose{ XMMatrixTranspose(transformM) };
+			VertexConstantBufferData matrices{ transformM, gGFX.getCamera().getMatrix(), gGFX.getProjection(), XMMatrixInverse(&det, tpose) };
 
 			mVCB = { GSO::Render::gGFX.getDevice(), gGFX.getCommandList(), matrices };
 
 			pcbData.mtl = mMaterialData;
 			mPCB = { GSO::Render::gGFX.getDevice(), gGFX.getCommandList(), pcbData };
+
 		}
 
 		Position& getPos() noexcept { return mPos; }
@@ -4570,7 +3508,7 @@ namespace GID::DSU {
 		MaterialData& getMaterialData() noexcept { return mMaterialData; }
 
 		void update() noexcept {
-			AssistMath::FAMVECTOR dt = _mm_set_ps1(GSO::Update::gTicks);
+			XMVECTOR dt = _mm_set_ps1(GSO::Update::gTicks);
 			mPos.translation = _mm_add_ps(mPos.translation, _mm_mul_ps(mSpeed.deltaTranslation, dt));
 			mPos.rotation = _mm_add_ps(mPos.rotation, _mm_mul_ps(mSpeed.deltaRotation, dt));
 			//mPos.center = _mm_add_ps(mPos.center, _mm_mul_ps(mSpeed.deltaTranslation, dt));
@@ -4585,14 +3523,14 @@ namespace GID::DSU {
 		}
 		void updateResources() noexcept {
 			using namespace GSO::Render;
-			AssistMath::FAMMATRIX transformM{ getTransformMx() };
-			AssistMath::FAMVECTOR det{ FAMMatrixDeterminant(transformM) };
-			AssistMath::FAMMATRIX tpose{ FAMMatrixTranspose(transformM) };
+			XMMATRIX transformM{ getTransformMx() };
+			XMVECTOR det{ XMMatrixDeterminant(transformM) };
+			XMMATRIX tpose{ XMMatrixTranspose(transformM) };
 			VertexConstantBufferData matrices{
 				transformM,
 				gGFX.getCamera().getMatrix(),
 				gGFX.getProjection(),
-				FAMMatrixInverse(det, tpose)
+				XMMatrixInverse(&det, tpose)
 			};
 			pcbData.eyePos = { gGFX.getCamera().mEye.m128_f32[0], gGFX.getCamera().mEye.m128_f32[1], gGFX.getCamera().mEye.m128_f32[2], 1.0f };
 			pcbData.globalAmbient = { 0.f, 0.f, 0.f, 1.f };
@@ -4619,8 +3557,16 @@ namespace GID::DSU {
 			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(2u, mVSTexSB.getDestRes()->GetGPUVirtualAddress());
 			gGFX.getCommandList()->SetGraphicsRootShaderResourceView(3u, mVSNormSB.getDestRes()->GetGPUVirtualAddress());
 			gGFX.getCommandList()->SetGraphicsRootConstantBufferView(4u, mPCB.getDestRes()->GetGPUVirtualAddress());
-			gGFX.getCommandList()->SetDescriptorHeaps(1u, gTexture2.GetAddressOf());
-			gGFX.getCommandList()->SetGraphicsRootDescriptorTable(5u, gTexture2->GetGPUDescriptorHandleForHeapStart());
+			if (objectidx == 0) {
+				gGFX.getCommandList()->SetDescriptorHeaps(1u, gTexture0.ptr.GetAddressOf());
+				gGFX.getCommandList()->SetGraphicsRootDescriptorTable(5u, gTexture0.ptr->GetGPUDescriptorHandleForHeapStart());
+				objectidx++;
+			}
+			else if (objectidx == 1) {
+				gGFX.getCommandList()->SetDescriptorHeaps(1u, gTexture1.ptr.GetAddressOf());
+				gGFX.getCommandList()->SetGraphicsRootDescriptorTable(5u, gTexture1.ptr->GetGPUDescriptorHandleForHeapStart());
+				objectidx--;
+			}
 			gGFX.getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			gGFX.getCommandList()->IASetVertexBuffers(0u, 1u, &mVertexBuffer.getView());
 			gGFX.getCommandList()->DrawInstanced(mVertexBuffer.getCount(), 1u, 0u, 0u);
@@ -4634,10 +3580,10 @@ namespace GID::DSU {
 			mVSNormSB.transitionToWrite(gGFX.getCommandList());
 			mPCB.transitionToWrite(gGFX.getCommandList());
 		}
-		AssistMath::FAMMATRIX getTransformMx() noexcept {
+		XMMATRIX getTransformMx() noexcept {
 			return {
-			AssistMath::FAMMatrixRotationRollPitchYaw(mPos.rotation)
-			* AssistMath::FAMMatrixTranslation(mPos.translation)
+			XMMatrixRotationRollPitchYaw(mPos.rotation.m128_f32[0], mPos.rotation.m128_f32[1], mPos.rotation.m128_f32[2])
+			* XMMatrixTranslation(mPos.translation.m128_f32[0], mPos.translation.m128_f32[1], mPos.translation.m128_f32[2])
 			};
 		}
 	};
@@ -4745,7 +3691,7 @@ namespace GID::DSU {
 		Timer mInitTimer{};
 		Timer mCurrentStateTimer{};
 			
-		ActorGroundState mGroundState{ ActorGroundState::GROUND };
+		ACTOR_GROUND_STATE mGroundState{ ACTOR_GROUND_STATE_GROUND };
 
 		Actor() = default;
 		Actor(std::string& objPath) {
@@ -4811,7 +3757,7 @@ namespace GID::GSO::Util {
 		using namespace GSO; using namespace GSO::Render::Viewport;
 		WindowNS::initWindow(1600, 900, L"Window");
 		Util::initGSO();
-		Render::initGFX({ ViewportPresets[(uint8_t)GID::DSU::ViewportPreset::VP1_DEFAULT] });
+		Render::initGFX({ ViewportPresets[(uint8_t)GID::DSU::VIEWPORT_TYPE_1_DEFAULT] });
 		Render::gGFX.m2D.initDebugText();
 
 	}
@@ -4912,13 +3858,13 @@ namespace GID::GSO::Scripts::Update {
 	//inline void doBasicCollision(GID::DSU::Actor& actor, std::vector<GID::DSU::Actor>& actors) {
 	//	using namespace DSU::AssistMath;
 	//	struct Triangle {
-	//		DSU::AssistMath::FAMVECTOR p1{};
-	//		DSU::AssistMath::FAMVECTOR p2{};
-	//		DSU::AssistMath::FAMVECTOR p3{};
+	//		DSU::XMVECTOR p1{};
+	//		DSU::XMVECTOR p2{};
+	//		DSU::XMVECTOR p3{};
 	//	};
 	//	struct Line {
-	//		DSU::AssistMath::FAMVECTOR p1{};
-	//		DSU::AssistMath::FAMVECTOR p2{};
+	//		DSU::XMVECTOR p1{};
+	//		DSU::XMVECTOR p2{};
 	//	};
 	//	// Gather all tris from the first actor
 	//	std::vector<Triangle> actor0Tris{};
@@ -4926,15 +3872,15 @@ namespace GID::GSO::Scripts::Update {
 	//		std::vector<Triangle> tris{};
 	//					
 	//		UINT iter = 0u;
-	//		FAMVECTOR v0{};
-	//		FAMVECTOR v1{};
-	//		FAMVECTOR v2{};
+	//		XMVECTOR v0{};
+	//		XMVECTOR v1{};
+	//		XMVECTOR v2{};
 	//					
 	//		for (auto& o : actor.mModel.mObjects) {
 	//			FAMMATRIX transformMx = o.getTransformMx();
 	//			for (auto& v : o.mObjectFileData.pos) {
 
-	//				FAMVECTOR vector{ AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
+	//				XMVECTOR vector{ AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
 	//				vector = FAMVector4Transform(vector, transformMx);
 
 	//				if (iter == 0) v0 = { AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
@@ -4962,15 +3908,15 @@ namespace GID::GSO::Scripts::Update {
 	//				std::vector<Triangle> tris{};
 
 	//				UINT iter = 0u;
-	//				FAMVECTOR v0{};
-	//				FAMVECTOR v1{};
-	//				FAMVECTOR v2{};
+	//				XMVECTOR v0{};
+	//				XMVECTOR v1{};
+	//				XMVECTOR v2{};
 
 	//				for (auto& o : a.mModel.mObjects) {
 	//					FAMMATRIX transformMx = o.getTransformMx();
 	//					for (auto& v : o.mObjectFileData.pos) {
 
-	//						FAMVECTOR vector{ AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
+	//						XMVECTOR vector{ AMLoadFloat4({ v.x, v.y, v.z, 1.0f }) };
 	//						vector = FAMVector4Transform(vector, transformMx);
 
 	//						if (iter == 0) v0 = { AMLoadFloat3({ vector.m128_f32[0], vector.m128_f32[1], vector.m128_f32[2] }) };
@@ -4988,7 +3934,7 @@ namespace GID::GSO::Scripts::Update {
 
 	//			// Determine if a triangle from actor 1 collides with a triangle of actor 2 (O(n) = n^2, make faster)
 	//			float result{};
-	//			FAMVECTOR triNorm{};
+	//			XMVECTOR triNorm{};
 	//			Triangle collidedTri{};
 	//			{
 	//				float intersectingDist{};
@@ -5058,8 +4004,8 @@ namespace GID::GSO::Scripts::Update {
 
 	//							if (isDifferentSign) {
 
-	//								FAMVECTOR outsidePoint{ (result1 > 0.0f) ? lines[i].p2 : lines[i].p1 };
-	//								FAMVECTOR insidePoint{ (result1 > 0.0f) ? lines[i].p1 : lines[i].p2 };
+	//								XMVECTOR outsidePoint{ (result1 > 0.0f) ? lines[i].p2 : lines[i].p1 };
+	//								XMVECTOR insidePoint{ (result1 > 0.0f) ? lines[i].p1 : lines[i].p2 };
 
 	//								Triangle plane0tri{};
 	//								plane0tri.p1 = outsidePoint;
@@ -5193,8 +4139,8 @@ namespace GID::GSO::Scripts::Update {
 	//			// (result is the amount of distance intersected)
 	//			if (result < 0.0f) {
 
-	//				FAMVECTOR velocity = actor.mModel.getObjects().at(0).getSpeed().deltaTranslation;
-	//				FAMVECTOR translation = actor.mModel.getObjects().at(0).getPos().translation;
+	//				XMVECTOR velocity = actor.mModel.getObjects().at(0).getSpeed().deltaTranslation;
+	//				XMVECTOR translation = actor.mModel.getObjects().at(0).getPos().translation;
 
 	//				enum Point {
 	//					x,
@@ -5231,7 +4177,7 @@ namespace GID::GSO::Scripts::Update {
 	//					// ---
 
 	//					// Determine the reflected momentum vector of the actor
-	//					FAMVECTOR refl =
+	//					XMVECTOR refl =
 	//						_mm_sub_ps(
 	//							velocity,
 	//							_mm_mul_ps(
@@ -5286,10 +4232,10 @@ namespace GID::GSO::Scripts::Factory {
 		for (auto& a : GID::GSO::Scene::gActors) {
 			for (auto& s : a.mScripts) {
 				switch (s) {
-				case DSU::ScriptID::BasicGravity:
+				case DSU::SCRIPT_ID_ACTOR_UPDATE_BASIC_GRAVITY:
 					//Update::doBasicGravity(a);
 					break;
-				case DSU::ScriptID::BasicCollision:
+				case DSU::SCRIPT_ID_ACTOR_UPDATE_BASIC_COLLISION:
 					//Update::doBasicCollision(a, GID::GSO::Scene::gActors);
 					break;
 				}
@@ -5299,7 +4245,7 @@ namespace GID::GSO::Scripts::Factory {
 	inline void processCameraScripts() noexcept {
 		for (auto& script : Render::gGFX.getCamera().getScripts()) {
 			switch (script) {
-			case DSU::ScriptID::AdvancedCameraFollow:
+			case DSU::SCRIPT_ID_CAMERA_UPDATE_ADVANCED_FOLLOW:
 				Update::doAdvancedCameraFollow();
 				break;
 			}

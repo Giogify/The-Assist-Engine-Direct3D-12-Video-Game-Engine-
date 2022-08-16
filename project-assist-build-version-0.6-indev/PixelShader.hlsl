@@ -25,7 +25,8 @@ struct Material {
 	
 	float specularPower; //Ns
 	bool isTextured;
-	int padding;
+	int2 padding;
+
 };
 
 // Light Struct (5 vectors)
@@ -50,12 +51,10 @@ struct Light {
 
 // Light Constant Buffer (47 vectors)
 cbuffer pixelCBuffer : register(b0) {
-
 	Material mtl : packoffset(c0);
 	float4 eyePos : packoffset(c5);
 	float4 globalAmbient : packoffset(c6);
 	Light lights[MAX_LIGHTS] : packoffset(c7);
-
 }
 
 // Texture and Sampler
