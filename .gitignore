@@ -370,3 +370,5 @@ FodyWeavers.xsd
 /project-assist-build-version-0.6-indev/inc/DirectXTex
 *.dds
 *.cso
+/project-assist-build-version-0.6-indev/res/actor/dragon.dae
+/project-assist-build-version-0.7-indev
